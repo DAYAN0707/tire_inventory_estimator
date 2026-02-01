@@ -7,10 +7,10 @@ class Tire(models.Model):
     size_raw = models.CharField('サイズ', max_length=20)
 
     unit_price = models.IntegerField('1本価格')
-    set_price = models.IntegerField('4本価格')
-
-    load_index = models.CharField('荷重指数', max_length=10, blank=True)
-    speed_symbol = models.CharField('速度記号', max_length=5, blank=True)
+    set_price = models.IntegerField('4本特価')
+    reorder_point = models.IntegerField('定数', default=4)
+    stock_qty = models.IntegerField('実在庫', default=0)
+    purchase_price = models.IntegerField('仕入れ値', default=0)
 
     def __str__(self):
         return f"{self.manufacturer} {self.brand} {self.size_raw}"
@@ -25,7 +25,7 @@ class Inventory(models.Model):
 
     total_quantity = models.IntegerField('総在庫数', default=0)
     reserved_quantity = models.IntegerField('予約在庫', default=0)
-    reorder_point = models.IntegerField('発注点', default=4)
+    reorder_point = models.IntegerField('定数', default=4)
 
     @property
     def available_stock(self):
