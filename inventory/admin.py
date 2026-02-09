@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from import_export.admin import ImportExportModelAdmin
-from .models import Tire
+from .models import Tire, Estimate
 from import_export import resources
 
 class TireResource(resources.ModelResource):
@@ -10,8 +10,7 @@ class TireResource(resources.ModelResource):
         import_id_fields = ('product_code',)
         fields = (
             'product_code', 'manufacturer', 'brand', 'size_raw', 
-            'unit_price', 'set_price', 'reorder_point', 'stock_qty', 
-            'purchase_price')
+            'unit_price', 'set_price', 'reorder_point',)
 
 @admin.register(Tire)
 class TireAdmin(ImportExportModelAdmin):
@@ -22,13 +21,11 @@ class TireAdmin(ImportExportModelAdmin):
 
     list_display = (
         'brand_display',  # ブランドとサイズをまとめた列
-        'stock_qty',       # 実在庫
         'stock_status',    # 有効在庫（赤字判定）
         'reorder_point',   # 定数
         'formatted_unit_price',      # 販売単価
         'formatted_set_price',       # 4本特価　
-        'order_button',     # 操作（発注）
-        'formatted_purchase_price',   # 仕入れ値
+        'order_button',     # 操作(発注)
     )
 
     def formatted_unit_price(self, obj):
@@ -38,11 +35,6 @@ class TireAdmin(ImportExportModelAdmin):
     def formatted_set_price(self, obj):
         return f"{obj.set_price:,}" if obj.set_price else "0"
     formatted_set_price.short_description = "4本特価"
-
-    def formatted_purchase_price(self, obj):
-        return f"{obj.purchase_price:,}" if obj.purchase_price else "0"
-    formatted_purchase_price.short_description = "仕入れ値"
-
 
     def brand_display(self, obj):
         return format_html('<b>{}</b><br><small>{}</small>', obj.brand, obj.size_raw)
