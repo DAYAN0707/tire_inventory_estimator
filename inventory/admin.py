@@ -4,14 +4,17 @@ from import_export.admin import ImportExportModelAdmin
 from .models import Tire, Estimate
 from import_export import resources
 
+# `Tire`モデル用のリソースクラスを定義
 class TireResource(resources.ModelResource):
     class Meta:
         model = Tire
-        import_id_fields = ('product_code',)
+        import_id_fields = ('product_code',) # 一意の識別子として商品コードを使用
         fields = (
             'product_code', 'manufacturer', 'brand', 'size_raw', 
-            'unit_price', 'set_price', 'reorder_point',)
+            'unit_price', 'set_price', 'reorder_point',)  # インポート・エクスポートするフィールド
 
+# マスタ管理（タイヤ・在庫）
+# ImportExportModelAdmin を継承、インポート・エクスポート機能を有効化
 @admin.register(Tire)
 class TireAdmin(ImportExportModelAdmin):
     resource_class = TireResource
