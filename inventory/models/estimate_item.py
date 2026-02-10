@@ -10,11 +10,22 @@ class EstimateItem(models.Model):
     quantity = models.PositiveIntegerField('本数')
     #見積時単価を保存(価格変更に影響されないため)
     unit_price = models.DecimalField('見積時単価',max_digits=8,decimal_places=0)
+    # quantity * unit_price を保存時に固定する
+    subtotal = models.IntegerField('小計', editable=False)
 
-# 見積時合計金額(単価×本数)、二重管理を防ぐ為、DBには保存しない
-    @property
-    def total_price(self):
-        return self.unit_price * self.quantity
+    # 見積時点の小計(単価×本数)を自動計算し、見積履歴としてDB保存
+    def save(self, *args, **kwargs):
+        self.subtotal = self.unit_price * self.quantity
+        super().save(*args, **kwargs)  # 親クラスの save() メソッドを呼び出して保存
+        # Item が追加・変更される度、親 Estimate の見積合計を自動更新
+        self.estimate.recalc_total_price()
     
+    # Item 削除時にも親 Estimate の見積合計を再計算
+    def delete(self, *args, **kwargs):
+        estimate = self.estimate  # 削除前に親 Estimate を取得
+        super().delete(*args, **kwargs)
+        estimate.recalc_total_price()  # 削除後に親 Estimate の合計を更新
+
+    # 管理画面等での表示用
     def __str__(self):
         return f"{self.tire} x {self.quantity}本"

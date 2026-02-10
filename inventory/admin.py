@@ -19,7 +19,7 @@ class TireResource(resources.ModelResource):
 class TireAdmin(ImportExportModelAdmin):
     resource_class = TireResource
 
-    actions_on_top = False      # 上部のバー削除
+    actions_on_top = False      # 上部のバーを非表示
     actions_on_bottom = True    # 下にバーを表示
 
     list_display = (
