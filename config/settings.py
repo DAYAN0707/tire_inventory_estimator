@@ -40,8 +40,9 @@ INSTALLED_APPS = [
 
     'import_export',
     'inventory',
-    'estimation',
-    'master'
+    'estimate',
+    'master',
+    'users',
 ]
 
 MIDDLEWARE = [

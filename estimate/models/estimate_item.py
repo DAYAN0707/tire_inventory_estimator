@@ -1,20 +1,23 @@
 from django.db import models
-from .estimate import Estimate
-from .tire import Tire
 
 class EstimateItem(models.Model):
-    estimate = models.ForeignKey(Estimate, on_delete=models.CASCADE, related_name='items')
-    #過去見積があるタイヤは削除できない(履歴保全)
-    tire = models.ForeignKey(Tire, on_delete=models.PROTECT,related_name='estimate_items')
+    # ForeignKeyの相手を Estimate(クラス名)ではなく'アプリ名.モデル名'(文字列)で指定＝インポートを書かずに済む
+    estimate = models.ForeignKey('estimate.Estimate', on_delete=models.CASCADE, related_name='items')
+    # 過去見積があるタイヤは削除できない(履歴保全)
+    tire = models.ForeignKey('inventory.Tire', on_delete=models.PROTECT, related_name='estimate_items')
     # default は設定しない（本数入力は必須とする）
     quantity = models.PositiveIntegerField('本数')
-    #見積時単価を保存(価格変更に影響されないため)
+    # 見積時単価を保存(価格変更に影響されないため)
     unit_price = models.DecimalField('見積時単価',max_digits=8,decimal_places=0)
     # quantity * unit_price を保存時に固定する
     subtotal = models.IntegerField('小計', editable=False)
 
     # 見積時点の小計(単価×本数)を自動計算し、見積履歴としてDB保存
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # 親クラスの save() メソッドをオーバーライド
+        if self.estimate.is_fixed:
+            raise ValueError('確定済みの見積は編集できません')
+    
+    # 見積が確定している場合、unit_priceをタイヤの現在価格に固定
         self.subtotal = self.unit_price * self.quantity
         super().save(*args, **kwargs)  # 親クラスの save() メソッドを呼び出して保存
         # Item が追加・変更される度、親 Estimate の見積合計を自動更新

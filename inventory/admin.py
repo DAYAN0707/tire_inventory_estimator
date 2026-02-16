@@ -1,10 +1,10 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from import_export.admin import ImportExportModelAdmin
-from .models import Tire, Estimate
+from .models import Tire, TireStatus
 from import_export import resources
 
-# `Tire`モデル用のリソースクラスを定義
+#  Tire モデル用のリソースクラスを定義
 class TireResource(resources.ModelResource):
     class Meta:
         model = Tire
@@ -43,21 +43,29 @@ class TireAdmin(ImportExportModelAdmin):
         return format_html('<b>{}</b><br><small>{}</small>', obj.brand, obj.size_raw)
     brand_display.short_description = "タイヤ情報"
 
+    #  在庫未登録にも耐えるよう修正
     def stock_status(self, obj):
-        limit = obj.reorder_point or 0
-        current = obj.stock_qty or 0
+        # 発注点未設定
+        if obj.reorder_point is None:
+            return format_html('<span style="color: gray;">未設定</span>') # グレー表示  
         
+        inventory = getattr(obj, 'inventory', None)
+        if not inventory:
+            return format_html('<span style="color: gray;">未登録</span>')
+
+        limit = obj.reorder_point
+        current = obj.stock_qty # 有効在庫
+
         # 在庫不足（赤字 ＋ 太字 ＋ 少し大きく）
         if current < limit:
             return format_html(
-                '<b style="color: red; font-weight: bold; font-size: 1.2em;">{}</b>', 
-                current
-            )
-        
+            '<b style="color: red; font-weight: bold; font-size: 1.2em;">{:,}</b>',current) #数値フォーマットを在庫にも統一
+
         # 通常時（太字のみ）
-        return format_html('<b style="font-weight: bold;">{}</b>', current)
+        return format_html('<b style="font-weight: bold;">{:,}</b>', current)
     stock_status.short_description = "有効在庫"
 
+    # 発注ボタンの表示
     def order_button(self, obj):
         return format_html(
             '<a class="button" style="background-color: #2a7da3; color: white; padding: 4px 12px; border-radius: 4px; text-decoration: none;" '
