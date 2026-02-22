@@ -1,0 +1,26 @@
+[
+    {
+        "model": "estimate.estimatestatus",
+        "pk": 1,
+        "fields": {
+            "status_name": "作成中",
+                "is_fixed": false
+        }
+    },
+    {
+        "model": "estimate.estimatestatus",
+        "pk": 2,
+        "fields": {
+            "status_name": "予約確定",
+            "is_fixed": true
+        }
+    },
+    {
+        "model": "estimate.estimatestatus",
+        "pk": 3,
+        "fields": {
+            "status_name": "完了",
+            "is_fixed": true
+        }
+    }
+]

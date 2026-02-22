@@ -6,3 +6,6 @@ class TireStatus(models.Model):
 
     def __str__(self):
         return self.status_name
+    
+    is_active = models.BooleanField(default=True)  # 廃盤や取扱停止中のタイヤを非表示にするフラグ（True: 販売中、False: 廃盤/取扱停止）
+    
