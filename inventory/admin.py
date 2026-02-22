@@ -55,6 +55,7 @@ class TireAdmin(ImportExportModelAdmin):
     # リスト表示項目
     list_display = (
         'brand_display',   # ブランドとサイズをまとめた列(廃盤判定込)
+        'stock_qty',       # 在庫数量表示
         'reserved_info',   # 予約数表示(見積連動)
         'stock_status',    # 有効在庫(取り寄せ・赤字判定込み)
         'reorder_point',   # 発注点(分析の閾値)
@@ -111,26 +112,25 @@ class TireAdmin(ImportExportModelAdmin):
 
     # 在庫未登録にも耐えるよう修正
     def stock_status(self, obj):
-        # 業務ルール：発注点がない場合は「取り寄せ」
+        # 在庫が1本以上ある場合は「在庫あり」と緑色で表示
+        if obj.stock_qty > 0:
+            return format_html('<span style="color: green;">在庫あり</span>')
+        # 発注点がない場合は「取り寄せ」とグレーで表示(定数0 → 常備しない → 取寄専用の業務ルールをモデル層で担保)
         if obj.reorder_point in (None, 0):
             return format_html('<span style="color: gray;">取り寄せ</span>') # グレーで「取り寄せ」と表示
+        # 在庫数が0で発注点がある場合は「入荷待ち」と赤色で表示
+        return format_html('<span style="color: red;">入荷待ち</span>')
         
-        # 在庫数取得(在庫数は Tire モデルのフィールドなので、直接 obj.stock_qty でアクセス)
-        current = obj.stock_qty or 0
-        if current < obj.reorder_point:
-            return format_html('<b style="color: red; font-size: 1.1em;">{:,}</b>',current) # 在庫不足は赤字で強調表示
-        return format_html('<b>{:,}</b>', current)
-    stock_status.short_description = "有効在庫"
 
-    def formatted_unit_price(self, obj):
-        return f"{obj.unit_price:,}" if obj.unit_price else "0"
-    formatted_unit_price.short_description = "1本価格"
+    def formatted_unit_price(self, obj): # 在庫未登録にも耐えるよう修正
+        return f"{obj.unit_price:,}" if obj.unit_price else "0" # カンマ区切りで表示、unit_price が 0 の場合は「0」と表示
+    formatted_unit_price.short_description = "1本価格" # 管理画面の列見出し
 
-    def formatted_set_price(self, obj):
+    def formatted_set_price(self, obj): # 在庫未登録にも耐えるよう修正
         if obj.set_price is None:
             return "—"
-        return f"{obj.set_price:,}"
-    formatted_set_price.short_description = "4本特価"
+        return f"{obj.set_price:,}" # カンマ区切りで表示、set_price が None の場合は「—」を表示
+    formatted_set_price.short_description = "4本特価" # 管理画面の列見出し
 
     #発注ボタンの表示
     def order_button(self, obj):

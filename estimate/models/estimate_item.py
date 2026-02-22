@@ -1,16 +1,32 @@
 from django.db import models
+from django.conf import settings
+from estimate.models.estimate import Estimate
+from inventory.models import Tire
 
+    # 管理画面で見積の状態を色分けして表示するためのプロパティ
 class EstimateItem(models.Model):
-    # ForeignKeyの相手を Estimate(クラス名)ではなく'アプリ名.モデル名'(文字列)で指定＝インポートを書かずに済む
-    estimate = models.ForeignKey('estimate.Estimate', on_delete=models.CASCADE, related_name='items')
-    # 過去見積があるタイヤは削除できない(履歴保全)
-    tire = models.ForeignKey('inventory.Tire', on_delete=models.PROTECT, related_name='estimate_items')
-    # default は設定しない（本数入力は必須とする）
-    quantity = models.PositiveIntegerField('本数')
-    # 見積時単価を保存(価格変更に影響されないため)
-    unit_price = models.DecimalField('見積時単価',max_digits=8,decimal_places=0)
-    # quantity * unit_price を保存時に固定する
-    subtotal = models.IntegerField('小計', editable=False)
+    estimate = models.ForeignKey(Estimate, related_name='items', on_delete=models.CASCADE) # 見積と見積アイテムは1対多の関係、見積が削除されたら関連するアイテムも削除
+    tire = models.ForeignKey(Tire, on_delete=models.PROTECT) # 見積アイテムは特定のタイヤに紐づく、タイヤが削除されないよう PROTECT を指定
+    quantity = models.IntegerField() # 本数
+    unit_price = models.IntegerField() # 見積時の単価を保存（価格変更に影響されないため）
+    subtotal = models.IntegerField() # 小計を保存（quantity × unit_price）
+
+    def stock_judgement(self):
+        # 見積本数 × 在庫数で在庫状態を判定
+        tire = self.tire
+        qty = self.quantity
+
+        # 在庫数が見積本数以上ある場合は「在庫有」と緑色で表示
+        if tire.stock_qty >= qty:
+            return "在庫有"
+
+        # 発注点がない場合は「取寄可能」とグレーで表示
+        if tire.reorder_point == 0:
+            return "取寄可能"
+
+        # 発注点があり在庫数が定数以下の場合は「入荷待ち」と赤色で表示
+        return "入荷待ち"
+    
 
     # 見積時点の小計(単価×本数)を自動計算し、見積履歴としてDB保存
     def save(self, *args, **kwargs):  # 親クラスの save() メソッドをオーバーライド

@@ -9,7 +9,8 @@ class Estimate(models.Model):
     # 見積の作成者を記録するための外部キー
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name="見積作成者")
     estimate_number = models.CharField('見積番号', max_length=50, unique=True)
-    customer_name = models.CharField('顧客名', max_length=100)
+    customer_name = models.CharField('顧客名（個人・会社）', max_length=100)
+    vehicle_name = models.CharField('車種', max_length=100)
     is_fixed = models.BooleanField('確定フラグ', default=False)
     # 外税内税の切替・会計システム連携の際は IntegerField を DecimalField に変更検討
     total_price = models.IntegerField('見積時合計金額', default=0) #円単位・税込固定
@@ -36,5 +37,3 @@ class Estimate(models.Model):
         total = sum(item.subtotal for item in self.items.all())
         self.total_price = total
         self.save(update_fields=['total_price'])
-
-        

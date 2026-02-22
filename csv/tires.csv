@@ -1,1 +1,4 @@
-product_code,manufacturer,brand,size_raw,unit_price,set_price,stock_qty
+product_code,manufacturer,brand,size_raw,unit_price,set_price,stock_qty,reorder_point 
+TC001,TOYO,TRANPATH MP7,205/60R16,25000,95000,8,4 
+BS001,BRIDGESTONE,REGNO GR-X3,215/55R17,48000,180000,2,4 
+YK001,YOKOHAMA,BlueEarth RV03,195/65R15,23000,56000,0,0

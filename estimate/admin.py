@@ -6,10 +6,32 @@ from audit.models.audit_log import AuditLog
 # 親(見積)画面の中に、子(見積詳細)を見積画面下方に「表形式(Inline)」で並べる
 class EstimateItemInline(admin.TabularInline):
     model = EstimateItem
-    extra = 2  # 前後サイズ違いの車両を考慮して空行を2行追加
-    min_num = 1  # 最低1行は必須 (空見積防止)
-    fields = ('tire', 'quantity', 'unit_price', 'subtotal')  # 表示項目
-    readonly_fields = ('subtotal',)  #　小計は自動計算(編集不可)、誤入力を防ぐ目的で readonly に設定
+
+    # 見積明細の入力フォームで、在庫数や在庫状況をリアルタイムに表示するためのカスタムメソッドを定義
+    fields = (
+        'tire',
+        'quantity',
+        'unit_price',
+        'subtotal',
+        'stock_status_display',
+    )
+
+    # 小計と在庫状況は見積入力の際に自動計算される項目で、誤入力を防ぐために readonly に設定
+    readonly_fields = (
+        'subtotal',
+        'stock_status_display',
+    )
+
+    extra = 2 # 前後サイズ違いの車両を考慮して空行を2行追加
+    min_num = 1# 空見積防止のため、最低1行は必須とする
+
+    # 在庫状況をリアルタイムに表示するカスタムメソッド
+    def stock_status_display(self, obj):
+        if not obj.pk:
+            return "-"
+        return obj.stock_judgement()
+
+    stock_status_display.short_description = "在庫状況"
 
 # 見積確定(is_fixed=True)後は、明細(EstimateItem)の追加・変更・削除すべて禁止
 # 見積履歴保全の為、admin 権限制御
@@ -34,15 +56,16 @@ class EstimateItemInline(admin.TabularInline):
 class EstimateAdmin(admin.ModelAdmin):
         # 画面から入力を消して、自動セットにする項目を exclude に追加    
         exclude = ('created_by', 'updated_by')
-        list_display = ('estimate_number', 'customer_name','colored_status', 'total_price',  'created_at')  # 管理画面の一覧表にどの項目を表示するか指定
+        list_display = ('estimate_number', 'customer_name', 'vehicle_name', 'colored_status', 'total_price',  'created_at')  # 管理画面の一覧表にどの項目を表示するか指定
         readonly_fields = ('total_price', 'created_at')  # 合計金額や作成日時を画面上で勝手に書き換えられないよう保護
         inlines = [EstimateItemInline]  # 表形式の子テーブルを見積の編集画面にドッキング
+        resource_class = None # 明示的にリソースがないことを指定（通常は自動生成されるが、見積はインポート・エクスポート対象外のため None を指定して明示的に無効化）
 
         # 画面上部に検索バー、画面右側に日付フィルター追加
-        search_fields = ('estimate_number', 'customer_name')
+        search_fields = ('estimate_number', 'customer_name', 'vehicle_name') # 見積番号と顧客名・車種で検索可能
         list_filter = ('created_at',)
         # フォームのレイアウトをカスタマイズ（フィールドセットを定義して、関連する項目をグループ化）
-        fields = ('estimate_number', 'customer_name', 'estimate_status', 'is_fixed', 'total_price', 'created_at') # 管理画面の入力フォームに表示する項目と順番を指定（created_by, updated_by は exclude で消しているため表示されない）
+        fields = ('estimate_number', 'customer_name', 'vehicle_name', 'estimate_status', 'is_fixed', 'total_price', 'created_at') # 管理画面の入力フォームに表示する項目と順番を指定（created_by, updated_by は exclude で消しているため表示されない）
         readonly_fields = ('total_price', 'created_at') # 合計金額や作成日時を画面上で勝手に書き換えられないよう保護
 
         def get_changeform_initial_data(self, request):# 新規作成画面を開いた瞬間、見積ステータスの初期値を「作成中」にセットするためのオーバーライド
