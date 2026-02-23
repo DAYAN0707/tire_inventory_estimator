@@ -18,6 +18,7 @@ class EstimateItemInline(admin.TabularInline):
 
     # 小計と在庫状況は見積入力の際に自動計算される項目で、誤入力を防ぐために readonly に設定
     readonly_fields = (
+        'unit_price',
         'subtotal',
         'stock_status_display',
     )
@@ -29,7 +30,16 @@ class EstimateItemInline(admin.TabularInline):
     def stock_status_display(self, obj):
         if not obj.pk:
             return "-"
-        return obj.stock_judgement()
+        # 見積アイテムの stock_judgement() メソッドを呼び出して在庫状況を取得
+        status = obj.stock_judgement()
+        # 在庫数が見積本数以上ある場合は「在庫有」と緑色で表示
+        if status == "在庫有":
+            return format_html('<span style="color:green; font-weight:bold;">{}</span>', status)
+        # 発注点がない場合は「取寄可能」とグレーで表示
+        if status == "取寄可能":
+            return format_html('<span style="color:gray;">{}</span>', status)
+        # 在庫数が発注点以下・在庫数が見積本数以下の場合は「入荷待ち」と赤色で表示
+        return format_html('<span style="color:red; font-weight:bold;">{}</span>', status)
 
     stock_status_display.short_description = "在庫状況"
 

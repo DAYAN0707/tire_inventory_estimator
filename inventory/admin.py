@@ -72,54 +72,61 @@ class TireAdmin(ImportExportModelAdmin):
     # タイヤの状態(廃盤・取扱停止)を管理するための外部キーをリスト表示に追加
     def brand_display(self, obj):
         if obj.tire_status and not obj.tire_status.is_active: # タイヤのステータスが非アクティブ(廃盤・取扱停止)ならグレー表示
+            # 廃盤・取扱停止のタイヤはグレーでブランドとサイズを表示し、さらに「販売終了」の文言を追加してわかりやすくする
             return format_html(
-                '<span style="color:#999;">'
-                '<b>{}</b><br>' # ブランド名を太字・垂直方向に情報整理(<span>では全て横並びなので<br>でブランド名とサイズを改行して表示)
-                '<small>{}</small><br>' # サイズを小さく表示
-                '<small>（販売終了）</small>' # 廃盤・取扱停止の注釈を追加
-                '</span>',
+                '<span style="color:#999;"><b>{}</b><br><small>{}</small><br><small>（販売終了）</small></span>',
                 obj.brand,
-                obj.size_raw
+                obj.size_raw,
             )
         # 通常の販売中タイヤ(アクティブ)なら通常の色で、ブランドとサイズだけ表示
         return format_html(
             '<b>{}</b><br><small>{}</small>', # 改行、ブランド太字、サイズ小
             obj.brand,
-            obj.size_raw
+            obj.size_raw,
         )
+    
     brand_display.short_description = "タイヤ情報" # 管理画面の列見出し
+
 
     # タイヤの状態(廃盤・取扱停止)を管理するための外部キーをリスト表示に追加
     def reserved_info(self, obj):
-    # 予約確定の見積明細に紐づく件数と数量をカウントして表示
+    # 1.予約確定の見積明細に紐づく件数と数量をカウントして表示
         qs = obj.estimate_items.filter(
             estimate__estimate_status__status_name=RESERVED_STATUS
         )
 
-        # 予約数と予約数量を集計(予約数は見積件数、予約数量は見積明細の数量合計)
+        # 2.件数が0の場合は「—」を表示して終了
         reserved_count = qs.values('estimate').distinct().count()
-        reserved_qty = qs.aggregate(total=Sum('quantity'))['total'] or 0
-        # 予約数がある場合は件数と数量をオレンジ色で表示、0件の場合は「—」で表示
-        if reserved_count:
-            return format_html(
-                '<span style="color: orange; font-weight: bold;">'
-                '{}件<br><small>({}本)</small>' # 件数と数量を改行して表示
-                '</span>', 
-                reserved_count, reserved_qty
-            )
-        return '—'
-    reserved_info.short_description = "予約状況"
+        if reserved_count == 0:
+            return '—'
+
+        # 3.件数が1以上ある場合は、予約数量もカウントして表示（例: 3件(12本)
+        reserved_qty = int(qs.aggregate(total=Sum('quantity'))['total'] or 0)
+
+        # 4.件数と数量をフォーマットして表示 (例: 3件(12本))
+        reserved_qty_display = f"{reserved_qty:,}"
+        # 件数をオレンジ色で強調表示、数量を小さく表示、カンマ区切りで見やすく表示
+        return format_html(
+            '<span style="color: orange; font-weight: bold;">'
+            '{}件<br><small>({}本)</small>'
+            '</span>',
+            reserved_count, # 件数をオレンジ色で強調表示
+            reserved_qty_display # 予約数量を小さく表示、カンマ区切りで見やすく表示
+        )
+        
+    reserved_info.short_description = "予約状況" # 管理画面の列見出し
+
 
     # 在庫未登録にも耐えるよう修正
     def stock_status(self, obj):
         # 在庫が1本以上ある場合は「在庫あり」と緑色で表示
         if obj.stock_qty > 0:
-            return format_html('<span style="color: green;">在庫あり</span>')
+            return format_html('<span style="color: green;">{}</span>', '在庫あり')
         # 発注点がない場合は「取り寄せ」とグレーで表示(定数0 → 常備しない → 取寄専用の業務ルールをモデル層で担保)
         if obj.reorder_point in (None, 0):
-            return format_html('<span style="color: gray;">取り寄せ</span>') # グレーで「取り寄せ」と表示
+            return format_html('<span style="color: gray;">{}</span>', '取り寄せ') # グレーで「取り寄せ」と表示
         # 在庫数が0で発注点がある場合は「入荷待ち」と赤色で表示
-        return format_html('<span style="color: red;">入荷待ち</span>')
+        return format_html('<span style="color: red;">{}</span>', '入荷待ち')
         
 
     def formatted_unit_price(self, obj): # 在庫未登録にも耐えるよう修正
