@@ -1,0 +1,43 @@
+<form method="post">
+    {% csrf_token %}
+
+    <!-- 購入タイプの選択 -->
+    {{ form.purchase_type.label_tag }}
+    {{ form.purchase_type }}
+
+    <!-- 顧客名の入力 -->
+    {{ form.customer_name.label_tag }}
+    {{ form.customer_name }}
+
+    <!-- 取付作業ありの時だけ表示 -->
+    <div id="vehicle-field">
+    {{ form.vehicle_name.label_tag }}
+    {{ form.vehicle_name }}
+    </div>
+
+    <button type="submit">見積作成</button>
+</form>
+
+
+
+<script>
+    /* JavaScriptで購入タイプの選択に応じて車種入力欄の表示/非表示を切り替える */
+    document.addEventListener('DOMContentLoaded', function () {
+        const purchaseType = document.getElementById('id_purchase_type'); /* 購入タイプのセレクトボックスの ID を指定 */
+        const vehicleField = document.getElementById('vehicle-field'); /* 車種入力欄全体を囲む div の ID を指定 */
+
+        /* 購入タイプの選択に応じて車種入力欄の表示/非表示を切り替える関数 */
+        function toggleVehicleField() {
+            if (purchaseType.value === 'install') { /* 取付作業ありが選択された場合 */
+                vehicleField.style.display = 'block'; /* 車種入力欄を表示 */
+            } else {
+                vehicleField.style.display = 'none'; /* 取付作業なしが選択された場合は車種入力欄を非表示 */
+            }
+        }
+
+        /* 購入タイプの選択が変更されたときに toggleVehicleField 関数を呼び出すイベントリスナーを追加 */
+        purchaseType.addEventListener('change', toggleVehicleField);
+        toggleVehicleField(); /* ページ読み込み時にも一度 toggleVehicleField 関数を呼び出して初期状態を設定 */
+    });
+</script>
+

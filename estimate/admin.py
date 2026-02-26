@@ -1,7 +1,12 @@
-from django.contrib import admin
 from django.utils.html import format_html
-from .models import Estimate,EstimateItem,EstimateStatus,ExpenseMaster
 from audit.models.audit_log import AuditLog
+from estimate.services.usecase import recalc_estimate
+from estimate.models.estimate_status import EstimateStatus
+
+from django.contrib import admin
+from .models import Estimate, EstimateItem, CostMaster, EstimateStatus ,EstimateCharge
+
+
 
 # 親(見積)画面の中に、子(見積詳細)を見積画面下方に「表形式(Inline)」で並べる
 class EstimateItemInline(admin.TabularInline):
@@ -61,49 +66,57 @@ class EstimateItemInline(admin.TabularInline):
         return True
     
 
+
+class EstimateChargeInline(admin.TabularInline):
+    model = EstimateCharge
+    extra = 0
+    fields = ("charge_type", "quantity", "unit_price", "subtotal")
+    readonly_fields = ("subtotal",)
+
+
 # 見積入力画面（EstimateItem を Inline で入力可能にする）
 @admin.register(Estimate)
 class EstimateAdmin(admin.ModelAdmin):
         # 画面から入力を消して、自動セットにする項目を exclude に追加    
         exclude = ('created_by', 'updated_by')
-        list_display = ('estimate_number', 'customer_name', 'vehicle_name', 'colored_status', 'total_price',  'created_at')  # 管理画面の一覧表にどの項目を表示するか指定
-        readonly_fields = ('total_price', 'created_at')  # 合計金額や作成日時を画面上で勝手に書き換えられないよう保護
-        inlines = [EstimateItemInline]  # 表形式の子テーブルを見積の編集画面にドッキング
+        list_display = ("id", "estimate_number", "customer_name", "vehicle_name", "colored_status", "total_price", "created_at", "is_fixed") # 管理画面の一覧表にどの項目を表示するか指定
+        readonly_fields = ('total_price', 'created_at', 'updated_at', 'is_fixed')  # 合計金額や作成日時を画面上で勝手に書き換えられないよう保護
         resource_class = None # 明示的にリソースがないことを指定（通常は自動生成されるが、見積はインポート・エクスポート対象外のため None を指定して明示的に無効化）
+        fields = ('estimate_number', 'customer_name', 'vehicle_name', 'purchase_type', 'estimate_status', 'is_fixed', 'total_price', 'updated_at', 'created_at')
+        inlines = [EstimateItemInline] # 表形式の子テーブルを見積の編集画面にドッキング
 
         # 画面上部に検索バー、画面右側に日付フィルター追加
         search_fields = ('estimate_number', 'customer_name', 'vehicle_name') # 見積番号と顧客名・車種で検索可能
-        list_filter = ('created_at',)
+        list_filter = ('created_at','purchase_type') # 作成日時と購入タイプで絞り込み可能
         # フォームのレイアウトをカスタマイズ（フィールドセットを定義して、関連する項目をグループ化）
-        fields = ('estimate_number', 'customer_name', 'vehicle_name', 'estimate_status', 'is_fixed', 'total_price', 'created_at') # 管理画面の入力フォームに表示する項目と順番を指定（created_by, updated_by は exclude で消しているため表示されない）
-        readonly_fields = ('total_price', 'created_at') # 合計金額や作成日時を画面上で勝手に書き換えられないよう保護
+        fields = ('estimate_number', 'customer_name', 'vehicle_name', 'purchase_type', 'estimate_status', 'is_fixed', 'total_price', 'updated_at', 'created_at') # 管理画面の入力フォームに表示する項目と順番を指定（created_by, updated_by は exclude で消しているため表示されない）
+
+            # 新規作成時に request.user を created_by にセット
+        def save_model(self, request, obj, form, change):
+            if not change:  # 新規作成の時だけ
+                obj.created_by = request.user
+            super().save_model(request, obj, form, change)
+            
+            if not obj.status:
+                obj.estimate_status = EstimateStatus.objects.get(status_name="作成中")
+            super().save_model(request, obj, form, change)
+
+            # 作成者・更新者などのセット
+            if not change:
+                obj.created_by = request.user
+                obj.updated_by = request.user
+
+            recalc_estimate(obj)
+
 
         def get_changeform_initial_data(self, request):# 新規作成画面を開いた瞬間、見積ステータスの初期値を「作成中」にセットするためのオーバーライド
             initial = super().get_changeform_initial_data(request)
             try:
-                initial['estimate_status'] = EstimateStatus.objects.get(is_fixed=False) # デフォルトの 作成中ステータス をセットする安全策(マスタにない場合は空のまま)
+                initial['estimate_status'] = EstimateStatus.objects.get(status_name="作成中") # デフォルトの 作成中ステータス をセット
             except EstimateStatus.DoesNotExist:
                 pass
             return initial
         
-
-        # 見積確定後は変更不可とするため、save_model() をオーバーライドして、見積の状態に応じて is_fixed を自動セットする業務ルールをモデル層で担保
-        def save_model(self, request, obj, form, change):
-            # 新規作成時は作成者をセット
-            if not change:
-                obj.created_by = request.user
-                # 見積の状態が未設定の場合は、デフォルトの「作成中」ステータスをセットする安全策(マスタにない場合は空のまま)
-                if not obj.estimate_status_id:
-                    try:
-                        obj.estimate_status = EstimateStatus.objects.get(status_name="作成中")
-                    except EstimateStatus.DoesNotExist:
-                        pass # マスタがない場合の安全策
-            # 更新時は常に更新者をセット
-            obj.updated_by = request.user
-            # 見積の状態が「契約済み」「キャンセル済み」などの場合、自動的に is_fixed を True にセットしてロックする業務ルールをモデル層で担保
-            if obj.estimate_status and obj.estimate_status.is_fixed:
-                obj.is_fixed = True
-            super().save_model(request, obj, form, change)
 
         # 見積の状態に応じてステータスを色分けして表示するカスタムメソッド
         def colored_status(self, obj):
@@ -122,6 +135,11 @@ class EstimateAdmin(admin.ModelAdmin):
                 status.status_name
             )
         colored_status.short_description = 'ステータス' # 管理画面の列見出し
+
+
+@admin.register(EstimateStatus)
+class EstimateStatusAdmin(admin.ModelAdmin):
+    list_display = ("id", "status_name", "is_fixed")
 
 
 # タイヤの状態(廃盤・取扱停止)を管理するための外部キーをリスト表示に追加
