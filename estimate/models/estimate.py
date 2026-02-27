@@ -4,29 +4,22 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from estimate.models.estimate_status import EstimateStatus
 from .cost_master import CostMaster
-from .estimate_charge import EstimateCharge
+from django.urls import reverse
+from django.utils import timezone
 
 
 
 # 見積の基本情報を管理するモデル
 class Estimate(models.Model):
     # 持ち帰り or 取付作業ありの選択肢を追加
-    PURCHASE_TYPE_CHOICES = [
-        ('takeout', '持ち帰り'),
-        ('install', '取付作業あり'),
-    ]
+    class PurchaseType(models.TextChoices):
+        TAKE_HOME = 'take_home', '持ち帰り'
+        INSTALL = 'install', '交換作業'
 
-    STATUS_DRAFT = "draft"
-    STATUS_RESERVED = "reserved"
-    STATUS_COMPLETED = "completed"
-
-    STATUS_CHOICES = [
-        ('draft', '見積中'),
-        ('confirmed', '予約確定'),
-        ('done', '完了'),
-    ]
-
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    purchase_type = models.CharField(
+        max_length=20,
+        choices=PurchaseType.choices,
+    )
 
     unit_price = models.IntegerField(default=0) # 
     tax_rate = models.DecimalField(max_digits=4, decimal_places=2, default=0.10)
@@ -34,8 +27,6 @@ class Estimate(models.Model):
     tax_amount = models.IntegerField(default=0)
 
     
-    # 購入タイプを管理するフィールドを追加
-    purchase_type = models.CharField(max_length=20,  choices=PURCHASE_TYPE_CHOICES,default="takeout",)
     # 見積の状態を管理する外部キー(例: 作成中、予約確定、キャンセル済みなど)
     estimate_status = models.ForeignKey(EstimateStatus, on_delete=models.PROTECT, related_name='estimates')
     # ステータスに応じて見積を自動ロック（業務ルールをモデル層で担保）
@@ -64,15 +55,8 @@ class Estimate(models.Model):
     created_at = models.DateTimeField('作成日時', auto_now_add=True)
     updated_at = models.DateTimeField('更新日時', auto_now=True)
 
-
-    class PurchaseType(models.TextChoices):
-        TAKE_HOME = "take_home", "持ち帰り"
-        INSTALL = "install", "交換作業"
-
-    purchase_type = models.CharField(
-        max_length=20,
-        choices=PurchaseType.choices,
-    )
+    def get_absolute_url(self):
+        return reverse("estimate:estimate_detail", args=[self.pk])
 
     # 見積時合計金額を再計算して保存するメソッド
     def clean(self):
@@ -110,10 +94,11 @@ class Estimate(models.Model):
             total=Sum('amount')
         )['total'] or 0 
 
-        self.total_amount = item_total + charge_total # タイヤ代と諸費用を足して、この見積書の total_amount(最終合計金額)とする
-
+        # タイヤ代と諸費用を足して、この見積書の total_amount(最終合計金額)とする
+        self.total_price = item_total + charge_total
         # 無限 save 防止
-        super().save(update_fields=['total_amount']) # 全部の項目を保存し直すのではなく total_amount(最終合計金額)だけデータベースに上書き
+        super().save(update_fields=['total_price'])
+        # 全部の項目を保存し直すのではなく total_amount(最終合計金額)だけデータベースに上書き
 
 
 
@@ -125,27 +110,15 @@ class Estimate(models.Model):
 
     def __str__(self): return f"Estimate {self.estimate_number} for {self.customer_name}" # 管理画面等表示用
     
-
-    class Status(models.TextChoices):
-        DRAFT = "draft", "下書き"
-        FIXED = "fixed", "契約済み"
-
-    status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.DRAFT
-    )
-
-    tax_rate = models.DecimalField(max_digits=4, decimal_places=2, default=0.10)
-    subtotal = models.IntegerField(default=0)
-    tax_amount = models.IntegerField(default=0)
-    total_price = models.IntegerField(default=0)
-
-
-
     def save(self, *args, **kwargs):
+        if not self.estimate_number:
+            today = timezone.now().strftime("%Y%m%d")
+            last = Estimate.objects.filter(
+                estimate_number__startswith=f"EST-{today}"
+            ).count() + 1
+
+            self.estimate_number = f"EST-{today}-{last:03d}"
+
         super().save(*args, **kwargs)
-
-
 
 

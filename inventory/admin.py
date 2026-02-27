@@ -5,6 +5,7 @@ from import_export.admin import ImportExportModelAdmin
 from import_export import resources
 from .models import Tire, TireStatus
 
+
 # 予約確定の見積に紐づく見積明細の件数をカウントするための定数(将来の拡張性のため、ハードコードせず定数化)
 RESERVED_STATUS = '予約確定'
 

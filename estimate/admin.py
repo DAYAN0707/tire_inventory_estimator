@@ -7,7 +7,6 @@ from django.contrib import admin
 from .models import Estimate, EstimateItem, CostMaster, EstimateStatus ,EstimateCharge
 
 
-
 # 親(見積)画面の中に、子(見積詳細)を見積画面下方に「表形式(Inline)」で並べる
 class EstimateItemInline(admin.TabularInline):
     model = EstimateItem
@@ -18,7 +17,7 @@ class EstimateItemInline(admin.TabularInline):
         'quantity',
         'unit_price',
         'subtotal',
-        'stock_status_display',
+        'stock_status_display', 
     )
 
     # 小計と在庫状況は見積入力の際に自動計算される項目で、誤入力を防ぐために readonly に設定

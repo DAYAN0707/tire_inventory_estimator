@@ -1,6 +1,12 @@
 <form method="post">
     {% csrf_token %}
 
+    <!--1本価格・4本特価の表示-->
+    {% if unit_price %}
+        <p>Unit price: {{ unit_price }} 円</p>
+        <p>4本特価: {{ four_price }} 円</p>
+    {% endif %}
+
     <!-- 購入タイプの選択 -->
     {{ form.purchase_type.label_tag }}
     {{ form.purchase_type }}
