@@ -2,14 +2,15 @@ from django.utils.html import format_html
 from audit.models.audit_log import AuditLog
 from estimate.services.usecase import recalc_estimate
 from estimate.models.estimate_status import EstimateStatus
-
 from django.contrib import admin
 from .models import Estimate, EstimateItem, CostMaster, EstimateStatus ,EstimateCharge
+
 
 
 # 親(見積)画面の中に、子(見積詳細)を見積画面下方に「表形式(Inline)」で並べる
 class EstimateItemInline(admin.TabularInline):
     model = EstimateItem
+    extra = 0 # 新規空行の数
 
     # 見積明細の入力フォームで、在庫数や在庫状況をリアルタイムに表示するためのカスタムメソッドを定義
     fields = (
@@ -90,21 +91,29 @@ class EstimateAdmin(admin.ModelAdmin):
         # フォームのレイアウトをカスタマイズ（フィールドセットを定義して、関連する項目をグループ化）
         fields = ('estimate_number', 'customer_name', 'vehicle_name', 'purchase_type', 'estimate_status', 'is_fixed', 'total_price', 'updated_at', 'created_at') # 管理画面の入力フォームに表示する項目と順番を指定（created_by, updated_by は exclude で消しているため表示されない）
 
-            # 新規作成時に request.user を created_by にセット
-        def save_model(self, request, obj, form, change):
-            if not change:  # 新規作成の時だけ
-                obj.created_by = request.user
-            super().save_model(request, obj, form, change)
-            
-            if not obj.status:
-                obj.estimate_status = EstimateStatus.objects.get(status_name="作成中")
-            super().save_model(request, obj, form, change)
+        #  EstimateItem の Inline 保存後に呼ばれる
+        def save_related(self, request, form, formsets, change):
+            super().save_related(request, form, formsets, change)
+            # Inline を含む保存後に合計を再計算
+            recalc_estimate(form.instance)
 
-            # 作成者・更新者などのセット
+
+        # 新規作成時に request.user を created_by にセット
+        def save_model(self, request, obj, form, change):
+            # 作成者・更新者セット
             if not change:
                 obj.created_by = request.user
-                obj.updated_by = request.user
+            obj.updated_by = request.user
 
+            # ステータス未設定なら「作成中」を自動セット
+            if not obj.estimate_status_id:
+                try:
+                    obj.estimate_status = EstimateStatus.objects.get(status_name="作成中")
+                except EstimateStatus.DoesNotExist:
+                    pass
+
+            super().save_model(request, obj, form, change)  # まず保存
+            # その後に合計再計算
             recalc_estimate(obj)
 
 
@@ -160,8 +169,11 @@ class AuditLogAdmin(admin.ModelAdmin):
         if not change:
             obj.created_by = request.user # 新規作成時は作成者をセット
 
+            # "作成中" という名前のステータスがあったら、その1つ目を使う。なければ何もしない
             if not obj.estimate_status_id:
-                obj.estimate_status = EstimateStatus.objects.get(is_fixed=False)# デフォルトの 作成中ステータス をセットする安全策(マスタにない場合エラーになるが、監査ログは必ず見積と紐づく為、見積ステータスがない＝マスタがないケースは想定しない)
+                status = EstimateStatus.objects.filter(status_name="作成中").first()
+                if status:
+                    obj.estimate_status = status
 
         obj.updated_by = request.user # 更新時は常に更新者をセット
         super().save_model(request, obj, form, change)

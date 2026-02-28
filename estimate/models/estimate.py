@@ -21,10 +21,7 @@ class Estimate(models.Model):
         choices=PurchaseType.choices,
     )
 
-    unit_price = models.IntegerField(default=0) # 
-    tax_rate = models.DecimalField(max_digits=4, decimal_places=2, default=0.10)
     subtotal = models.IntegerField(default=0)
-    tax_amount = models.IntegerField(default=0)
 
     
     # 見積の状態を管理する外部キー(例: 作成中、予約確定、キャンセル済みなど)
@@ -84,7 +81,7 @@ class Estimate(models.Model):
 
 
     # 最終的な合計金額を計算し直して、保存する
-    def _recalculate_total(self):
+    def _recalc_estimatel(self):
         item_total = self.items.aggregate(
             total=Sum('subtotal')
         )['total'] or 0

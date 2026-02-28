@@ -1,15 +1,16 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
+from estimate.models import Estimate
 
-def recalculate_total(estimate):
+def recalc_estimate(estimate):
     subtotal = sum(i.subtotal for i in estimate.items.all()) + \
                 sum(c.subtotal for c in estimate.charges.all())
 
-    # tax_rate が float の場合は Decimal に変換
-    tax_rate = Decimal(str(estimate.tax_rate))  
-    tax = (Decimal(subtotal) * tax_rate).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
-
     estimate.subtotal = subtotal
-    estimate.tax_amount = tax
-    estimate.total_price = subtotal + tax
 
-    estimate.save(update_fields=["subtotal", "tax_amount", "total_price"])
+    estimate.save(update_fields=["subtotal", "total_price"]) 
+
+# Estimate の合計金額を再計算（税込み込みなので tax は不要）
+def recalc_estimate(estimate: Estimate) -> None:
+    total_amount = sum(item.quantity * item.price for item in estimate.items.all())
+    estimate.total_amount = total_amount
+    estimate.save()

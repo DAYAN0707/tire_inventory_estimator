@@ -18,6 +18,9 @@ class EstimateCharge(models.Model):
     unit_price = models.IntegerField('単価') # 見積時の単価を保存（価格変更に影響されないため）
     subtotal = models.IntegerField('小計') # 小計を保存（quantity × unit_price）
 
+    # 重要：これが無いと「どのタイヤの工賃か」分からない！！！
+    item = models.ForeignKey("EstimateItem",on_delete=models.CASCADE,null=True,blank=True)
+
     # 管理画面等での表示用
     def save(self, *args, **kwargs):
         self.subtotal = self.unit_price * self.quantity # 小計を自動計算して保存
