@@ -57,17 +57,31 @@ class Estimate(models.Model):
 
     # 見積時合計金額を再計算して保存するメソッド
     def clean(self):
-        # 取付作業ありの場合は車種必須
-        if self.purchase_type == Estimate.PurchaseType.INSTALL and not self.vehicle_name:
-            raise ValidationError('取付作業の場合は車種が必須です')
-# フォームだけでなく、モデルの clean() メソッドでも同様のバリデーションを行うことで、管理画面やAPI等、どこから見積が作成・更新されてもこの業務ルールが担保される
+        # 保存ボタンを押した時に実行される強力なバリデーション
+        super().clean()
 
+        # 取付作業ありの場合は車種必須
+        if self.purchase_type == "install" and not self.vehicle_name:
+            raise ValidationError('取付作業の場合は車種が必須です')
+
+        # 【新規】保存済みのデータがある場合のみ、台数・本数制限をチェック
+        if self.pk and self.purchase_type == "install":
+            item_kinds = self.items.count()
+            if item_kinds > 2:
+                raise ValidationError(f"【台数制限エラー】作業予約は1台分（前後サイズ違いのお車は最大2サイズ可）までです。現在{item_kinds}種類登録されています。")
+                
+            total_qty = sum(item.quantity for item in self.items.all())
+            if total_qty > 8:
+                raise ValidationError(
+                    f"【本数制限エラー】1台分（最大8本）を超えています。現在{total_qty}本です。"
+                )
+
+# フォームだけでなく、モデルの clean() メソッドでも同様のバリデーションを行うことで、管理画面やAPI等、どこから見積が作成・更新されてもこの業務ルールが担保される
 
 
     def _apply_install_charges(self):
         # 応急処置：インチ別工賃ロジック一時停止
         return
-
 
 
     # 取付作業が不要になったときに、見積データから工賃（諸費用）だけを自動で削除する

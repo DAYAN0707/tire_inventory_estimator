@@ -9,6 +9,10 @@ class CostMaster(models.Model):
     price_per_tire = models.PositiveIntegerField() # タイヤ1本あたりの取付工賃（円単位）
     is_active = models.BooleanField(default=True) # 有効フラグ（無効にすると見積作成時の選択肢から外れる）
 
+
+
+    # 将来的にオプション機能を付ける時まで、一旦眠らせておく
     # 管理画面で「（例）12-13インチ：1100円」と表示させ、設定ミスを防ぐ
     def __str__(self):
+        # 現在の CostMaster にはカテゴリがないため、一旦無効化
         return f"{self.min_inch}-{self.max_inch}インチ: {self.price_per_tire}円"

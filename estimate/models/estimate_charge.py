@@ -6,12 +6,14 @@ class EstimateCharge(models.Model):
     estimate = models.ForeignKey(
         'Estimate',
         related_name='charges', #見積から諸費用を逆参照するための related_name を追加
-        on_delete=models.CASCADE #見積が削除されたら関連する諸費用も削除
+        on_delete=models.CASCADE, #見積が削除されたら関連する諸費用も削除
+        verbose_name='見積'
     )
     # 諸費用の種類を管理する外部キー（例: 取付工賃、廃タイヤ、エアバルブなど）
     cost_master = models.ForeignKey(
         CostMaster, # 諸費用のマスタモデルへの外部キー
-        on_delete=models.PROTECT # 諸費用のマスタが削除されないように PROTECT を指定
+        on_delete=models.PROTECT, # 諸費用のマスタが削除されないように PROTECT を指定
+        verbose_name='諸費用'
     )
 
     quantity = models.IntegerField('作業本数', default=0) # 取付工賃などで本数連動する場合の本数を管理するフィールド（例: 4本分の取付工賃なら quantity=4、エアバルブ交換で3本必要なら quantity=3 など）
@@ -29,8 +31,6 @@ class EstimateCharge(models.Model):
 
 
     #
-    def remove_option_fees(estimate):
-        EstimateCharge.objects.filter(
-            estimate=estimate,
-            charge_type__in=["DISPOSAL", "VALVE", "RFT"]
-        ).delete()
+    def remove_option_fees(self):
+        # 諸費用マスタ(cost_master)のカテゴリー(category)が 'option' のものを消す、という書き方
+        self.charges.filter(cost_master__category='option').delete()

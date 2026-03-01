@@ -8,10 +8,11 @@ from django.core.exceptions import ValidationError
     # 管理画面で見積の状態を色分けして表示するためのプロパティ
 class EstimateItem(models.Model):
     estimate = models.ForeignKey(Estimate, related_name='items', on_delete=models.CASCADE) # 見積と見積アイテムは1対多の関係、見積が削除されたら関連するアイテムも削除
-    tire = models.ForeignKey(Tire, on_delete=models.PROTECT, related_name="estimate_items") # 見積アイテムは特定のタイヤに紐づく、タイヤが削除されないよう PROTECT を指定
-    quantity = models.IntegerField() # 本数
-    unit_price = models.IntegerField() # 見積時の単価を保存（価格変更に影響されないため）
-    subtotal = models.IntegerField() # 小計を保存（quantity × unit_price）
+    tire = models.ForeignKey(Tire, on_delete=models.PROTECT, related_name="estimate_items", verbose_name='タイヤ') # 見積アイテムは特定のタイヤに紐づく、タイヤが削除されないよう PROTECT を指定
+    quantity = models.IntegerField('本数') # 本数
+    unit_price = models.IntegerField('1本価格', blank=True, null=True) # 見積時の単価を保存（価格変更に影響されないため）
+    set_price = models.IntegerField('4本特価', blank=True, null=True) # 見積時の4本特価を保存
+    subtotal = models.IntegerField('タイヤ小計', blank=True, null=True) # 小計を保存（quantity × unit_price）
 
     # 工賃マスタと紐づけるための項目
     cost_master = models.ForeignKey('estimate.CostMaster',on_delete=models.CASCADE, null=True, blank=True, related_name="estimate_items")
