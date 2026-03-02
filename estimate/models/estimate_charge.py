@@ -25,12 +25,18 @@ class EstimateCharge(models.Model):
 
     # 管理画面等での表示用
     def save(self, *args, **kwargs):
-        self.subtotal = self.unit_price * self.quantity # 小計を自動計算して保存
+        # 整数の商：4本セットがいくつ取れるか (例: 6本なら 1セット)
+        num_sets = self.quantity // 4
+
+        # 剰余：セットにならなかった余りは何本か (例: 6本なら 2本)
+        remainder = self.quantity % 4
+
+        # 合計金額を計算　(セット数 × 4本特価) + (余り本数 × 1本単価)
+        self.subtotal = (num_sets * self.set_price) + (remainder * self.unit_price)
+
         super().save(*args, **kwargs)
 
 
-
-    #
     def remove_option_fees(self):
         # 諸費用マスタ(cost_master)のカテゴリー(category)が 'option' のものを消す、という書き方
         self.charges.filter(cost_master__category='option').delete()
