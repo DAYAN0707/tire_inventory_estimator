@@ -1,20 +1,91 @@
 from django.contrib import admin, messages
+from django import forms
 from django.utils.html import format_html
 from django.core.exceptions import ValidationError
 from estimate.models import Estimate, EstimateItem, EstimateCharge, EstimateStatus
 from estimate.services.usecase import recalc_estimate, validate_estimate_rules
 from audit.models.audit_log import AuditLog
+from django.forms.models import BaseInlineFormSet
+from django.core.exceptions import ValidationError
+from estimate.models.estimate_item import EstimateItem
+
+
+
+
+class EstimateItemInlineFormSet(BaseInlineFormSet):
+    def clean(self):
+        # 最初に行う基本処理
+        super().clean()
+
+        # self.data から画面上の最新の選択を取得
+        # 保存前（エラー表示中）でも「持ち帰り」への変更を即座に検知できる
+        purchase_type_id = self.data.get('purchase_type')
+
+        # 持ち帰り判定（ID または 文字列で判定）
+        is_takeout = (purchase_type_id in ['take_home', '持ち帰り'])
+
+        active_kind_count = 0
+        total_qty = 0
+        
+        prefix = self.prefix
+
+        
+        for i, form in enumerate(self.forms):
+            # 1. 削除チェック（レ点）が画面で入っているか
+            is_delete_checked = self.data.get(f'{prefix}-{i}-DELETE') == 'on'
+
+            should_delete = is_delete_checked or form.cleaned_data.get('DELETE', False)
+
+            if should_delete:
+                continue # 削除予定の行は、種類数にも本数にも含めない
+
+            # タイヤと本数の取得
+            # ここもcleaned_dataが空になる可能性を考慮し、生のデータも参照
+            tire_id = self.data.get(f'{prefix}-{i}-tire')
+            qty_raw = self.data.get(f'{prefix}-{i}-quantity') or 0
+
+            try:
+                qty = int(qty_raw)
+            except (ValueError, TypeError):
+                qty = 0
+
+            # タイヤが選択されている有効な行だけをカウント
+            if tire_id and tire_id != '':
+                active_kind_count += 1
+                total_qty += qty
+
+        # エラー判定（「持ち帰り」でない場合のみ実行）
+        if not is_takeout:
+
+            # 種類の制限チェック（前後サイズ違いなど想定、2種類まで）
+            if active_kind_count > 2:
+                raise forms.ValidationError(
+                f"【サイズ制限】前後サイズ違いなど、最大2サイズまでです（現在{active_kind_count}サイズ選択中）。"
+                "サイズを見直すか、不要な項目を削除してください。"
+                )
+
+            # 本数の制限チェック（最大8本まで）
+            if total_qty > 8:
+                raise forms.ValidationError(
+                f"【本数制限】交換作業ご希望の場合は合計8本までです（現在{total_qty}本選択中）。"
+                "本数を見直すか、不要な項目を削除してください。"
+                )
+            #5本購入(ジムニーなどスペアタイヤとして1本余分に購入)が前提の場合も考慮
+
+
 
 
 # 親(見積)画面の中に、子(見積詳細)を見積画面下方に「表形式(Inline)」で並べる
 class EstimateItemInline(admin.TabularInline):
     model = EstimateItem
+    formset = EstimateItemInlineFormSet  # ← ここで自作のFormSetを指定！
     # 見積明細の入力フォームで、在庫数や在庫状況をリアルタイムに表示するためのカスタムメソッドを定義
-    fields = ('tire', 'quantity', 'unit_price', 'set_price', 'subtotal', 'stock_status_display')
+    fields = ('tire', 'quantity', 'unit_price', 'set_price', 'subtotal', 'stock_status_display') 
     # 小計と在庫状況は見積入力の際に自動計算される項目で、誤入力を防ぐために readonly に設定
     readonly_fields = ('unit_price', 'set_price', 'subtotal', 'stock_status_display')
     extra = 2 # 前後サイズ違いの車両を考慮して空行を2行追加
     min_num = 1 # 空見積防止のため、最低1行は必須とする
+    can_delete = True
 
     # 在庫状況をリアルタイムに表示するカスタムメソッド
     def stock_status_display(self, obj):
@@ -30,6 +101,7 @@ class EstimateItemInline(admin.TabularInline):
         # 在庫数が発注点以下・在庫数が見積本数以下の場合は「入荷待ち」と赤色で表示
         return format_html('<span style="color:red; font-weight:bold;">{}</span>', status)
     stock_status_display.short_description = "在庫状況"
+    pass
 
 
 class EstimateChargeInline(admin.TabularInline):
@@ -72,16 +144,49 @@ class EstimateAdmin(admin.ModelAdmin):
             obj.created_by = request.user # 新規作成時は作成者をセット
         obj.updated_by = request.user # 更新時は常に更新者をセット
 
-
-        # ステータス未設定なら「作成中」を自動セット
-        if not obj.estimate_status_id:
-            status = EstimateStatus.objects.filter(status_name="作成中").first()
-            if status:
-                obj.estimate_status = status
-        # 本体と明細（Inline）を保存した直後にバリデーションを実行する
+        # 画面（form）から直接、最新の購入タイプを取得して本体(obj)にセット
+        # バリデーションエラー中であっても変更を強制的に反映させます
+        if 'purchase_type' in form.cleaned_data:
+            obj.purchase_type = form.cleaned_data['purchase_type']
+        
         super().save_model(request, obj, form, change)
-        # 本体の情報だけで一旦再計算,本体の保存直後にも計算を走らせておく（念のため）
-        recalc_estimate(obj)
+
+    def save_formset(self, request, form, formset, change):
+        # まず formset.save(commit=False) を実行、Djangoが内部で「削除対象」や「修正対象」を整理
+        instances = formset.save(commit=False)
+
+        # 削除チェック が入ったものを物理削除
+        for obj in formset.deleted_objects:
+            obj.delete()
+
+        # 親（見積本体）の情報を取得、status だけを確認
+        parent_obj = form.instance
+        # hasattrを使って、安全にステータスがあるか確認し、文字列にする
+        status_name = str(parent_obj.estimate_status) if parent_obj.estimate_status else ""
+        
+        is_creating = "作成中" in status_name
+
+
+        # 残ったタイヤ明細を保存
+        for instance in instances:
+            # タイヤが選ばれていて、かつステータスが「作成中」なら価格コピー
+            if is_creating and hasattr(instance, 'tire') and instance.tire:
+                tire_master = instance.tire
+                # 1本価格が空ならマスターからコピー
+                # 単価のコピー（マスターの unit_price を使用）
+                if not instance.unit_price:
+                    instance.unit_price = tire_master.unit_price
+                # 4本特価が空ならマスターからコピー
+                # 4本特価のコピー（マスターの set_price を使用）
+                if not instance.set_price:
+                    instance.set_price = tire_master.set_price
+
+            # データベースに保存
+            instance.save()
+        
+        # 多対多のリレーションがある場合に備えて実行
+        formset.save_m2m()
+
 
     # 明細保存後の最終処理（計算とルールチェック）,EstimateItem の Inline 保存後に呼ばれる
     def save_related(self, request, form, formsets, change):
