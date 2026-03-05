@@ -1,16 +1,14 @@
 from django.contrib import admin, messages
 from django import forms
 from django.utils.html import format_html
+from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.forms.models import BaseInlineFormSet
+from estimate.models import Estimate, EstimateItem, EstimateCharge, EstimateStatus
 from estimate.services.usecase import recalc_estimate, validate_estimate_rules
 from audit.models.audit_log import AuditLog
-from django.forms.models import BaseInlineFormSet
-from django.core.exceptions import ValidationError
-from estimate.models.estimate_item import EstimateItem
-from .models import Estimate, EstimateItem, EstimateCharge, EstimateStatus
-from .models.masters.charge_master import ChargeMaster
-from .models.masters.estimate_status import EstimateStatus
-from django.utils import timezone
+
+
 
 class EstimateItemInlineFormSet(BaseInlineFormSet):
     def clean(self):
@@ -110,6 +108,7 @@ class EstimateChargeInline(admin.TabularInline):
     fields = ("charge_master", "quantity", "unit_price", "subtotal")
     readonly_fields = ("subtotal",)
 
+
 # 見積入力画面（EstimateItem を Inline で入力可能にする）
 @admin.register(Estimate)
 class EstimateAdmin(admin.ModelAdmin):
@@ -127,6 +126,33 @@ class EstimateAdmin(admin.ModelAdmin):
     search_fields = ('estimate_number', 'customer_name', 'vehicle_name') # 見積番号と顧客名・車種で検索可能
     list_filter = ('created_at', 'purchase_type') # 作成日時と購入タイプで絞り込み可能
 
+
+    def get_readonly_fields(self, request, obj=None):
+        
+        # 確定ステータスの見積は、全フィールドを読み取り専用にする
+        base_readonly = list(super().get_readonly_fields(request, obj))
+
+        # 提供されたコードに合わせて obj.estimate_status.is_fixed で判定
+        if obj and obj.estimate_status and obj.estimate_status.is_fixed:
+            all_fields = [f.name for f in self.model._meta.fields]
+            # 重複を排除しつつ全フィールドをロック
+            return list(set(base_readonly + all_fields))
+
+        return base_readonly
+
+    def has_change_permission(self, request, obj=None):
+        # 確定済みの場合は編集権限（保存ボタン）を消す
+        if obj and obj.estimate_status and obj.estimate_status.is_fixed:
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        # 確定済みの場合は削除権限を消す
+        if obj and obj.estimate_status and obj.estimate_status.is_fixed:
+            return False
+        return super().has_delete_permission(request, obj)
+
+
     # 新規作成画面を開いた瞬間、見積ステータスの初期値を「作成中」にセットするためのオーバーライド
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)
@@ -143,6 +169,7 @@ class EstimateAdmin(admin.ModelAdmin):
         return "-"
     get_created_at_jst.short_description = "作成日時"
     
+
     # 監査ログはシステムが自動で記録するものであるため、管理画面からの編集は一切禁止する方針
     # 本体の保存（作成者・更新者の自動セット）
     def save_model(self, request, obj, form, change):
@@ -156,6 +183,7 @@ class EstimateAdmin(admin.ModelAdmin):
             obj.purchase_type = form.cleaned_data['purchase_type']
         
         super().save_model(request, obj, form, change)
+
 
     def save_formset(self, request, form, formset, change):
         # まず formset.save(commit=False) を実行、Djangoが内部で「削除対象」や「修正対象」を整理
@@ -225,7 +253,6 @@ class EstimateAdmin(admin.ModelAdmin):
                     # ステータスだけを「作成中」に書き換えて保存
                     form.instance.save(update_fields=['estimate_status'])
                     messages.warning(request, "⚠️重大なエラーがあるため、ステータスを自動的に「作成中」に戻しました。内容を修正してください。")
-
 
 
 
