@@ -1,42 +1,71 @@
 from django.db import models
-from .cost_master import CostMaster
+from .estimate import Estimate
+from .estimate_item import EstimateItem
+from .masters.charge_master import ChargeMaster
 
-# 見積に紐づく諸費用を管理するモデル
+
+# 見積時点での諸費用（工賃・オプション等）の確定情報を保存
 class EstimateCharge(models.Model):
+
+    """
+    【設計の重要ポイント：マスタからのデカップリング】
+    このモデルには計算ロジック（save()での自動計算など）を持たせない
+    作成時に Calculator サービスが計算した「その瞬間の単価・小計」をそのまま保存
+    将来マスタ価格が改定されても過去の見積金額が勝手に変わることを防ぐ！！
+    """
+
     estimate = models.ForeignKey(
-        'Estimate',
-        related_name='charges', #見積から諸費用を逆参照するための related_name を追加
-        on_delete=models.CASCADE, #見積が削除されたら関連する諸費用も削除
+        Estimate,
+        related_name='charges',
+        on_delete=models.CASCADE,
         verbose_name='見積'
     )
-    # 諸費用の種類を管理する外部キー（例: 取付工賃、廃タイヤ、エアバルブなど）
-    cost_master = models.ForeignKey(
-        CostMaster, # 諸費用のマスタモデルへの外部キー
-        on_delete=models.PROTECT, # 諸費用のマスタが削除されないように PROTECT を指定
-        verbose_name='諸費用'
+
+    charge_master = models.ForeignKey(
+        ChargeMaster,
+        on_delete=models.PROTECT, # マスタが消されても、過去の見積データが消えないよう保護
+        verbose_name='諸費用マスタ'
     )
 
-    quantity = models.IntegerField('作業本数', default=0) # 取付工賃などで本数連動する場合の本数を管理するフィールド（例: 4本分の取付工賃なら quantity=4、エアバルブ交換で3本必要なら quantity=3 など）
-    unit_price = models.IntegerField('単価') # 見積時の単価を保存（価格変更に影響されないため）
-    subtotal = models.IntegerField('小計') # 小計を保存（quantity × unit_price）
+    # 数量・単価・小計はすべて「数値」として直接保存（マスタへの依存を断ち切る）
+    quantity = models.IntegerField(
+        '作業本数', 
+        default=0,
+        help_text='取付工賃の本数や、廃タイヤの個数、エアバルブの個数など'
+    )
+    
+    unit_price = models.IntegerField(
+        '単価',
+        help_text='見積作成時点のマスタ単価（RFT加算等を含む最終単価）'
+    )
+    
+    subtotal = models.IntegerField(
+        '小計',
+        help_text='Calculatorによって計算済みの合計金額（単価×数量、または4本特価適用後）'
+    )
 
-    # 重要：これが無いと「どのタイヤの工賃か」分からない！！！
-    item = models.ForeignKey("EstimateItem",on_delete=models.CASCADE,null=True,blank=True)
+    # どのタイヤに対する費用かを特定するための紐付け
+    # ※前後サイズ違いの場合、どのタイヤの工賃かを判別するために必須
+    item = models.ForeignKey(
+        EstimateItem,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        verbose_name="対象タイヤ明細"
+    )
 
-    # 管理画面等での表示用
-    def save(self, *args, **kwargs):
-        # 整数の商：4本セットがいくつ取れるか (例: 6本なら 1セット)
-        num_sets = self.quantity // 4
+    class Meta:
+        verbose_name = "見積諸費用"
+        verbose_name_plural = "見積諸費用"
 
-        # 剰余：セットにならなかった余りは何本か (例: 6本なら 2本)
-        remainder = self.quantity % 4
-
-        # 合計金額を計算　(セット数 × 4本特価) + (余り本数 × 1本単価)
-        self.subtotal = (num_sets * self.set_price) + (remainder * self.unit_price)
-
-        super().save(*args, **kwargs)
+    def __str__(self):
+        # 管理画面で「どの作業が何本分か」をひと目で確認できるようにする
+        return f"{self.charge_master.name} × {self.quantity}本"
 
 
-    def remove_option_fees(self):
-        # 諸費用マスタ(cost_master)のカテゴリー(category)が 'option' のものを消す、という書き方
-        self.charges.filter(cost_master__category='option').delete()
+    """
+    【削除処理の集約】
+    かつてここにあった remove_option_fees() などの削除ロジックは、
+    業務ルールの変更（例：キャンペーン中は消さない等）に対応しやすくする為、
+    全て services/calculator.py 側に集約
+    """

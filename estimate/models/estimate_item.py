@@ -1,8 +1,9 @@
 from django.db import models
 from django.conf import settings
-from estimate.models.estimate import Estimate
 from inventory.models import Tire
 from django.core.exceptions import ValidationError
+from .estimate import Estimate
+from .masters.charge_master import ChargeMaster
 
 
     # 管理画面で見積の状態を色分けして表示するためのプロパティ
@@ -15,7 +16,7 @@ class EstimateItem(models.Model):
     subtotal = models.IntegerField('タイヤ小計', blank=True, null=True) # 小計を保存（quantity × unit_price）
 
     # 工賃マスタと紐づけるための項目
-    cost_master = models.ForeignKey('estimate.CostMaster',on_delete=models.CASCADE, null=True, blank=True, related_name="estimate_items")
+    cost_master = models.ForeignKey(ChargeMaster, on_delete=models.CASCADE, null=True, blank=True, related_name="estimate_items")
 
     def stock_judgement(self):
         # 見積本数 × 在庫数で在庫状態を判定

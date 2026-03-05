@@ -1,1 +1,1 @@
-from estimate.models import CostMaster, ChargeMaster
+from estimate.models import ChargeMaster

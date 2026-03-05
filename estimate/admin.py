@@ -2,15 +2,15 @@ from django.contrib import admin, messages
 from django import forms
 from django.utils.html import format_html
 from django.core.exceptions import ValidationError
-from estimate.models import Estimate, EstimateItem, EstimateCharge, EstimateStatus
 from estimate.services.usecase import recalc_estimate, validate_estimate_rules
 from audit.models.audit_log import AuditLog
 from django.forms.models import BaseInlineFormSet
 from django.core.exceptions import ValidationError
 from estimate.models.estimate_item import EstimateItem
-
-
-
+from .models import Estimate, EstimateItem, EstimateCharge, EstimateStatus
+from .models.masters.charge_master import ChargeMaster
+from .models.masters.estimate_status import EstimateStatus
+from django.utils import timezone
 
 class EstimateItemInlineFormSet(BaseInlineFormSet):
     def clean(self):
@@ -107,7 +107,7 @@ class EstimateItemInline(admin.TabularInline):
 class EstimateChargeInline(admin.TabularInline):
     model = EstimateCharge
     extra = 0
-    fields = ("cost_master", "quantity", "unit_price", "subtotal")
+    fields = ("charge_master", "quantity", "unit_price", "subtotal")
     readonly_fields = ("subtotal",)
 
 # 見積入力画面（EstimateItem を Inline で入力可能にする）
@@ -116,17 +116,16 @@ class EstimateAdmin(admin.ModelAdmin):
     # 画面から入力を消して、自動セットにする項目を exclude に追加
     exclude = ('created_by', 'updated_by')
     # 管理画面の一覧表にどの項目を表示するか指定
-    list_display = ("id", "estimate_number", "customer_name", "vehicle_name", "colored_status", "total_price", "created_at", "is_fixed")
+    list_display = ('estimate_number', 'customer_name', 'vehicle_name', 'colored_status', 'total_price', 'created_at','get_created_at_jst', 'is_fixed')
     # 合計金額や作成日時を画面上で勝手に書き換えられないよう保護
-    readonly_fields = ('total_price', 'created_at', 'updated_at', 'is_fixed')
+    readonly_fields = ('estimate_number', 'total_price', 'created_at', 'updated_at', 'is_fixed')
     # フォームのレイアウトをカスタマイズ（フィールドセットを定義して、関連する項目をグループ化）fields は 1つにまとめる
-    fields = ('estimate_number', 'customer_name', 'vehicle_name', 'purchase_type', 'estimate_status', 'is_fixed', 'total_price', 'updated_at', 'created_at')
+    fields = ('customer_name', 'vehicle_name', 'purchase_type', 'estimate_status', 'is_fixed', 'total_price', 'updated_at', 'created_at')
     # 表形式の子テーブルを見積の編集画面にドッキング
     inlines = [EstimateItemInline, EstimateChargeInline]
     # 画面上部に検索バー、画面右側に日付フィルター追加
     search_fields = ('estimate_number', 'customer_name', 'vehicle_name') # 見積番号と顧客名・車種で検索可能
     list_filter = ('created_at', 'purchase_type') # 作成日時と購入タイプで絞り込み可能
-
 
     # 新規作成画面を開いた瞬間、見積ステータスの初期値を「作成中」にセットするためのオーバーライド
     def get_changeform_initial_data(self, request):
@@ -136,6 +135,13 @@ class EstimateAdmin(admin.ModelAdmin):
         except EstimateStatus.DoesNotExist:
             pass
         return initial
+    
+    def get_created_at_jst(self, obj):
+        # 日本時間に変換して読みやすい形式で返す
+        if obj.created_at:
+            return timezone.localtime(obj.created_at).strftime('%Y/%m/%d %H:%M')
+        return "-"
+    get_created_at_jst.short_description = "作成日時"
     
     # 監査ログはシステムが自動で記録するものであるため、管理画面からの編集は一切禁止する方針
     # 本体の保存（作成者・更新者の自動セット）
@@ -237,7 +243,7 @@ class EstimateAdmin(admin.ModelAdmin):
 
 @admin.register(EstimateStatus)
 class EstimateStatusAdmin(admin.ModelAdmin):
-    list_display = ("id", "status_name", "is_fixed")
+    list_display = ('id', 'status_name', 'is_fixed')
 
 # タイヤの状態(廃盤・取扱停止)を管理するための外部キーをリスト表示に追加
 @admin.register(AuditLog)

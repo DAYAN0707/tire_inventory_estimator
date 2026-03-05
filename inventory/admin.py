@@ -65,7 +65,7 @@ class TireAdmin(ImportExportModelAdmin):
         'order_button', # 操作(発注)
     )
     # 検索バー設定　(メーカー、ブランド、サイズ、商品コードで部分一致検索可能)
-    search_fields = ('manufacturer', 'brand', 'size_raw', 'product_code')
+    search_fields = ('estimate_number', 'manufacturer', 'brand', 'size_raw', 'product_code')
     # フィルタ設定(メーカー：ブリヂストン 且つ 在庫戦略：設定あり(常備品)などの絞り込みが可能)
     list_filter = ('manufacturer', 'brand', ReorderPointFilter) # 在庫戦略フィルタ追加
 

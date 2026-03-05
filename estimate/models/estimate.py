@@ -1,11 +1,12 @@
-from django.db import models, transaction
+from django.db import models
 from django.db.models import Sum
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from estimate.models.estimate_status import EstimateStatus
-from .cost_master import CostMaster
+from .masters.estimate_status import EstimateStatus
 from django.urls import reverse
 from django.utils import timezone
+import datetime
+
 
 
 
@@ -52,7 +53,45 @@ class Estimate(models.Model):
     created_at = models.DateTimeField('作成日時', auto_now_add=True)
     updated_at = models.DateTimeField('更新日時', auto_now=True)
 
+    estimate_number = models.CharField('見積番号', max_length=20, unique=True, blank=True, db_index=True, help_text="空のまま保存すると 'EST-YYYYMMDD-001' 形式で自動採番されます"
+    )
+
+    def save(self, *args, **kwargs):
+
+        # 保存時に見積番号がなければ自動採番を行う
+        if not self.estimate_number:
+            # 1. サーバー設定（日本時間）に基づいた今日の日付を取得
+            # timezone.localdate() を使うことで、海外時間との時差問題回避
+            today_str = timezone.localdate().strftime('%Y%m%d')
+            
+            # 2. 今日の最新番号を検索。ゼロ埋め3桁なので文字列ソートで最新が取れる
+            last_estimate = (
+                Estimate.objects
+                .filter(estimate_number__startswith=f"EST-{today_str}")
+                .order_by("estimate_number")
+                .last()
+            )
+
+            if last_estimate:
+                # 3. 既存の最新番号（例: EST-20260305-002）の末尾3桁を切り出し、数値にして+1する
+                last_no = int(last_estimate.estimate_number[-3:])
+                new_no = f"{last_no + 1:03}" # 再度3桁のゼロ埋め文字列に戻す
+            else:
+                # 4. 今日最初の発行なら 001
+                new_no = "001"
+
+            # 5. 生成した番号をセット
+            self.estimate_number = f"EST-{today}-{new_no}"
+
+        # 実際の保存処理を実行
+        super().save(*args, **kwargs)
+
+
+    # この見積データの「詳細表示画面」のURLを自動生成して返すメソッド
+    # 管理画面の「サイトで表示」ボタンや、テンプレート内でのリンク作成で使用
     def get_absolute_url(self):
+        # reverse関数を使うことで、urls.pyで定義した名前（estimate:estimate_detail）から
+        # 実際のURL（例: /estimate/123/）を逆引き
         return reverse("estimate:estimate_detail", args=[self.pk])
 
     # 見積時合計金額を再計算して保存するメソッド

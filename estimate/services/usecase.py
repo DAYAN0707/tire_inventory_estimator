@@ -1,10 +1,9 @@
 from decimal import Decimal
 from django.db import transaction
 from estimate.models import Estimate
-from estimate.services.install_fee_service import apply_install_fees, remove_install_fees
-from estimate.services.option_fee_service import apply_option_fees, remove_option_fees
 from django.core.exceptions import ValidationError
-
+from estimate.models import ChargeMaster
+from .calculator import apply_install_fees, apply_option_fees, remove_install_fees, remove_option_fees
 
 
 #  純粋に金額だけを合計する関数（saveはしない）
@@ -104,7 +103,7 @@ def recalc_estimate(estimate):
         estimate.save(update_fields=['total_price'])
 
 
-# 1見積につき2サイズまでOK(前後サイズ違い車種にも対応)と、複数台の混同を防ぐためのチェック機能
+# 見積につき2サイズまでOK(前後サイズ違い車種にも対応)と、複数台の混同を防ぐためのチェック機能
 def validate_estimate_rules(estimate: Estimate):
     # 「取付作業あり」の場合のみ制限をかける
     if estimate.purchase_type == "install": # 交換作業
@@ -115,7 +114,7 @@ def validate_estimate_rules(estimate: Estimate):
                 f"【台数制限エラー】作業予約は1台ずつです。現在{item_kinds}種類のタイヤが登録されています。2種類（前後サイズ違い）までに絞ってください。"
             )
         
-        # 2. 合計本数のチェック（1台分＝スペア含め最大6〜8本程度に制限）
+        # 合計本数のチェック（1台分＝スペア含め最大6〜8本程度に制限）
         total_qty = sum(item.quantity for item in estimate.items.all())
         if total_qty > 8:
             raise ValidationError(

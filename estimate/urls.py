@@ -1,9 +1,8 @@
 from django.urls import path
-from .views import EstimateCreateView, EstimateDetailView
+from . import views
 
 app_name = "estimate"
 
 urlpatterns = [
-    path("create/", EstimateCreateView.as_view(), name="estimate_create"),
-    path("<int:pk>/", EstimateDetailView.as_view(), name="estimate_detail"),
-]
+    path('create/', views.EstimateCreateView.as_view(), name='estimate_create'),
+    ]
