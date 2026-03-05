@@ -1,12 +1,10 @@
-from django.db import models
-from django.db.models import Sum
+from django.db.models import Sum, Max
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from .masters.estimate_status import EstimateStatus
 from django.urls import reverse
 from django.utils import timezone
-import datetime
-
+from django.db import models, transaction
 
 
 
@@ -33,14 +31,14 @@ class Estimate(models.Model):
     customer_name = models.CharField('顧客名（個人・会社）', max_length=100)
     vehicle_name = models.CharField('車種', max_length=100, blank=True, null=True)
     # 見積番号はユニークな文字列として管理（例: "EST-20240601-001" などの形式を想定）
-    estimate_number = models.CharField('見積番号', max_length=50, unique=True)
+    estimate_number = models.CharField('見積番号', max_length=50, unique=True, blank=True, db_index=True, help_text='空のまま保存すると自動採番されます')
     # 見積時合計金額を保存するフィールドを追加（円単位・税込固定）
     total_price = models.IntegerField('見積時合計金額', default=0)
     # 見積の作成者を記録するための外部キー
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, # User モデルへの外部キー
         on_delete=models.PROTECT, # 作成者のユーザーレコードが削除されないように PROTECT を指定
-        verbose_name="見積作成者" # 管理画面などでの表示名
+        verbose_name='見積作成者' # 管理画面などでの表示名
     )
     # 更新者を記録するための外部キー
     updated_by = models.ForeignKey(
@@ -58,32 +56,38 @@ class Estimate(models.Model):
 
     def save(self, *args, **kwargs):
 
-        # 保存時に見積番号がなければ自動採番を行う
+
+        # 見積番号は日付ベースの連番で採番
+        # 同時アクセス時の番号重複を防ぐ為、transaction.atomic() と select_for_update() を使いロックする実装
         if not self.estimate_number:
             # 1. サーバー設定（日本時間）に基づいた今日の日付を取得
             # timezone.localdate() を使うことで、海外時間との時差問題回避
             today_str = timezone.localdate().strftime('%Y%m%d')
             
-            # 2. 今日の最新番号を検索。ゼロ埋め3桁なので文字列ソートで最新が取れる
-            last_estimate = (
-                Estimate.objects
-                .filter(estimate_number__startswith=f"EST-{today_str}")
-                .order_by("estimate_number")
-                .last()
-            )
+            ## 2. データベースをロックして「最新の番号」を安全に取得
+            # このブロック内は1つのDBトランザクション(途中で他の処理が割り込めない)
+            with transaction.atomic():
+                # select_for_update() で、銀行レベルのロック!!(このレコードは処理が終わるまで他の処理が触れない)
+                last_estimate = (
+                    Estimate.objects
+                    .select_for_update()
+                    .filter(estimate_number__startswith=f"EST-{today_str}")
+                    .aggregate(Max("estimate_number"))
+                )
 
-            if last_estimate:
-                # 3. 既存の最新番号（例: EST-20260305-002）の末尾3桁を切り出し、数値にして+1する
-                last_no = int(last_estimate.estimate_number[-3:])
-                new_no = f"{last_no + 1:03}" # 再度3桁のゼロ埋め文字列に戻す
-            else:
-                # 4. 今日最初の発行なら 001
-                new_no = "001"
+                last_number = last_estimate["estimate_number__max"]
 
-            # 5. 生成した番号をセット
-            self.estimate_number = f"EST-{today}-{new_no}"
+                if last_number:
+                    # 最新番号（例: EST-20260305-002）の末尾3文字を取り出して+1
+                    seq = int(last_number[-3:]) + 1
+                else:
+                    # 今日最初の発行なら 1
+                    seq = 1
 
-        # 実際の保存処理を実行
+            # 3. 新しい番号をセット (例: EST-20260305-003)
+                self.estimate_number = f"EST-{today_str}-{seq:03}"
+
+        # 4. 実際の保存を実行
         super().save(*args, **kwargs)
 
 
