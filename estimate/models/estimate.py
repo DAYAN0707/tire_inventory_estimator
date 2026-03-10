@@ -34,7 +34,7 @@ class Estimate(models.Model):
     customer_name = models.CharField('顧客名（個人・会社）', max_length=100)
     vehicle_name = models.CharField('車種', max_length=100, blank=True, null=True)
     # 見積番号はユニークな文字列として管理（例: "EST-20240601-001" などの形式を想定）
-    estimate_number = models.CharField('見積番号', max_length=50, unique=True, blank=True, db_index=True, help_text='空のまま保存すると自動採番されます')
+    estimate_number = models.CharField('見積番号', max_length=20, unique=True, blank=True, db_index=True, help_text='空のまま保存すると "EST-YYYYMMDD-001" 形式で自動採番されます')
     # 見積時合計金額を保存するフィールドを追加（円単位・税込固定）
     total_price = models.IntegerField('見積時合計金額', default=0)
     # 見積の作成者を記録するための外部キー
@@ -54,12 +54,7 @@ class Estimate(models.Model):
     created_at = models.DateTimeField('作成日時', auto_now_add=True)
     updated_at = models.DateTimeField('更新日時', auto_now=True)
 
-    estimate_number = models.CharField('見積番号', max_length=20, unique=True, blank=True, db_index=True, help_text="空のまま保存すると 'EST-YYYYMMDD-001' 形式で自動採番されます"
-    )
-
     def save(self, *args, **kwargs):
-
-
         # 見積番号は日付ベースの連番で採番
         # 同時アクセス時の番号重複を防ぐ為、transaction.atomic() と select_for_update() を使いロックする実装
         if not self.estimate_number:
@@ -94,6 +89,29 @@ class Estimate(models.Model):
         super().save(*args, **kwargs)
 
 
+    # 見積アイテムの小計を合計し、見積全体の合計金額を再計算するメソッド
+    def recalc_total_price(self):
+        # タイヤ代と諸費用を合算して合計金額を更新
+        from estimate.services.calculator import sync_estimate_charges
+        # 1. 諸費用の自動生成（確定前のみ）
+        if not self.is_fixed:
+            sync_estimate_charges(self)
+        # 2. タイヤ代の合計
+        item_total = sum(item.subtotal for item in self.items.all()) or 0
+        # 3. 諸費用の合計
+        charge_total = sum(charge.subtotal for charge in self.charges.all()) or 0
+
+        # 日本の商売では円単位（整数）が普通なので、計算の最後に int() でくくる
+        self.total_price = int(item_total + charge_total)
+        # save()を呼ぶと無限ループになるのでupdateを使用
+        Estimate.objects.filter(pk=self.pk).update(total_price=self.total_price)
+
+
+    def __str__(self): return f"Estimate {self.estimate_number} for {self.customer_name}" # 管理画面等表示用
+
+
+
+
     # この見積データの「詳細表示画面」のURLを自動生成して返すメソッド
     # 管理画面の「サイトで表示」ボタンや、テンプレート内でのリンク作成で使用
     def get_absolute_url(self):
@@ -123,59 +141,3 @@ class Estimate(models.Model):
                 )
 
 # フォームだけでなく、モデルの clean() メソッドでも同様のバリデーションを行うことで、管理画面やAPI等、どこから見積が作成・更新されてもこの業務ルールが担保される
-
-
-    def _apply_install_charges(self):
-        # 応急処置：インチ別工賃ロジック一時停止
-        return
-
-
-    # 取付作業が不要になったときに、見積データから工賃（諸費用）だけを自動で削除する
-    def _remove_install_charges(self):
-        from estimate.models import EstimateCharge
-
-        EstimateCharge.objects.filter(
-            estimate=self,
-            charge_type=EstimateCharge.ChargeType.INSTALL
-        ).delete() 
-
-
-    # 最終的な合計金額を計算し直して、保存する
-    def _recalc_estimatel(self):
-        item_total = self.items.aggregate(
-            total=Sum('subtotal')
-        )['total'] or 0
-
-        # 工賃や廃タイヤ処分料など）の合計を計算
-        charge_total = self.charges.aggregate(
-            total=Sum('amount')
-        )['total'] or 0 
-
-        # タイヤ代と諸費用を足して、この見積書の total_amount(最終合計金額)とする
-        self.total_price = item_total + charge_total
-        # 無限 save 防止
-        super().save(update_fields=['total_price'])
-        # 全部の項目を保存し直すのではなく total_amount(最終合計金額)だけデータベースに上書き
-
-
-
-    # 見積アイテムの小計を合計し、見積全体の合計金額を再計算するメソッド
-    def recalc_total_price(self):
-        total = sum(item.subtotal for item in self.items.all())
-        self.total_price = total
-        self.save(update_fields=['total_price'])
-
-    def __str__(self): return f"Estimate {self.estimate_number} for {self.customer_name}" # 管理画面等表示用
-    
-    def save(self, *args, **kwargs):
-        if not self.estimate_number:
-            today = timezone.now().strftime("%Y%m%d")
-            last = Estimate.objects.filter(
-                estimate_number__startswith=f"EST-{today}"
-            ).count() + 1
-
-            self.estimate_number = f"EST-{today}-{last:03d}"
-
-        super().save(*args, **kwargs)
-
-

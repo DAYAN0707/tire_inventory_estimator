@@ -3,24 +3,24 @@ from decimal import Decimal
 from dataclasses import dataclass
 from typing import Optional
 from django.db import transaction
-
 from estimate.models import Estimate, EstimateCharge
 from estimate.models.masters.charge_master import ChargeMaster
 
 
-
-# タイヤ仕様解析（TireSpecクラス ＆ 解析関数）
+# 1.タイヤ仕様解析（データ構造 ＆ 解析エンジン）
 @dataclass(frozen=True)
 class TireSpec:
-    #タイヤのスペック情報を一時的にまとめるためのデータ箱
-    inch: Optional[int] # inch: インチ数
-    load_index: Optional[int] # load_index: 荷重指数
-    speed_symbol: Optional[str] # speed_symbol: 速度記号
-    is_rft: bool # is_rft: ランフラット判定
-
+    """タイヤのスペック情報を一時的にまとめるためのデータ箱"""
+    inch: Optional[int]         # インチ数
+    load_index: Optional[int]   # 荷重指数(LI)
+    speed_symbol: Optional[str] # 速度記号
+    is_rft: bool                # ランフラットタイヤ判定
 
 def parse_tire_spec(size_raw: str) -> TireSpec:
-# タイヤのサイズ表記（例：225/45R18 91W RFT）から正規表現を使って計算に必要な情報を抜き出す解析エンジン
+    """
+    タイヤのサイズ表記（例：225/45R18 91W RFT）から
+    正規表現を使って計算に必要な情報を抜き出す解析エンジン
+    """
     if not size_raw:
         # 表記がない場合は、すべて空の状態で返す
         return TireSpec(None, None, None, False)
@@ -34,7 +34,7 @@ def parse_tire_spec(size_raw: str) -> TireSpec:
     load_index = int(li_match.group(1)) if li_match else None
     speed_symbol = li_match.group(2) if li_match else None
 
-    # RFT判定：表記ゆれ（RFT, RUNFLAT等）を検知。IGNORECASEで大文字小文字を無視
+    # RFT判定：表記ゆれ（RFT, RUNFLAT, ROF等）を検知。IGNORECASEで大文字小文字を無視
     is_rft = bool(
         re.search(r'\b(RFT|RUN\s?FLAT|ROF)\b', size_raw, re.IGNORECASE)
     )
@@ -43,13 +43,12 @@ def parse_tire_spec(size_raw: str) -> TireSpec:
 
 
 
-# 4本特価ロジック（計算機）
+#  2.計算ロジック
 def calculate_set_price_subtotal(
     quantity: int,
     unit_price: Decimal,
     set_price: Optional[Decimal] = None,
 ) -> Decimal:
-    
     """
     【4本特価の計算ルール】
     1. 特価設定がない または 4本未満なら「単価 × 本数」
@@ -58,7 +57,6 @@ def calculate_set_price_subtotal(
     例：6本購入、単価1000円、4本特価3500円の場合
     (3500 * (6//4=1セット)) + (1000 * (6%4=2本)) = 5500円
     """
-
     if not set_price or quantity < 4:
         return unit_price * quantity
 
@@ -69,171 +67,114 @@ def calculate_set_price_subtotal(
 
 
 
-# INSTALL工賃（取付作業料の適用）
-def remove_install_fees(estimate: Estimate) -> None:
-
+# 3.現場対応型：諸費用の同期ロジック
+@transaction.atomic
+def sync_estimate_charges(estimate):
     """
-    工賃データのみをピンポイントで削除
-    ※ charge_type が INSTALL のものだけに絞り、手入力の調整金などを守る
+    前後サイズ違い・RFT対応の諸費用同期ロジック
     """
-
-    EstimateCharge.objects.filter(
-        estimate=estimate,
-        charge_master__charge_type=ChargeMaster.ChargeType.INSTALL
-    ).delete()
-
-
-def apply_install_fees(estimate: Estimate) -> None:
-
-    """
-    作業あり（install）の場合、各タイヤのインチ数に応じた工賃を自動適用
-    前後サイズ違いの場合でも、それぞれの明細に対して正しい工賃を計算
-    """
-
-    # 「持ち帰り（作業なし）」の場合は、既存の工賃を消して終了
-    if estimate.purchase_type != "install":
-        remove_install_fees(estimate)
+    # 自動生成分を一旦リセット（重複作成を防止）
+    estimate.charges.filter(is_manual_edited=False).delete()
+    
+    # 持ち帰りの場合は工賃等が発生しないため終了
+    if estimate.purchase_type == Estimate.PurchaseType.TAKE_HOME:
         return
+    
+    items = estimate.items.select_related('tire').all()
+    total_work_qty = 0    # 全体の作業本数（バルブ・廃タイヤ用）
+    total_rft_qty = 0     # ランフラットの本数
+    install_summary = {}  # インチ別の集計用
 
-    # 既存の工賃（INSTALLタイプのみ）を一旦クリア（再計算の重複防止）
-    remove_install_fees(estimate)
-
-    # 見積内の各タイヤ明細をループ処理（前後サイズ違い対応）
-    for item in estimate.items.filter(tire__isnull=False):
+    # A: 各タイヤ明細から本数を集計
+    for item in items:
+        if not item.tire: continue
 
         spec = parse_tire_spec(item.tire.size_raw)
-        if not spec.inch:
-            continue
+        
+        # その行の数量（例:2本）を正確に取得
+        target_qty = item.work_quantity if item.work_quantity is not None else item.quantity
+        
+        total_work_qty += target_qty
+        
+        if spec.is_rft:
+            total_rft_qty += target_qty
 
-        # マスタから「工賃タイプ」かつ「インチ範囲内」の有効な設定を探す
-        fee_master = ChargeMaster.objects.filter(
+        # インチに合う工賃マスタを特定
+        install_master = ChargeMaster.objects.filter(
             charge_type=ChargeMaster.ChargeType.INSTALL,
-            min_inch__lte=spec.inch,
-            max_inch__gte=spec.inch,
-            is_active=True
+            min_inch__lte=spec.inch, max_inch__gte=spec.inch, is_active=True
         ).first()
 
-        if not fee_master:
-            continue
+        if install_master:
+            mid = install_master.id
+            if mid not in install_summary:
+                install_summary[mid] = {'master': install_master, 'qty': 0}
+            # 全本数ではなく「この行の本数(2本)」だけを足すことで計4本に!!!
+            install_summary[mid]['qty'] += target_qty
 
-        # 1本あたりの基本単価 ＋ RFT加算(一律1100円)を算出
-        base_price = Decimal(fee_master.unit_price)
-        rft_add = Decimal("1100") if spec.is_rft else Decimal("0")
-        unit_price = base_price + rft_add
-
-        # 4本特価を考慮して小計を計算
-        subtotal = calculate_set_price_subtotal(
-            quantity=item.quantity,
-            unit_price=unit_price,
-            set_price=getattr(fee_master, "set_price", None)
-        )
-
-        # 計算結果を見積諸費用テーブルに保存（履歴保護のため物理コピー）
+    # B: 諸費用の作成   
+    # 基本工賃（同じ18インチなら2本+2本の計4本として作成）
+    for data in install_summary.values():
         EstimateCharge.objects.create(
             estimate=estimate,
-            item=item, # どのタイヤに対する工賃かを明確にする！
-            charge_master=fee_master,
-            quantity=item.quantity,
-            unit_price=unit_price,
-            subtotal=subtotal,
+            charge_master=data['master'],
+            quantity=data['qty'],
+            unit_price=data['master'].unit_price,
+            is_auto_generated=True
         )
 
-def remove_option_fees(estimate: Estimate) -> None:
-# オプション費用（廃タイヤ、バルブ等）をピンポイントで削除(※ charge_type が INSTALL 以外（OPTION等）のものに絞る)
-    EstimateCharge.objects.filter(
-        estimate=estimate
-    ).exclude(
-        charge_master__charge_type=ChargeMaster.ChargeType.INSTALL
-    ).delete()
-
-
-
-# オプション費用（廃タイヤ・バルブ等）
-def apply_option_fees(estimate: Estimate) -> None:
-    """
-    タイヤ本数に連動するオプション費用（廃タイヤ、バルブ等）を自動適用する。
-    前後でインチが違っても、それぞれの本数に合わせてオプションを計算。
-    """
-    # 工賃(INSTALL)以外の有効なオプション項目をマスタから取得
-    options = ChargeMaster.objects.filter(
-        is_active=True
-    ).exclude(
-        charge_type=ChargeMaster.ChargeType.INSTALL
-    )
-
-    # タイヤ明細ごとにオプションを適用（例：前2本、後2本ならそれぞれに対して計算）
-    for item in estimate.items.filter(tire__isnull=False):
-
-        spec = parse_tire_spec(item.tire.size_raw)
-
-        for option in options:
-            # RFT専用オプション（RFT加算マスタなど）の場合、非RFTタイヤなら適用しない
-            if getattr(option, "requires_rft", False) and not spec.is_rft:
-                continue
-
-            # 本数連動ならタイヤ明細の数量、そうでなければ1(固定費)
-            qty = item.quantity if getattr(option, "per_tire", True) else 1
-
-            # 特価も含めた小計計算
-            subtotal = calculate_set_price_subtotal(
-                quantity=qty,
-                unit_price=Decimal(option.unit_price),
-                set_price=getattr(option, "set_price", None)
-            )
-
-            # 二重登録を防ぐため、update_or_create を使用
-            EstimateCharge.objects.update_or_create(
+    # 共通諸費用（バルブ・廃タイヤ）
+    if total_work_qty > 0:
+        # VALVE と WASTE の両方を確実に取得して作成
+        commons = ChargeMaster.objects.filter(
+            charge_type__in=[ChargeMaster.ChargeType.VALVE, ChargeMaster.ChargeType.WASTE], 
+            is_active=True
+        )
+        for master in commons:
+            EstimateCharge.objects.create(
                 estimate=estimate,
-                # 本数連動（per_tire）なら明細に紐付け、そうでなければ見積全体に紐付け
-                item=item if getattr(option, "per_tire", True) else None,
-                charge_master=option,
-                defaults={
-                    "quantity": qty,
-                    "unit_price": option.unit_price,
-                    "subtotal": subtotal,
-                }
+                charge_master=master,
+                quantity=total_work_qty, # ここが合計の4本になる!!!
+                unit_price=master.unit_price,
+                is_auto_generated=True
+            )
+
+    # RFT加算（ランフラットがある場合のみ）
+    if total_rft_qty > 0:
+        rft_master = ChargeMaster.objects.filter(
+            charge_type=ChargeMaster.ChargeType.RFT, is_active=True
+        ).first()
+        if rft_master:
+            EstimateCharge.objects.create(
+                estimate=estimate,
+                charge_master=rft_master,
+                quantity=total_rft_qty,
+                unit_price=rft_master.unit_price,
+                is_auto_generated=True
             )
 
 
-
-# 合計金額の最終更新（トータル計算）
+# 4.合計金額の最終更新（メインエンジン）
 def recalc_estimate(estimate: Estimate) -> None:
     """
-    「全タイヤ明細」と「全諸費用」の小計をすべて足し合わせて、
-    見積(Estimate)テーブルの total_price を確定させる。
+    「全タイヤ明細」と「全諸費用」をすべて足し合わせて total_price を確定させる
     """
-    # タイヤ本体の合計
+    # タイヤ本体の合計（各明細の小計を足す）
     item_total = sum(
-        (item.subtotal or Decimal("0"))
-        for item in estimate.items.all()
+        (item.subtotal or Decimal("0")) for item in estimate.items.all()
     )
 
-    # 工賃・オプションの合計
+    # 工賃・諸費用の合計
     charge_total = sum(
-        (charge.subtotal or Decimal("0"))
-        for charge in estimate.charges.all()
+        (charge.subtotal or Decimal("0")) for charge in estimate.charges.all()
     )
 
-    # 見積親テーブルの合計金額を更新
+    # 見積親テーブルの合計金額を更新（無限ループ防止のため update_fields 指定）
     estimate.total_price = item_total + charge_total
     estimate.save(update_fields=["total_price"])
 
-
-
-# 見積価格エンジンの入口（メインエンジン）
-@transaction.atomic
 def recalc_all(estimate: Estimate) -> None:
-
-    """
-    この関数を呼ぶだけで、以下の工程が実行される
-    1. 工賃の再計算と適用
-    2. オプション費用の再計算と適用
-    3. 全体の合計金額の算出
-    
-    @transaction.atomic により、途中でエラーが起きても
-    「計算前の状態」に自動で戻るため、データが壊れる心配がない
-    """
-
-    apply_install_fees(estimate)
-    apply_option_fees(estimate)
+#外部（admin.pyやviews.py）から呼ばれるメインの入り口
+#諸費用の同期と、最終的な合計計算を順番に実行
+    sync_estimate_charges(estimate)
     recalc_estimate(estimate)

@@ -10,13 +10,19 @@ from .masters.charge_master import ChargeMaster
 class EstimateItem(models.Model):
     estimate = models.ForeignKey(Estimate, related_name='items', on_delete=models.CASCADE) # 見積と見積アイテムは1対多の関係、見積が削除されたら関連するアイテムも削除
     tire = models.ForeignKey(Tire, on_delete=models.PROTECT, related_name="estimate_items", verbose_name='タイヤ') # 見積アイテムは特定のタイヤに紐づく、タイヤが削除されないよう PROTECT を指定
-    quantity = models.IntegerField('本数') # 本数
+    quantity = models.IntegerField('購入本数', null=True, blank=True)
     unit_price = models.IntegerField('1本価格', blank=True, null=True) # 見積時の単価を保存（価格変更に影響されないため）
     set_price = models.IntegerField('4本特価', blank=True, null=True) # 見積時の4本特価を保存
     subtotal = models.IntegerField('タイヤ小計', blank=True, null=True) # 小計を保存（quantity × unit_price）
+    
+    work_quantity = models.IntegerField(
+        '作業本数', 
+        help_text="工賃・廃タイヤ・バルブの計算に使用します。スペアなど車体への取付(交換)作業が不要・持ち帰り分が含まれる場合は、数量を減らしてください。",
+        default=4
+    )
 
     # 工賃マスタと紐づけるための項目
-    cost_master = models.ForeignKey(ChargeMaster, on_delete=models.CASCADE, null=True, blank=True, related_name="estimate_items")
+    cost_master = models.ForeignKey(ChargeMaster, on_delete=models.PROTECT, null=True, blank=True, related_name="estimate_items")
 
     def stock_judgement(self):
         # 見積本数 × 在庫数で在庫状態を判定
@@ -56,7 +62,9 @@ class EstimateItem(models.Model):
         else:
             self.subtotal = normal_price * quantity
 
+        # タイヤ代はあくまで「quantity（購入本数）」で計算
         super().save(*args, **kwargs)
+
         # 見積確定前なら見積の合計金額を再計算して保存（見積アイテムの変更が見積全体の金額に反映されるようにするため）
         if not self.estimate.is_fixed:
             self.estimate.recalc_total_price()

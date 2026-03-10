@@ -51,8 +51,24 @@ class EstimateCharge(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        verbose_name="対象タイヤ明細"
+        verbose_name='対象タイヤ明細'
     )
+
+    # プロのフラグ：システムが自動で作ったものか、人間が手で入れたものかを区別
+    is_auto_generated = models.BooleanField('自動生成フラグ', default=True)
+
+    # これが True の間は、自動計算ロジックはこの行の数量を勝手に変えません。
+    is_manual_edited = models.BooleanField(
+        '手動編集済み', 
+        default=False, 
+        help_text='数量を手動で変更した場合、自動計算の対象外になります'
+    )
+
+    def save(self, *args, **kwargs):
+        # 単価 × 数量を常に計算
+        self.subtotal = self.unit_price * self.quantity
+        super().save(*args, **kwargs)
+
 
     class Meta:
         verbose_name = "見積諸費用"

@@ -19,7 +19,6 @@ class Tire(models.Model):
     tire_status = models.ForeignKey('inventory.TireStatus',on_delete=models.PROTECT,
                                     null=True,  #（一時的に空を許す）
     blank=True) #（一時的に空を許す）
-    
-    
+
     def __str__(self):
         return f"{self.manufacturer} {self.brand} {self.size_raw}"

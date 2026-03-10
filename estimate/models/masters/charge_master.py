@@ -6,10 +6,11 @@ class ChargeMaster(models.Model):
     
     # 分類定義
     class ChargeType(models.TextChoices):
-        INSTALL = "install", "交換工賃"
-        WASTE = "waste", "廃タイヤ"
-        VALVE = "valve", "バルブ"
+        INSTALL = "INSTALL", "基本工賃(バランス・脱着)"
+        WASTE = "waste", "廃タイヤ処分"
+        VALVE = "valve", "ゴムバルブ交換"
         RFT = "rft", "RFT加算"
+        OTHER = "OTHER", "その他諸費用"
 
     # オプション項目の分類定義(ロジック内で「RFTならこの計算」「バルブならこの処理」と判定するために使用)
     class FeeType(models.TextChoices):
@@ -25,19 +26,17 @@ class ChargeMaster(models.Model):
         null=True, blank=True,
         help_text="システム識別用コード（例: RFT_SURCHARGE）"
     )
-    
-    name = models.CharField("名称", max_length=100) # 画面に表示される名称（例：廃タイヤ料金）
-    
-    charge_type = models.CharField(
-        "料金タイプ",
-        max_length=20,
-        choices=ChargeType.choices
-    )
+
+    name = models.CharField("項目名", max_length=100) # 画面に表示される名称（例：廃タイヤ料金）
+    code = models.CharField("管理コード", max_length=50, unique=True, help_text="RFT_FEE 等、システム識別用")
+    charge_type = models.CharField("料金タイプ",max_length=20,choices=ChargeType.choices)
 
     # 価格・条件設定
-    unit_price = models.IntegerField("単価") # 単価(履歴保護の為、見積作成時にこの金額を「見積明細（EstimateItem）」側に直接コピー)
-    set_price = models.IntegerField("4本特価", null=True, blank=True) # 4本セット時の特別価格
-    
+    unit_price = models.IntegerField("単価(税込)") # 単価(履歴保護の為、見積作成時にこの金額を「見積明細（EstimateItem）」側に直接コピー)
+    set_price = models.IntegerField("4本特価(税込)", null=True, blank=True) # 4本セット時の特別価格
+    is_active = models.BooleanField('有効フラグ', default=True)
+
+    # インチ判定用
     min_inch = models.PositiveIntegerField("最小インチ", null=True, blank=True) # 最小インチ数
     max_inch = models.PositiveIntegerField("最大インチ", null=True, blank=True) # 最大インチ数
     
@@ -56,9 +55,17 @@ class ChargeMaster(models.Model):
     )
     created_at = models.DateTimeField("登録日時", auto_now_add=True) # 登録日時(いつからこの単価設定が導入されたかを追跡するために保持)
 
+    # 重複登録をDBレベルで禁止する
     class Meta:
         verbose_name = "諸費用マスタ"
         verbose_name_plural = "諸費用マスタ"
+        constraints = [
+            # 同じタイプ・同じインチ範囲で「有効なもの」は1つだけに限定するプロの制約
+            models.UniqueConstraint(
+                fields=['charge_type', 'min_inch', 'max_inch', 'is_active'],
+                name='unique_charge_active_range'
+            )
+        ]
 
     # 管理画面等での表示用
     def __str__(self):

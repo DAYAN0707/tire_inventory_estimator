@@ -4,7 +4,7 @@ from django.utils.html import format_html
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.forms.models import BaseInlineFormSet
-from estimate.models import Estimate, EstimateItem, EstimateCharge, EstimateStatus
+from estimate.models import Estimate, EstimateItem, EstimateCharge, EstimateStatus, ChargeMaster
 from estimate.services.usecase import recalc_estimate, validate_estimate_rules
 from audit.models.audit_log import AuditLog
 
@@ -105,8 +105,23 @@ class EstimateItemInline(admin.TabularInline):
 class EstimateChargeInline(admin.TabularInline):
     model = EstimateCharge
     extra = 0
-    fields = ("charge_master", "quantity", "unit_price", "subtotal")
-    readonly_fields = ("subtotal",)
+    fields = ('charge_master', 'unit_price', 'quantity_display', 'is_manual_edited')
+    readonly_fields = ('quantity_display', 'subtotal')
+
+    def quantity_display(self, obj):
+        if not obj.id: return "-"
+        
+        # 手動編集されていたら青太字で表示
+        if obj.is_manual_edited:
+            return format_html('<b style="color: blue; border-bottom: 1px solid blue;">{} (手動修正済み)</b>', obj.quantity)
+        
+        return obj.quantity
+    
+    quantity_display.short_description = "数量"
+
+    # JavaScriptで「数量が変わったらチェックを入れる」
+    class Media:
+        js = ('js/admin_estimate_custom.js',)
 
 
 # 見積入力画面（EstimateItem を Inline で入力可能にする）
@@ -126,6 +141,8 @@ class EstimateAdmin(admin.ModelAdmin):
     search_fields = ('estimate_number', 'customer_name', 'vehicle_name') # 見積番号と顧客名・車種で検索可能
     list_filter = ('created_at', 'purchase_type') # 作成日時と購入タイプで絞り込み可能
 
+    class Media:
+        js = ('js/admin_estimate_custom.js',) # static/js/ 以下のパスを指定
 
     def get_readonly_fields(self, request, obj=None):
         
@@ -225,35 +242,36 @@ class EstimateAdmin(admin.ModelAdmin):
     # 明細保存後の最終処理（計算とルールチェック）,EstimateItem の Inline 保存後に呼ばれる
     def save_related(self, request, form, formsets, change):
         # まず Inline（タイヤ明細など）をすべて保存
+        # 保存が終わった直後に一度だけ計算(これが一番安全でパフォーマンスが良いタイミング)
         super().save_related(request, form, formsets, change)
 
-        # 明細が確定した状態で最新の本数・単価をもとに合計金額を再計算（最新金額の反映）
-        recalc_estimate(form.instance)
 
+        estimate = form.instance
+        if not estimate.is_fixed:
+            # calculator.py から必要な関数をインポート（このタイミングで呼ぶのが安全）
+            from estimate.services.calculator import recalc_all
+            # 諸費用の同期と合計金額の計算を一気に実行( sync_estimate_charges と recalc_estimate が走る)
+            recalc_all(estimate)
 
-        #「車種」「種類数」「本数」などのルールを一斉チェック
+        # 3. ルールチェック（車種必須・台数制限など）
         try:
-            # モデルの clean() を実行（車種必須・台数制限など）
-            form.instance.full_clean() 
-            # 追加のビジネスルールを実行
-            validate_estimate_rules(form.instance)
-        
+            estimate.full_clean() 
+            # validate_estimate_rules が別にある場合はここでも実行
+            # validate_estimate_rules(estimate)
+
         except ValidationError as e:
+            error_msg = e.messages if hasattr(e, 'messages') else str(e)
+            messages.error(request, f"保存時にエラーが発生しました: {error_msg}")
             # エラーメッセージを画面に表示
-            # e.message_dict がある場合は全エラー、なければ単一メッセージを表示
-            error_msg = e.messages if hasattr(e, 'messages') else e.message
-            messages.error(request, error_msg)
 
             # 【強制引き戻し処理】
             # エラーがあるのにステータスを「予約確定」にして保存しようとした場合
-            if form.instance.estimate_status.status_name == "予約確定":
+            if estimate.estimate_status.status_name == "予約確定":
                 draft_status = EstimateStatus.objects.filter(status_name="作成中").first()
                 if draft_status:
-                    form.instance.estimate_status = draft_status
-                    # ステータスだけを「作成中」に書き換えて保存
-                    form.instance.save(update_fields=['estimate_status'])
+                    estimate.estimate_status = draft_status
+                    estimate.save(update_fields=['estimate_status'] ) # ステータスを「作成中」に書き換えて保存
                     messages.warning(request, "⚠️重大なエラーがあるため、ステータスを自動的に「作成中」に戻しました。内容を修正してください。")
-
 
 
     # 見積の状態に応じてステータスを色分けして表示するカスタムメソッド
@@ -280,6 +298,10 @@ class AuditLogAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None): return False # 管理画面上での変更・削除をすべて禁止
     def has_delete_permission(self, request, obj=None): return False # 管理画面上での削除をすべて禁止
 
-
-
-
+# 一番下あたりに追加
+@admin.register(ChargeMaster)
+class ChargeMasterAdmin(admin.ModelAdmin):
+    # 管理画面の一覧で見たい項目
+    list_display = ('code', 'name', 'unit_price')
+    # 検索ボックスで探せる項目
+    search_fields = ('code', 'name')

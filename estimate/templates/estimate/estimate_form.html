@@ -1,49 +1,94 @@
-<form method="post">
-    {% csrf_token %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>見積作成</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; }
+        .tire-row td { border-bottom: 1px solid #ddd; padding: 10px; }
+        .basic-info-section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .total-area { margin-top: 20px; text-align: right; font-size: 1.5em; color: #d63384; }
+    </style>
+</head>
+<body>
 
-    <!--1本価格・4本特価の表示-->
-    {% if unit_price %}
-        <p>Unit price: {{ unit_price }} 円</p>
-        <p>4本特価: {{ four_price }} 円</p>
-    {% endif %}
+    <h1>見積作成</h1>
 
-    <!-- 購入タイプの選択 -->
-    {{ form.purchase_type.label_tag }}
-    {{ form.purchase_type }}
+    <form method="post" id="estimate-form">
+        {% csrf_token %}
 
-    <!-- 顧客名の入力 -->
-    {{ form.customer_name.label_tag }}
-    {{ form.customer_name }}
+        <div class="basic-info-section">
+            <h3>基本情報</h3>
+            {{ form.purchase_type.label_tag }} {{ form.purchase_type }}<br>
+            {{ form.customer_name.label_tag }} {{ form.customer_name }}<br>
+            <div id="vehicle-field">
+                {{ form.vehicle_name.label_tag }} {{ form.vehicle_name }}
+            </div>
+        </div>
 
-    <!-- 取付作業ありの時だけ表示 -->
-    <div id="vehicle-field">
-    {{ form.vehicle_name.label_tag }}
-    {{ form.vehicle_name }}
+        <div class="tire-section">
+            <h3>タイヤ明細</h3>
+            {{ tire_formset.management_form }}
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #e9ecef;">
+                        <th>タイヤ選択</th>
+                        <th>本数</th>
+                        <th>単価</th>
+                        <th>小計</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for form in tire_formset %}
+                    <tr class="tire-row"> 
+                        <td>{{ form.tire }}</td>
+                        <td>{{ form.quantity }}</td>
+                        <td class="unit-price-display">0円</td>
+                        <td class="subtotal-display">0円</td>
+                        {{ form.id }}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="total-area" style="margin-top: 20px; text-align: right; font-size: 1.5em; font-weight: bold;">
+            <span id="grand-total-display" style="color: #d63384;"></span>
+        </div>
+
+        <div id="auto-charges-preview" style="margin-top: 20px; padding: 15px; border: 1px solid #ddd; background-color: #f9f9f9;">
+            <h4 style="margin-top: 0;">諸費用（概算）</h4>
+            <table style="width: 100%;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 2px solid #ccc;">
+                        <th>項目名</th>
+                        <th>単価</th>
+                        <th>数量</th>
+                        <th>小計</th>
+                    </tr>
+                </thead>
+            <tbody id="charges-tbody">
+                <tr><td colspan="4" style="text-align: center; color: #888;">タイヤを選択すると表示されます</td></tr>
+            </tbody>
+        </table>
     </div>
 
-    <button type="submit">見積作成</button>
-</form>
+    <div id="charge-section" style="display: none;"> <h3>諸費用（概算）</h3>
+        <div id="charge-items-container">
+            </div>
+    </div>
 
+        <button type="button" id="add-row-btn" class="btn btn-secondary" style="margin-top: 10px;">
+            ＋ タイヤ項目を追加
+        </button>
 
+        <button type="submit" style="margin-top: 20px; padding: 10px 20px; background: #0d6efd; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            見積を確定して保存
+        </button>
+    </form>
 
-<script>
-    /* JavaScriptで購入タイプの選択に応じて車種入力欄の表示/非表示を切り替える */
-    document.addEventListener('DOMContentLoaded', function () {
-        const purchaseType = document.getElementById('id_purchase_type'); /* 購入タイプのセレクトボックスの ID を指定 */
-        const vehicleField = document.getElementById('vehicle-field'); /* 車種入力欄全体を囲む div の ID を指定 */
-
-        /* 購入タイプの選択に応じて車種入力欄の表示/非表示を切り替える関数 */
-        function toggleVehicleField() {
-            if (purchaseType.value === 'install') { /* 取付作業ありが選択された場合 */
-                vehicleField.style.display = 'block'; /* 車種入力欄を表示 */
-            } else {
-                vehicleField.style.display = 'none'; /* 取付作業なしが選択された場合は車種入力欄を非表示 */
-            }
-        }
-
-        /* 購入タイプの選択が変更されたときに toggleVehicleField 関数を呼び出すイベントリスナーを追加 */
-        purchaseType.addEventListener('change', toggleVehicleField);
-        toggleVehicleField(); /* ページ読み込み時にも一度 toggleVehicleField 関数を呼び出して初期状態を設定 */
-    });
-</script>
-
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="/static/js/admin_estimate_custom.js"></script>
+</body>
+</html>
