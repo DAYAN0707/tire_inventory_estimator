@@ -38,6 +38,7 @@ class EstimateUseCase:
             return {"charges": [], "total": 0}
 
         total_work_qty = 0
+        total_rft_qty = 0  # RFTの本数を集計する変数
         install_summary = {}
 
         for item in items:
@@ -49,6 +50,8 @@ class EstimateUseCase:
 
             tire = Tire.objects.get(id=tire_id)
             spec = parse_tire_spec(tire.size_raw)
+            if spec.is_rft:
+                total_rft_qty += qty  # RFTならその本数を加算
 
             # インチ数に合致するアクティブな工賃を取得
             master = ChargeMaster.objects.filter(
@@ -91,6 +94,21 @@ class EstimateUseCase:
                 "qty": total_work_qty,
                 "subtotal": int(m.unit_price) * total_work_qty
             })
+
+            # --- RFT加算 (APIレスポンス用) ---
+        if total_rft_qty > 0:
+            rft_master = ChargeMaster.objects.filter(
+                charge_type=ChargeMaster.ChargeType.RFT,
+                is_active=True
+            ).first()
+
+            if rft_master:
+                results.append({
+                    "name": rft_master.name,
+                    "price": int(rft_master.unit_price),
+                    "qty": total_rft_qty,
+                    "subtotal": int(rft_master.unit_price) * total_rft_qty
+                })
 
         return {"charges": results}
 

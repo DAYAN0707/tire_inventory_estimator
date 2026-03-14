@@ -91,6 +91,7 @@ def sync_estimate_charges(estimate):
 
         spec = parse_tire_spec(item.tire.size_raw)
         
+        
         # その行の数量（例:2本）を正確に取得
         target_qty = item.work_quantity if item.work_quantity is not None else item.quantity
         
@@ -142,8 +143,10 @@ def sync_estimate_charges(estimate):
     # RFT加算（ランフラットがある場合のみ）
     if total_rft_qty > 0:
         rft_master = ChargeMaster.objects.filter(
-            charge_type=ChargeMaster.ChargeType.RFT, is_active=True
+            charge_type=ChargeMaster.ChargeType.RFT,
+            is_active=True
         ).first()
+
         if rft_master:
             EstimateCharge.objects.create(
                 estimate=estimate,
