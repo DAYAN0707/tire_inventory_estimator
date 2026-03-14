@@ -126,3 +126,18 @@ const EstimateCalculator = {
 
 // 実行
 $(document).ready(() => EstimateCalculator.init());
+
+// ページが読み込まれたら実行
+$(function() {
+    // ピンクのエラーエリアを探す
+    const $alert = $('.alert-danger');
+    
+    if ($alert.length) {
+        let html = $alert.html();
+        // [' と '] を力技で空文字に置き換える
+        // 念のため、全角や半角のバリエーションも考慮
+        let cleanHtml = html.replace(/[\[\]']+/g, ''); 
+        
+        $alert.html(cleanHtml);
+    }
+});

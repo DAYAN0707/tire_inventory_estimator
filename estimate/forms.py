@@ -56,3 +56,41 @@ class EstimateTireForm(forms.ModelForm):
             # 数量入力に js-quantity-input クラスを追加（JSがこの名前を探す）
             'quantity': forms.NumberInput(attrs={'class': 'form-control js-quantity-input', 'min': 1}),
         }
+
+
+
+class EstimateItemInlineFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        
+        # 削除フラグが立っていないフォームの合計本数と種類をカウント
+        total_qty = 0
+        active_kind_count = 0
+
+        # メインフォーム（EstimateForm）の購入区分を取得
+        purchase_type = self.instance.purchase_type
+        is_takeout = (purchase_type == 'takeout')
+
+        for form in self.forms:
+            # 削除チェックがついている、またはデータが空のフォームは無視
+            if self._should_delete_form(form) or not form.cleaned_data:
+                continue
+            
+            # --- 【英語エラーの修正】 ---
+            # .get('quantity') が None（空欄）を返す可能性があるので "or 0" を付ける
+            qty = form.cleaned_data.get('quantity') or 0
+            tire = form.cleaned_data.get('tire')
+
+            if tire and qty > 0:
+                total_qty += qty
+                active_kind_count += 1
+
+        # エラー判定（「持ち帰り」でない場合のみ実行）
+        if not is_takeout:
+            # 台数制限（種類）のチェック
+            if active_kind_count > 2:
+                self.add_error(None, f"【台数制限エラー】現在{active_kind_count}種類選択中です。交換作業ご希望の場合は、1台分（前後サイズ違いのお車は最大2サイズ可）までです。")
+            
+            # 本数制限のチェック
+            if total_qty > 8:
+                self.add_error(None, f"【本数制限エラー】現在{total_qty}本選択中です。交換作業ご希望の場合は、最大8本までにしてください。")

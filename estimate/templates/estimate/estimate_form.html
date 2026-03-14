@@ -10,14 +10,14 @@
     <hr>
 
     {# --- 全体エラーの表示 --- #}
-    {% if form.non_field_errors %}
-    <div class="alert alert-danger shadow-sm">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        {% for error in form.non_field_errors %}
-            {{ error }}
-        {% endfor %}
-    </div>
-    {% endif %}
+{# --- 全体エラーの表示エリア --- #}
+{% if form.non_field_errors %}
+<div class="alert alert-danger shadow-sm">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    {# 文字列として強制変換し、記号を一つずつ削る #}
+    {{ form.non_field_errors.0|stringformat:"s"|cut:"['"|cut:"']"|cut:"'" }}
+</div>
+{% endif %}
 
     <form method="post" id="estimate-form">
         {% csrf_token %}
