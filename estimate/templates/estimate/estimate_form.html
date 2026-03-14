@@ -42,51 +42,82 @@
             </div>
         </div>
 
-        {# --- タイヤ明細セクション --- #}
-        <div class="d-flex align-items-center mb-2">
-            <h4 class="mb-0">タイヤ明細</h4>
-            <span id="validation-error-msg" class="badge ms-2" style="display:none;"></span>
-        </div>
-        
-        {{ tire_formset.management_form }}
-        
-        <div class="table-responsive">
-            <table class="table table-bordered align-middle shadow-sm">
-                <thead class="table-dark">
-                    <tr>
-                        <th style="width: 40%;">タイヤ商品</th>
-                        <th>単価</th>
-                        <th>4本特価</th>
-                        <th style="width: 15%;">数量</th>
-                        <th class="text-center">小計</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for tire_form in tire_formset %}
-                    {# JSはこの .formset-row を目印に 1行ずつデータを読み取ります #}
-                    <tr class="formset-row" data-unit-price="0" data-set-price="0">
-                        <td>
-                            {{ tire_form.id }}
-                            {{ tire_form.tire }}
-                        </td>
-                        <td class="text-end text-nowrap">
-                            <span class="js-unit-price text-muted">-</span>
-                        </td>
-                        <td class="text-end text-nowrap">
-                            <span class="js-set-price text-muted">-</span>
-                        </td>
-                        <td>
-                            {# ここには js-quantity-input クラスが付与されます #}
-                            {{ tire_form.quantity }}
-                        </td>
-                        <td class="text-end font-monospace fw-bold text-nowrap">
-                            <span class="js-subtotal">0</span>
-                        </td>
-                    </tr>
+{# --- タイヤ明細セクション --- #}
+<div class="d-flex align-items-center mb-2">
+    <h4 class="mb-0">タイヤ明細</h4>
+    {# バリデーションエラー（8本制限など）を表示するバッジ。JSからコントロール #}
+    <span id="validation-error-msg" class="badge ms-2" style="display:none;"></span>
+</div>
+
+{# Django Formsetの門番（現在の行数や初期行数を管理する隠しフィールド） #}
+{# これがないと追加した行が保存されない #}
+{{ tire_formset.management_form }}
+
+<div class="table-responsive">
+    <table class="table table-bordered align-middle shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th style="width: 40%;">タイヤ商品</th>
+                <th>単価</th>
+                <th>4本特価</th>
+                <th style="width: 15%;">数量</th>
+                <th class="text-center">小計</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tire_form in tire_formset %}
+            {# JSはこの .formset-row を目印に 1行ずつデータを読み取ります #}
+            {# data-unit-price, data-set-price は計算用の一時保存場所です #}
+            <tr class="formset-row" data-unit-price="0" data-set-price="0">
+                <td>
+                    {# 既存データの更新に必須の隠しフィールド（idやDELETE用など）を表示 #}
+                    {% for hidden in tire_form.hidden_fields %}
+                        {{ hidden }}
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                    
+                    {# タイヤ選択プルダウン #}
+                    {{ tire_form.tire }}
+                    
+                    {# バリデーションエラー（個別）がある場合に表示 #}
+                    {% if tire_form.tire.errors %}
+                        <div class="text-danger small">{{ tire_form.tire.errors.0 }}</div>
+                    {% endif %}
+                </td>
+                
+                {# 単価表示エリア：JSが値を書き換えます #}
+                <td class="text-end text-nowrap">
+                    <span class="js-unit-price text-muted">-</span>
+                </td>
+                
+                {# 4本特価表示エリア：JSが値を書き換えます #}
+                <td class="text-end text-nowrap">
+                    <span class="js-set-price text-muted">-</span>
+                </td>
+                
+                {# 数量入力エリア #}
+                <td>
+                    {{ tire_form.quantity }}
+                    {% if tire_form.quantity.errors %}
+                        <div class="text-danger small">{{ tire_form.quantity.errors.0 }}</div>
+                    {% endif %}
+                </td>
+                
+                {# 行ごとの小計表示エリア #}
+                <td class="text-end font-monospace fw-bold text-nowrap">
+                    <span class="js-subtotal">0</span>円
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# 行追加ボタン：JS側のID名 #add-row-btn と一致させる#}
+<div class="mb-4">
+    <button type="button" class="btn btn-outline-primary btn-sm" id="add-row-btn">
+        <i class="bi bi-plus-circle me-1"></i>明細行を追加
+    </button>
+</div>
 
         {# --- 諸費用・工賃セクション --- #}
         <div class="mt-5">
@@ -101,9 +132,9 @@
                     </tr>
                 </thead>
 
-                {# JSが計算結果（HTML）をここに流し込みます #}
-                <tbody id="js-charges-container">
-                    <tr>
+                {# JSが計算結果（HTML）をここに流し込む #}
+                <tbody id="js-charges-container" data-state="empty">
+                    <tr id="charges-placeholder">
                         <td colspan="4" class="text-muted text-center py-3 small">
                             タイヤを選択し数量を入力すると、工賃が自動計算されます
                         </td>
@@ -114,7 +145,7 @@
                     <tr class="table-primary fs-3">
                         <td colspan="3" class="text-end fw-bold">総合計（税込）</td>
                         <td class="text-end font-monospace fw-bold">
-                            <span id="js-grand-total">0</span>
+                            <span id="js-grand-total" data-total="0">0</span>
                         </td>
                     </tr>
                 </tfoot>
@@ -129,7 +160,7 @@
     </form>
 </div>
 
-{# --- JavaScript用データ (これは content ブロック内でOK) --- #}
+{# --- JavaScript用データ --- #}
 <script id="tire-master-data" type="application/json">
 {{ tires_json|safe }}
 </script>

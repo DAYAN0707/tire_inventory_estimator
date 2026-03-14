@@ -114,10 +114,6 @@ class EstimateChargeInline(admin.TabularInline):
     
     quantity_display.short_description = "数量"
 
-    # JavaScriptで「数量が変わったらチェックを入れる」
-    class Media:
-        js = ('js/admin_estimate_custom.js',)
-
 
 # 見積入力画面（EstimateItem を Inline で入力可能にする）
 @admin.register(Estimate)
@@ -135,9 +131,6 @@ class EstimateAdmin(admin.ModelAdmin):
     # 画面上部に検索バー、画面右側に日付フィルター追加
     search_fields = ('estimate_number', 'customer_name', 'vehicle_name') # 見積番号と顧客名・車種で検索可能
     list_filter = ('created_at', 'purchase_type') # 作成日時と購入タイプで絞り込み可能
-
-    class Media:
-        js = ('js/admin_estimate_custom.js',) # static/js/ 以下のパスを指定
 
     def get_readonly_fields(self, request, obj=None):
         

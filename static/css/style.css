@@ -1,0 +1,8 @@
+/* バリデーションメッセージの調整 */
+#validation-error-msg {
+    white-space: normal !important; /* 自動で改行させる */
+    word-break: break-all !important; /* 英数字でも強制改行 */
+    line-height: 1.5; /* 行間を広げて読みやすく */
+    margin-bottom: 10px; /* 下の表との隙間 */
+    width: 100%; /* 親要素の幅いっぱいに広げる */
+}
