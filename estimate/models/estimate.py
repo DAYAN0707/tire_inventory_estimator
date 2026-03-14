@@ -17,17 +17,20 @@ class Estimate(models.Model):
     class PurchaseType(models.TextChoices):
         TAKE_HOME = 'take_home', '持ち帰り'
         INSTALL = 'install', '交換作業'
+        
 
     purchase_type = models.CharField(
         max_length=20,
         choices=PurchaseType.choices,
+        default=PurchaseType.INSTALL,
+        verbose_name="購入区分"
     )
 
     subtotal = models.IntegerField(default=0)
 
     
     # 見積の状態を管理する外部キー(例: 作成中、予約確定、キャンセル済みなど)
-    estimate_status = models.ForeignKey(EstimateStatus, on_delete=models.PROTECT, related_name='estimates')
+    estimate_status = models.ForeignKey(EstimateStatus, on_delete=models.PROTECT, related_name='estimates', default=1)
     # ステータスに応じて見積を自動ロック（業務ルールをモデル層で担保）
     is_fixed = models.BooleanField('確定フラグ', default=False)
     # 顧客名、車種などの基本情報を追加
@@ -132,12 +135,12 @@ class Estimate(models.Model):
         if self.pk and self.purchase_type == "install":
             item_kinds = self.items.count()
             if item_kinds > 2:
-                raise ValidationError(f"【台数制限エラー】作業予約は1台分（前後サイズ違いのお車は最大2サイズ可）までです。現在{item_kinds}種類登録されています。")
+                raise ValidationError(f"【台数制限エラー】作業予約は1台分（前後サイズ違いのお車は最大2サイズ可）までです。")
                 
             total_qty = sum(item.quantity for item in self.items.all())
             if total_qty > 8:
                 raise ValidationError(
-                    f"【本数制限エラー】1台分（最大8本）を超えています。現在{total_qty}本です。"
+                    f"【本数制限エラー】1台分（最大8本）を超えています。"
                 )
 
 # フォームだけでなく、モデルの clean() メソッドでも同様のバリデーションを行うことで、管理画面やAPI等、どこから見積が作成・更新されてもこの業務ルールが担保される

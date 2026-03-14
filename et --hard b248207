@@ -1,0 +1,48 @@
+[33mb248207[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m feat: 諸費用（工賃・バルブ等）の自動計算APIの実装とUIリアルタイム連動
+[33m8f41e45[m feat: 見積確定後の編集・削除は不可能とするロック機能を実装
+[33m70c6c22[m fix: 見積番号採番の同時アクセス対策（atomic / select_for_update）
+[33m39fc6e4[m Refactor: estimateアプリ構造整理（models分割・service層導入）
+[33m3ce5146[m refactor：タイヤの4本特価（整数商・剰余）計算ロジックを実装
+[33m8a517bc[m Fix: 交換作業希望の場合のタイヤ選択可能本数・タイヤの種類選択可能数のエラー解消と削除機能の修正、および価格自動コピー機能の実装完了！
+[33m6401a4a[m feat: 見積計算ロジックの実装とUI日本語化
+[33m7058a27[m feat: 無限ループ解消、Fix/Feat/Docs: 見積計算の整理と税込表示の修正
+[33mc008983[m feat: データ作成後の詳細画面遷移フローを実装・Estimateモデルの構造を整理
+[33m78fdc4f[m fix: モデルとDBの不整合を解消し、見積作成・ステータス変更を安定化
+[33m6d710b8[m Django6対応のformat_html修正・タイヤ管理画面のカスタマイズとインポート機能の実装・タイヤ見積単価自動計算実装
+[33m23d3809[m 見積・在庫管理の基盤実装（Estimate / EstimateItem / 在庫判定ロジック）
+[33mc510934[m 見積ステータスの初期化とユーザー自動記録を含む業務ロジックの実装
+[33m2b0673d[m 管理画面のエラー解消とモデル構成の再構築
+[33md742b74[m 見積明細(EstimateItem)追加と見積金額の自動再計算をモデルで実装
+[33mbe33fa0[m 見積機能を親子モデルに刷新し前後サイズ違いに対応
+[33mac9fe31[m モデル設計の見直し、inventoryのmodelsを分割して再構成
+[33mae2f2e5[m 在庫一覧の機能強化：検索・フィルタ実装、仕入れ値追加、UIのカンマ・太字対応
+[33m214cf9b[m CSV import
+[33m8eb73fa[m venvとDBを管理対象から除外、モデルの変更
+[33mc0201c7[m GitHubからvenvフォルダ削除
+[33m3ae7e1e[m モデルの作成とアプリの追加
+[33mb5705e5[m Remove venv from repository and use gitignore
+[33mc5795fe[m Initial Django project setup with inventory, estimation, and master apps
+[33mb248207[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m feat: 諸費用（工賃・バルブ等）の自動計算APIの実装とUIリアルタイム連動
+[33m8f41e45[m feat: 見積確定後の編集・削除は不可能とするロック機能を実装
+[33m70c6c22[m fix: 見積番号採番の同時アクセス対策（atomic / select_for_update）
+[33m39fc6e4[m Refactor: estimateアプリ構造整理（models分割・service層導入）
+[33m3ce5146[m refactor：タイヤの4本特価（整数商・剰余）計算ロジックを実装
+[33m8a517bc[m Fix: 交換作業希望の場合のタイヤ選択可能本数・タイヤの種類選択可能数のエラー解消と削除機能の修正、および価格自動コピー機能の実装完了！
+[33m6401a4a[m feat: 見積計算ロジックの実装とUI日本語化
+[33m7058a27[m feat: 無限ループ解消、Fix/Feat/Docs: 見積計算の整理と税込表示の修正
+[33mc008983[m feat: データ作成後の詳細画面遷移フローを実装・Estimateモデルの構造を整理
+[33m78fdc4f[m fix: モデルとDBの不整合を解消し、見積作成・ステータス変更を安定化
+[33m6d710b8[m Django6対応のformat_html修正・タイヤ管理画面のカスタマイズとインポート機能の実装・タイヤ見積単価自動計算実装
+[33m23d3809[m 見積・在庫管理の基盤実装（Estimate / EstimateItem / 在庫判定ロジック）
+[33mc510934[m 見積ステータスの初期化とユーザー自動記録を含む業務ロジックの実装
+[33m2b0673d[m 管理画面のエラー解消とモデル構成の再構築
+[33md742b74[m 見積明細(EstimateItem)追加と見積金額の自動再計算をモデルで実装
+[33mbe33fa0[m 見積機能を親子モデルに刷新し前後サイズ違いに対応
+[33mac9fe31[m モデル設計の見直し、inventoryのmodelsを分割して再構成
+[33mae2f2e5[m 在庫一覧の機能強化：検索・フィルタ実装、仕入れ値追加、UIのカンマ・太字対応
+[33m214cf9b[m CSV import
+[33m8eb73fa[m venvとDBを管理対象から除外、モデルの変更
+[33mc0201c7[m GitHubからvenvフォルダ削除
+[33m3ae7e1e[m モデルの作成とアプリの追加
+[33mb5705e5[m Remove venv from repository and use gitignore
+[33mc5795fe[m Initial Django project setup with inventory, estimation, and master apps

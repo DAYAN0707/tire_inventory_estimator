@@ -1,12 +1,18 @@
 from django import forms
-from .models import Estimate
+from .models import Estimate, EstimateItem
 
 
 # 見積のフォームクラス（管理画面やフロントエンドで使用）
 class EstimateForm(forms.ModelForm):
     class Meta:
         model = Estimate
-        fields = '__all__' # モデルの全フィールドをフォームに含める（必要に応じて特定のフィールドだけ指定することも可能）
+        fields = ['purchase_type', 'customer_name', 'vehicle_name']
+        widgets = {
+            # 購入区分に JS用のクラスを追加
+            'purchase_type': forms.Select(attrs={'class': 'form-select'}),
+            'customer_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例：寶井 秀人 '}),
+            'vehicle_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例：プリウス'}),
+        }
 
     # フォームの初期化時に、購入タイプに応じて車種の必須設定を動的に変更する（フロントエンドでのユーザビリティ向上）
     def __init__(self, *args, **kwargs):
@@ -25,7 +31,6 @@ class EstimateForm(forms.ModelForm):
         if purchase_type == 'install':
             self.fields['vehicle_name'].required = True
 
-
     # 購入タイプが取付作業ありの場合、車種が必須になるようにバリデーションを追加する（サーバーサイドでのデータ整合性を担保）
     def clean_vehicle_name(self):
         purchase_type = (
@@ -39,3 +44,15 @@ class EstimateForm(forms.ModelForm):
             raise forms.ValidationError('取付作業の場合は車種が必須です')
 
         return vehicle_name
+
+# タイヤ明細用のフォームクラス
+class EstimateTireForm(forms.ModelForm):
+    class Meta:
+        model = EstimateItem
+        fields = ['tire', 'quantity']
+        widgets = {
+            # タイヤ選択に js-tire-select クラスを追加（JSがこの名前を探す）
+            'tire': forms.Select(attrs={'class': 'form-select js-tire-select'}),
+            # 数量入力に js-quantity-input クラスを追加（JSがこの名前を探す）
+            'quantity': forms.NumberInput(attrs={'class': 'form-control js-quantity-input', 'min': 1}),
+        }

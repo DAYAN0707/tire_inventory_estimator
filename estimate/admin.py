@@ -7,6 +7,7 @@ from django.forms.models import BaseInlineFormSet
 from estimate.models import Estimate, EstimateItem, EstimateCharge, EstimateStatus, ChargeMaster
 from estimate.services.usecase import recalc_estimate, validate_estimate_rules
 from audit.models.audit_log import AuditLog
+from django.forms.models import BaseInlineFormSet
 
 
 
@@ -58,15 +59,13 @@ class EstimateItemInlineFormSet(BaseInlineFormSet):
             # 種類の制限チェック（前後サイズ違いなど想定、2種類まで）
             if active_kind_count > 2:
                 raise forms.ValidationError(
-                f"【サイズ制限】前後サイズ違いなど、最大2サイズまでです（現在{active_kind_count}サイズ選択中）。"
-                "サイズを見直すか、不要な項目を削除してください。"
+                f"【台数制限エラー】現在{active_kind_count}サイズ選択中です。交換作業ご希望の場合は、1台分(前後サイズ違いのお車など、最大2サイズ選択可能)までにしてください。"
                 )
 
             # 本数の制限チェック（最大8本まで）
             if total_qty > 8:
                 raise forms.ValidationError(
-                f"【本数制限】交換作業ご希望の場合は合計8本までです（現在{total_qty}本選択中）。"
-                "本数を見直すか、不要な項目を削除してください。"
+                f"【本数制限エラー】現在{total_qty}本選択中です。交換作業ご希望の場合は、最大8本までにしてください。"
                 )
             #5本購入(ジムニーなどスペアタイヤとして1本余分に購入)が前提の場合も考慮
 
@@ -260,7 +259,7 @@ class EstimateAdmin(admin.ModelAdmin):
             # validate_estimate_rules(estimate)
 
         except ValidationError as e:
-            error_msg = e.messages if hasattr(e, 'messages') else str(e)
+            error_msg = " ".join(e.messages) if hasattr(e, 'messages') else str(e)
             messages.error(request, f"保存時にエラーが発生しました: {error_msg}")
             # エラーメッセージを画面に表示
 

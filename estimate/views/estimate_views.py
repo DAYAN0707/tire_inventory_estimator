@@ -1,53 +1,62 @@
-from django.views.generic import CreateView, DetailView, ListView
-from django.shortcuts import render
-from django import forms
+from django.views.generic import ListView, CreateView, DetailView
 from django.forms import inlineformset_factory
-from django.http import JsonResponse
-from inventory.models import Tire
-from ..models import Estimate, EstimateItem, EstimateCharge, EstimateStatus
 from django.urls import reverse
+from django.shortcuts import redirect  # HttpResponseRedirectの代わりに使いやすいこちらを使用
+from inventory.models import Tire
+from ..models import Estimate, EstimateItem, EstimateStatus
+# 業務ロジックを担当するUseCaseをインポート
+from ..services.usecase import EstimateUseCase
+from django import forms
+from ..forms import EstimateTireForm
 import json
-from django.views.decorators.http import require_POST
-from estimate.services.calculator import parse_tire_spec
 
 
-# 見積明細（タイヤ）を複数入力するための設定
-TireFormSet = inlineformset_factory(
-    Estimate, EstimateItem, 
-    fields=('tire', 'quantity'), 
-    extra=2,  # 最初から表示する空の行数
-    can_delete=True
+# フォームセットの設定
+EstimateTireFormSet = inlineformset_factory(
+    Estimate, # 親モデル
+    EstimateItem, # 子モデル
+    form=EstimateTireForm, # 上で作った目印付きのフォームを指定
+    can_delete=False  # 行の削除を許可するかどうか
 )
 
-def get_tire_info(request, tire_id):
-    # タイヤのIDを受け取って、単価などを返すAPI
-    try:
-        tire = Tire.objects.get(pk=tire_id)
-        return JsonResponse({
-            'unit_price': tire.unit_price,
-            'set_price': tire.set_price,
-            # その他の必要な情報
-        })
-    except Tire.DoesNotExist:
-        return JsonResponse({'error': 'Not found'}, status=404)
+class EstimateListView(ListView):
+    model = Estimate
+    template_name = 'estimate/estimate_list.html'
+    context_object_name = 'estimates'
+    ordering = ['-created_at']
 
-
+# 見積を新規作成する画面のビュー
 class EstimateCreateView(CreateView):
     model = Estimate
     template_name = "estimate/estimate_form.html"
+    # ユーザーが入力する基本項目
     fields = ["purchase_type", "customer_name", "vehicle_name"]
 
+    # 保存が成功した後に、作成された見積の詳細画面へリダイレクト
     def get_success_url(self):
-        # 保存が終わったら、今作った見積の詳細画面（detail）に飛ばす
         return reverse('estimate:estimate_detail', kwargs={'pk': self.object.pk})
 
+    # HTMLテンプレートに渡すデータ（変数）を準備する
     def get_context_data(self, **kwargs):
+        # 親クラスから既存のcontext（formsetなど）を取得
         context = super().get_context_data(**kwargs)
-        # 画面に「タイヤ入力欄」のセットを渡す
+        
+        tires_list = list(
+            Tire.objects.values(
+                "id",
+                "unit_price", 
+                "set_price" 
+            )
+        )
+
+        # 
+        context["tires_json"] = json.dumps(tires_list)
+
         if self.request.POST:
-            context['tire_formset'] = TireFormSet(self.request.POST)
+            context['tire_formset'] = EstimateTireFormSet(self.request.POST)
         else:
-            context['tire_formset'] = TireFormSet()
+            context['tire_formset'] = EstimateTireFormSet()
+
         return context
 
     def form_valid(self, form):
@@ -55,113 +64,38 @@ class EstimateCreateView(CreateView):
         tire_formset = context['tire_formset']
 
         if tire_formset.is_valid():
-            # 保存する前に、ログインユーザーを作成者としてセットする
-            form.instance.created_by = self.request.user 
-            
-            # ステータス等の不足情報をセット（例: "作成中"）
-            initial_status = EstimateStatus.objects.first()
-            if initial_status:
-                form.instance.estimate_status = initial_status
+            try:
+                # 1. 親モデルのインスタンスをメモリ上に作成（まだ保存しない）
+                estimate = form.save(commit=False)
+                
+                # 2. 【修正箇所】文字列の 'draft' ではなく、モデルからインスタンスを取得する
+                # データベースにある EstimateStatus の中から status_name= が 'draft' のものを探します
+                try:
+                    status_draft = EstimateStatus.objects.get(status_name ='作成中')
+                    estimate.estimate_status = status_draft
+                except EstimateStatus.DoesNotExist:
+                    # もし 'draft' がなければエラーとして表示させる
+                    form.add_error(None, "ステータスマスタに 'draft' が登録されていません。")
+                    return self.render_to_response(self.get_context_data(form=form)) 
+                
+                # 3. UseCase に渡して、詳細な計算と最終保存をお任せする
+                self.object = EstimateUseCase.create_estimate(
+                    estimate_instance=estimate,
+                    tire_formset=tire_formset,
+                    user=self.request.user
+                )
+                
+                return redirect(self.get_success_url())
 
-            # Estimate本体を保存
-            self.object = form.save()
-            
-            # タイヤ明細を保存
-            tire_formset.instance = self.object
-            tire_formset.save()
-
-            # ここで super().form_valid(form) を呼ぶことで success_url に飛ぶ
-            return super().form_valid(form)
+            except Exception as e:
+                # ここで自作メッセージを含め、エラー内容を表示
+                form.add_error(None, str(e))
+                return self.render_to_response(self.get_context_data(form=form))
         else:
             return self.render_to_response(self.get_context_data(form=form))
-
-
-
-# 作成された見積の詳細画面
-# ここでは計算済みの「タイヤ明細」「諸費用」「合計金額」を表示
+        
+# 作成された見積の最終結果を表示する画面
 class EstimateDetailView(DetailView):
     model = Estimate
     template_name = 'estimate/estimate_detail.html'
-    context_object_name = 'estimate' # テンプレート側で使う変数名
-
-
-
-@require_POST
-def calculate_charges_api(request):
-    """
-    画面上のタイヤ構成から諸費用をリアルタイム計算して返すAPI
-    """
-    try:
-        data = json.loads(request.body)
-        items = data.get('items', [])
-        purchase_type = data.get('purchase_type')
-
-        # 1. 「持ち帰り」なら諸費用はなし
-        if purchase_type == 'take_home':
-            return JsonResponse({'charges': [], 'total': 0})
-
-        total_work_qty = 0
-        install_summary = {}
-        
-        # 2. 画面から送られてきた各行をループして集計
-        for item in items:
-            tire_id = item.get('tire_id')
-            qty = int(item.get('quantity', 0))
-            if not tire_id or qty <= 0:
-                continue
-            
-            # タイヤ情報を取得
-            tire = Tire.objects.get(id=tire_id)
-            spec = parse_tire_spec(tire.size_raw)
-            
-            total_work_qty += qty
-            
-            # インチに合う工賃マスタを検索
-            from ..models.masters.charge_master import ChargeMaster
-            master = ChargeMaster.objects.filter(
-                charge_type=ChargeMaster.ChargeType.INSTALL,
-                min_inch__lte=spec.inch,
-                max_inch__gte=spec.inch,
-                is_active=True
-            ).first()
-            
-            if master:
-                mid = master.id
-                if mid not in install_summary:
-                    install_summary[mid] = {
-                        'name': master.name,
-                        'price': int(master.unit_price),
-                        'qty': 0
-                    }
-                install_summary[mid]['qty'] += qty
-
-        # 3. 返却用データ作成
-        results = []
-        # 工賃
-        for res in install_summary.values():
-            results.append({
-                'name': res['name'],
-                'price': res['price'],
-                'qty': res['qty'],
-                'subtotal': res['price'] * res['qty']
-            })
-        
-        # バルブ・廃タイヤ
-        if total_work_qty > 0:
-            from ..models.masters.charge_master import ChargeMaster
-            commons = ChargeMaster.objects.filter(
-                charge_type__in=[ChargeMaster.ChargeType.VALVE, ChargeMaster.ChargeType.WASTE],
-                is_active=True
-            )
-            for m in commons:
-                results.append({
-                    'name': m.name,
-                    'price': int(m.unit_price),
-                    'qty': total_work_qty,
-                    'subtotal': int(m.unit_price) * total_work_qty
-                })
-
-        return JsonResponse({'charges': results})
-
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+    context_object_name = 'estimate'
