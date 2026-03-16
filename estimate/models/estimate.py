@@ -58,6 +58,7 @@ class Estimate(models.Model):
     updated_at = models.DateTimeField('更新日時', auto_now=True)
 
     def save(self, *args, **kwargs):
+        
         # 見積番号は日付ベースの連番で採番
         # 同時アクセス時の番号重複を防ぐ為、transaction.atomic() と select_for_update() を使いロックする実装
         if not self.estimate_number:
@@ -94,20 +95,23 @@ class Estimate(models.Model):
 
     # 見積アイテムの小計を合計し、見積全体の合計金額を再計算するメソッド
     def recalc_total_price(self):
+
         # タイヤ代と諸費用を合算して合計金額を更新
-        from estimate.services.calculator import sync_estimate_charges
+        # from estimate.services.calculator import sync_estimate_charges
         # 1. 諸費用の自動生成（確定前のみ）
-        if not self.is_fixed:
-            sync_estimate_charges(self)
-        # 2. タイヤ代の合計
+        # if not self.is_fixed:
+            # sync_estimate_charges(self)
+
+        # タイヤ代の合計
         item_total = sum(item.subtotal for item in self.items.all()) or 0
-        # 3. 諸費用の合計
+        # 諸費用の合計
         charge_total = sum(charge.subtotal for charge in self.charges.all()) or 0
 
         # 日本の商売では円単位（整数）が普通なので、計算の最後に int() でくくる
         self.total_price = int(item_total + charge_total)
         # save()を呼ぶと無限ループになるのでupdateを使用
         Estimate.objects.filter(pk=self.pk).update(total_price=self.total_price)
+        
 
 
     def __str__(self): return f"Estimate {self.estimate_number} for {self.customer_name}" # 管理画面等表示用

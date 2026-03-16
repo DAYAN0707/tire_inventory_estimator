@@ -65,8 +65,17 @@ class EstimateCharge(models.Model):
     )
 
     def save(self, *args, **kwargs):
-        # 単価 × 数量を常に計算
+        # 単価 × 数量を常に計算（見積確定時の総合計金額！！！）
         self.subtotal = self.unit_price * self.quantity
+        # 既存データの更新時、人間が直したかチェックする（変更されたら「手動編集済み」にする）
+        if self.pk:
+            # DBにある今の値を取得（変数名を old に統一）
+            old = EstimateCharge.objects.get(pk=self.pk)
+            # 数量か単価が変わっていれば「手動編集済み」のスイッチを入れる
+            if old.quantity != self.quantity or old.unit_price != self.unit_price:
+                # フィールド名を is_manual_edited にし、True に設定する！！！
+                self.is_manual_edited = True
+                
         super().save(*args, **kwargs)
 
 

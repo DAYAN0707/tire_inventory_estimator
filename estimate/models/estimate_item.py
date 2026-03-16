@@ -65,9 +65,6 @@ class EstimateItem(models.Model):
         # タイヤ代はあくまで「quantity（購入本数）」で計算
         super().save(*args, **kwargs)
 
-        # 見積確定前なら見積の合計金額を再計算して保存（見積アイテムの変更が見積全体の金額に反映されるようにするため）
-        if not self.estimate.is_fixed:
-            self.estimate.recalc_total_price()
 
     
     

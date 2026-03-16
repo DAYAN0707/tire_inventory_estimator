@@ -70,15 +70,21 @@ def calculate_set_price_subtotal(
 # 3.現場対応型：諸費用の同期ロジック
 @transaction.atomic
 def sync_estimate_charges(estimate):
+    # 既に諸費用が存在する場合は一旦削除（autoのみ）
+    estimate.charges.filter(is_manual_edited=False).delete()
     """
     前後サイズ違い・RFT対応の諸費用同期ロジック
     """
-    # 自動生成分を一旦リセット（重複作成を防止）
-    estimate.charges.filter(is_manual_edited=False).delete()
-    
+    # 修正！！！　削除対象を「自動生成」に限定とする
+    # 手動で作った/修正した行（is_auto_generated=False）は消されずに残す！
+    # estimate.charges.filter(is_auto_generated=True).delete()
+    # 手動編集済み（is_manual_edited=True）の行が一つでもあれば、同期を中止する
+    if estimate.charges.filter(is_manual_edited=True).exists():
+        return
     # 持ち帰りの場合は工賃等が発生しないため終了
     if estimate.purchase_type == Estimate.PurchaseType.TAKE_HOME:
         return
+
     
     items = estimate.items.select_related('tire').all()
     total_work_qty = 0    # 全体の作業本数（バルブ・廃タイヤ用）
@@ -88,17 +94,16 @@ def sync_estimate_charges(estimate):
     # A: 各タイヤ明細から本数を集計
     for item in items:
         if not item.tire: continue
-
         spec = parse_tire_spec(item.tire.size_raw)
-        
-        
-        # その行の数量（例:2本）を正確に取得
-        target_qty = item.work_quantity if item.work_quantity is not None else item.quantity
-        
-        total_work_qty += target_qty
-        
+    
+        target_qty = item.quantity
+
+        total_work_qty += item.quantity
+
+        # 見積保存時ランフラット加算料金も入るように！！！
         if spec.is_rft:
             total_rft_qty += target_qty
+
 
         # インチに合う工賃マスタを特定
         install_master = ChargeMaster.objects.filter(
@@ -112,17 +117,28 @@ def sync_estimate_charges(estimate):
                 install_summary[mid] = {'master': install_master, 'qty': 0}
             # 全本数ではなく「この行の本数(2本)」だけを足すことで計4本に!!!
             install_summary[mid]['qty'] += target_qty
+            
 
-    # B: 諸費用の作成   
+# B: 諸費用の作成・更新 
     # 基本工賃（同じ18インチなら2本+2本の計4本として作成）
     for data in install_summary.values():
-        EstimateCharge.objects.create(
+        # get_or_create を使うことで、二重作成を防ぎつつ既存データを取得
+        charge, created = EstimateCharge.objects.get_or_create(
             estimate=estimate,
             charge_master=data['master'],
-            quantity=data['qty'],
-            unit_price=data['master'].unit_price,
-            is_auto_generated=True
+            defaults={
+                'quantity': data['qty'],
+                'unit_price': data['master'].unit_price,
+                'is_auto_generated': True
+            }
         )
+        # 既にデータがあり、かつ「自動生成」のままなら最新の本数に更新
+        # 手動で修正(is_auto_generated=False)されていたら、この更新をスキップして値を守る！
+        if not created and charge.is_auto_generated:
+            charge.quantity = data['qty']
+            charge.unit_price = data['master'].unit_price  # 単価も更新
+            charge.save() # 変更をDBに保存
+
 
     # 共通諸費用（バルブ・廃タイヤ）
     if total_work_qty > 0:
@@ -132,13 +148,20 @@ def sync_estimate_charges(estimate):
             is_active=True
         )
         for master in commons:
-            EstimateCharge.objects.create(
+            charge, created = EstimateCharge.objects.get_or_create(
                 estimate=estimate,
                 charge_master=master,
-                quantity=total_work_qty, # ここが合計の4本になる!!!
-                unit_price=master.unit_price,
-                is_auto_generated=True
+                defaults={
+                    'quantity': total_work_qty, # ここが合計の4本になる!!!
+                    'unit_price': master.unit_price,
+                    'is_auto_generated': True
+                }
             )
+            # 手動修正を尊重するロジック（工賃と同様）
+            if not created and charge.is_auto_generated:
+                charge.quantity = total_work_qty
+                charge.unit_price = master.unit_price  # 単価も更新
+                charge.save() # 変更をDBに保存
 
     # RFT加算（ランフラットがある場合のみ）
     if total_rft_qty > 0:
@@ -148,13 +171,25 @@ def sync_estimate_charges(estimate):
         ).first()
 
         if rft_master:
-            EstimateCharge.objects.create(
+            # 既存行の有無をまず確認、estimate(この見積)と charge_master(RFT加算) の組み合わせでDBを検索
+            # あればそのデータを charge に格納(created = False)
+            charge, created = EstimateCharge.objects.get_or_create(
                 estimate=estimate,
                 charge_master=rft_master,
-                quantity=total_rft_qty,
-                unit_price=rft_master.unit_price,
-                is_auto_generated=True
+                defaults={
+                    'quantity': total_rft_qty,     # 最初に見つからなかった時だけこの値が使われる
+                    'unit_price': rft_master.unit_price,
+                    'is_manual_edited': False      # システムが作った証拠を残す(システム作成時は手動ではないのでFalse)
+                }
             )
+
+            # 「手動修正」を守るためのガード設定
+            # すでにデータが存在し(not created)、システム自動生成(True)のまま手動編集されていないなら、最新の数量と単価で上書き
+            if not created and not charge.is_manual_edited:
+                charge.quantity = total_rft_qty   # タイヤ本数に合わせて最新の数量に更新
+                charge.unit_price = rft_master.unit_price  # 単価も更新
+                charge.save()                     # 変更をDBに保存
+
 
 
 # 4.合計金額の最終更新（メインエンジン）
@@ -176,8 +211,16 @@ def recalc_estimate(estimate: Estimate) -> None:
     estimate.total_price = item_total + charge_total
     estimate.save(update_fields=["total_price"])
 
-def recalc_all(estimate: Estimate) -> None:
-#外部（admin.pyやviews.py）から呼ばれるメインの入り口
-#諸費用の同期と、最終的な合計計算を順番に実行
+
+def recalc_all(estimate):
+    # 諸費用を同期（手動編集があれば、上の return で何もせず戻ってくる）
     sync_estimate_charges(estimate)
-    recalc_estimate(estimate)
+
+    # 合計金額を計算（or 0 を入れることで NULL による計算エラーや0円化を防ぐ）
+    tire_sum = sum((item.subtotal or 0) for item in estimate.items.all())
+    charge_sum = sum((charge.subtotal or 0) for charge in estimate.charges.all())
+
+    # 見積本体の合計金額を更新して保存
+    estimate.total_price = tire_sum + charge_sum
+    # saveを呼ぶことで画面上の「総合計」更新
+    estimate.save(update_fields=['total_price'])

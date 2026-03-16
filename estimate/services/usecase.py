@@ -5,6 +5,7 @@ from inventory.models import Tire
 from ..models import Estimate, EstimateItem, EstimateStatus
 from ..models.masters.charge_master import ChargeMaster
 from .calculator import recalc_estimate, parse_tire_spec
+from .calculator import sync_estimate_charges
 
 # --- バリデーションロジック ---
 def validate_estimate_rules(estimate: Estimate):
@@ -126,9 +127,16 @@ class EstimateUseCase:
             tire_formset.instance = estimate_instance
             tire_formset.save()
 
+
             # 業務ルール違反がないかチェック
             validate_estimate_rules(estimate_instance)
-            # 保存データに基づいて最終計算（サーバーサイド）
-            recalc_estimate(estimate_instance)
+            # 保存データに基づいて最終計算（サーバーサイド）recalc_all を呼ぶ！
+            from .calculator import recalc_all
+            recalc_all(estimate_instance)
 
             return estimate_instance
+
+
+        # --- 手動入力を守る ---
+        # 1. ユーザーが画面で明示的に入力した工賃・諸費用はそのまま維持
+        # 2. 自動計算（recalc_estimate）は、まだデータがない場合にのみ補完、もしくは「手動フラグ」がないものだけを更新するように recalc_estimate 側を改修する
