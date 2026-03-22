@@ -5,6 +5,8 @@ from typing import Optional
 from django.db import transaction
 from estimate.models import Estimate, EstimateCharge
 from estimate.models.masters.charge_master import ChargeMaster
+from .tire_spec_parser import parse_tire_spec
+
 
 
 # 1.タイヤ仕様解析（データ構造 ＆ 解析エンジン）
@@ -67,154 +69,81 @@ def calculate_set_price_subtotal(
 
 
 
+def apply_manual_charges(estimate, manual_data):
+    """
+    画面から送られてきた工賃・諸費用の数量（manual_data）をDBに反映する
+    manual_data の形式例: [{'master_id': 1, 'qty': 2}, ...]
+    """
+    from ..models.masters.charge_master import ChargeMaster
+    from ..models.estimate_charge import EstimateCharge
+
+    for data in manual_data:
+        master_id = data.get('master_id')
+        qty = data.get('qty', 0)
+        
+        if not master_id:
+            continue
+            
+        master = ChargeMaster.objects.filter(id=master_id).first()
+        if master:
+            # 画面からの入力値を優先して新規作成（または上書き）
+            EstimateCharge.objects.create(
+                estimate=estimate,
+                charge_master=master,
+                quantity=qty,
+                unit_price=master.unit_price,
+                is_manual_edited=True  # 画面から来た値なので「手動編集済み」にする
+            )
+
+
 # 3.現場対応型：諸費用の同期ロジック
 @transaction.atomic
-def sync_estimate_charges(estimate):
-    # 既に諸費用が存在する場合は一旦削除（autoのみ）
-    estimate.charges.filter(is_manual_edited=False).delete()
+def sync_estimate_charges(estimate, manual_data=None):
     """
     前後サイズ違い・RFT対応の諸費用同期ロジック
     """
-    # 修正！！！　削除対象を「自動生成」に限定とする
-    # 手動で作った/修正した行（is_auto_generated=False）は消されずに残す！
-    # estimate.charges.filter(is_auto_generated=True).delete()
-    # 手動編集済み（is_manual_edited=True）の行が一つでもあれば、同期を中止する
-    if estimate.charges.filter(is_manual_edited=True).exists():
-        return
-    # 持ち帰りの場合は工賃等が発生しないため終了
+    # 1. 一旦、今の諸費用をすべて削除（常に最新の状態にするため）
+    estimate.charges.all().delete()
+
+    # 持ち帰りの場合は工賃が発生しないのでここで終了
     if estimate.purchase_type == Estimate.PurchaseType.TAKE_HOME:
         return
-
     
-    items = estimate.items.select_related('tire').all()
-    total_work_qty = 0    # 全体の作業本数（バルブ・廃タイヤ用）
-    total_rft_qty = 0     # ランフラットの本数
-    install_summary = {}  # インチ別の集計用
 
-    # A: 各タイヤ明細から本数を集計
-    for item in items:
-        if not item.tire: continue
-        spec = parse_tire_spec(item.tire.size_raw)
+    print("test")
+    # 2. 辞書を壊さずそのまま受け取る
+    manual_dict = {}
+    if isinstance(manual_data, dict):
+        manual_dict = manual_data
+
+    # 🔍 デバッグログ：ここが {'6': 0, '4': 2} の形ならOK
+    print(f"DEBUG FINAL manual_dict: {manual_dict}")
     
-        target_qty = item.quantity
+    # 3. タイヤ明細準備
+    items_data = [{'tire': item.tire, 'quantity': item.quantity} for item in estimate.items.all()]
 
-        total_work_qty += item.quantity
+    # 4. 計算エンジン呼び出し
+    calculated_results = calculate_purely(
+        purchase_type=estimate.purchase_type,
+        items_data=items_data,
+        manual_charge_qtys=manual_dict
+    )
 
-        # 見積保存時ランフラット加算料金も入るように！！！
-        if spec.is_rft:
-            total_rft_qty += target_qty
-
-
-        # インチに合う工賃マスタを特定
-        install_master = ChargeMaster.objects.filter(
-            charge_type=ChargeMaster.ChargeType.INSTALL,
-            min_inch__lte=spec.inch, max_inch__gte=spec.inch, is_active=True
-        ).first()
-
-        if install_master:
-            mid = install_master.id
-            if mid not in install_summary:
-                install_summary[mid] = {'master': install_master, 'qty': 0}
-            # 全本数ではなく「この行の本数(2本)」だけを足すことで計4本に!!!
-            install_summary[mid]['qty'] += target_qty
-            
-
-# B: 諸費用の作成・更新 
-    # 基本工賃（同じ18インチなら2本+2本の計4本として作成）
-    for data in install_summary.values():
-        # get_or_create を使うことで、二重作成を防ぎつつ既存データを取得
-        charge, created = EstimateCharge.objects.get_or_create(
+    # 5. 計算結果（0を含む）をすべて保存
+    for res in calculated_results:
+        master = ChargeMaster.objects.get(id=res['master_id'])
+        EstimateCharge.objects.create(
             estimate=estimate,
-            charge_master=data['master'],
-            defaults={
-                'quantity': data['qty'],
-                'unit_price': data['master'].unit_price,
-                'is_auto_generated': True
-            }
+            charge_master=master,
+            quantity=res['qty'], # ここに 0 や ランフラットの 4 が入る
+            unit_price=res['price'],
+            subtotal=res['subtotal']
         )
-        # 既にデータがあり、かつ「自動生成」のままなら最新の本数に更新
-        # 手動で修正(is_auto_generated=False)されていたら、この更新をスキップして値を守る！
-        if not created and charge.is_auto_generated:
-            charge.quantity = data['qty']
-            charge.unit_price = data['master'].unit_price  # 単価も更新
-            charge.save() # 変更をDBに保存
 
 
-    # 共通諸費用（バルブ・廃タイヤ）
-    if total_work_qty > 0:
-        # VALVE と WASTE の両方を確実に取得して作成
-        commons = ChargeMaster.objects.filter(
-            charge_type__in=[ChargeMaster.ChargeType.VALVE, ChargeMaster.ChargeType.WASTE], 
-            is_active=True
-        )
-        for master in commons:
-            charge, created = EstimateCharge.objects.get_or_create(
-                estimate=estimate,
-                charge_master=master,
-                defaults={
-                    'quantity': total_work_qty, # ここが合計の4本になる!!!
-                    'unit_price': master.unit_price,
-                    'is_auto_generated': True
-                }
-            )
-            # 手動修正を尊重するロジック（工賃と同様）
-            if not created and charge.is_auto_generated:
-                charge.quantity = total_work_qty
-                charge.unit_price = master.unit_price  # 単価も更新
-                charge.save() # 変更をDBに保存
-
-    # RFT加算（ランフラットがある場合のみ）
-    if total_rft_qty > 0:
-        rft_master = ChargeMaster.objects.filter(
-            charge_type=ChargeMaster.ChargeType.RFT,
-            is_active=True
-        ).first()
-
-        if rft_master:
-            # 既存行の有無をまず確認、estimate(この見積)と charge_master(RFT加算) の組み合わせでDBを検索
-            # あればそのデータを charge に格納(created = False)
-            charge, created = EstimateCharge.objects.get_or_create(
-                estimate=estimate,
-                charge_master=rft_master,
-                defaults={
-                    'quantity': total_rft_qty,     # 最初に見つからなかった時だけこの値が使われる
-                    'unit_price': rft_master.unit_price,
-                    'is_manual_edited': False      # システムが作った証拠を残す(システム作成時は手動ではないのでFalse)
-                }
-            )
-
-            # 「手動修正」を守るためのガード設定
-            # すでにデータが存在し(not created)、システム自動生成(True)のまま手動編集されていないなら、最新の数量と単価で上書き
-            if not created and not charge.is_manual_edited:
-                charge.quantity = total_rft_qty   # タイヤ本数に合わせて最新の数量に更新
-                charge.unit_price = rft_master.unit_price  # 単価も更新
-                charge.save()                     # 変更をDBに保存
-
-
-
-# 4.合計金額の最終更新（メインエンジン）
-def recalc_estimate(estimate: Estimate) -> None:
-    """
-    「全タイヤ明細」と「全諸費用」をすべて足し合わせて total_price を確定させる
-    """
-    # タイヤ本体の合計（各明細の小計を足す）
-    item_total = sum(
-        (item.subtotal or Decimal("0")) for item in estimate.items.all()
-    )
-
-    # 工賃・諸費用の合計
-    charge_total = sum(
-        (charge.subtotal or Decimal("0")) for charge in estimate.charges.all()
-    )
-
-    # 見積親テーブルの合計金額を更新（無限ループ防止のため update_fields 指定）
-    estimate.total_price = item_total + charge_total
-    estimate.save(update_fields=["total_price"])
-
-
-def recalc_all(estimate):
+def recalc_all(estimate, manual_data=None):
     # 諸費用を同期（手動編集があれば、上の return で何もせず戻ってくる）
-    sync_estimate_charges(estimate)
+    sync_estimate_charges(estimate, manual_data=manual_data)
 
     # 合計金額を計算（or 0 を入れることで NULL による計算エラーや0円化を防ぐ）
     tire_sum = sum((item.subtotal or 0) for item in estimate.items.all())
@@ -224,3 +153,108 @@ def recalc_all(estimate):
     estimate.total_price = tire_sum + charge_sum
     # saveを呼ぶことで画面上の「総合計」更新
     estimate.save(update_fields=['total_price'])
+
+
+
+# DBに触る部分」と「純粋な計算ロジック」に分ける
+# 改造：calculate_purely 関数を追加。これがAPI専用の「保存しない計算エンジン」
+def calculate_purely(purchase_type, items_data, manual_charge_qtys=None):
+    """
+    DBに一切保存せず、送られてきたデータだけで工賃リストを計算して返す
+    items_data: [{'tire': tire_obj, 'quantity': 4}, ...]
+    """    
+    results = []        # 計算結果をリストにまとめる（createせず辞書で作る）
+    total_work_qty = 0  # 全体の作業本数（バルブ・廃タイヤ用）
+    total_rft_qty = 0   # RFTの本数
+
+        # 持ち帰りの場合は何も計算せず空のリストを返す
+    if purchase_type == 'take_home':
+        return []
+
+    # A: タイヤごとの工賃計算
+    for item in items_data:
+        tire = item['tire']
+        qty = item['quantity']
+
+        # 【重要】ここでspecを定義！
+        spec = parse_tire_spec(tire.size_raw)
+
+        if purchase_type == 'install':
+            # そのタイヤサイズに合う工賃マスタを探す
+            work_master = ChargeMaster.objects.filter(
+                charge_type=ChargeMaster.ChargeType.INSTALL,
+                min_inch__lte=spec.inch,
+                max_inch__gte=spec.inch,
+                is_active=True
+            ).first()
+
+            if work_master:
+                # 数量の決定（手動入力があればそれを優先、なければタイヤ本数）
+                val = manual_charge_qtys.get(str(work_master.id)) if manual_charge_qtys else None
+                # 2. 数量の決定ロジック（0を正しく扱う書き方）
+                if val is not None and val != "":
+                    # 画面に入力（0を含む）があれば、それを最優先する
+                    work_qty = int(val)
+                else:
+                    # 入力が空っぽの時だけ、タイヤの本数(qty)を自動セットする
+                    work_qty = qty
+
+                # 全体の集計に加算
+                total_work_qty += work_qty
+
+                # ランフラットタイヤの場合の加算フラグ
+                if spec.is_rft:
+                    total_rft_qty += work_qty
+
+                # 工賃を結果に追加（前後サイズ違いでも、それぞれの行として追加される）
+                results.append({
+                "master_id": work_master.id,
+                "name": f"{work_master.name} ({spec.inch}インチ)",
+                "qty": work_qty,
+                "price": int(work_master.unit_price),
+                "subtotal": int(work_master.unit_price * work_qty)
+            })
+                
+
+    # B: 共通諸費用（バルブ・廃タイヤ）
+    # 作業が1本でもあれば、バルブと廃タイヤを表示する
+    if total_work_qty > 0:
+        commons = ChargeMaster.objects.filter(
+            charge_type__in=[ChargeMaster.ChargeType.VALVE, ChargeMaster.ChargeType.WASTE],
+            is_active=True
+        )
+        for m in commons:
+            # manual_charge_qtys からこの諸費用(m.id)の入力値を探す
+            val = manual_charge_qtys.get(str(m.id)) if manual_charge_qtys else None
+            # 重要！0を許可する判定に変更
+            if val is not None and val != "":
+                qty = int(val) # 画面で 0 なら 0 になる
+            else:
+                qty = total_work_qty # 入力がなければデフォルト（4本）
+
+            results.append({
+                "master_id": m.id,
+                "name": m.name,
+                "qty": qty,
+                "price": int(m.unit_price),
+                "subtotal": int(m.unit_price * qty)
+            })
+
+    # C: ランフラット加算（強制連動）
+    # 作業本数（total_work_qty）が発生している場合のみ追加
+    if total_rft_qty > 0 and total_work_qty > 0:
+        rft_master = ChargeMaster.objects.filter(
+            charge_type=ChargeMaster.ChargeType.RFT, is_active=True
+        ).first()
+
+        if rft_master:
+            # RFTは「RFTタイヤに対して作業が発生した本数」に強制固定
+            results.append({
+                "master_id": rft_master.id,
+                "name": rft_master.name,
+                "qty": total_rft_qty,
+                "price": int(rft_master.unit_price),
+                "subtotal": int(rft_master.unit_price * total_rft_qty)
+            })
+
+    return results

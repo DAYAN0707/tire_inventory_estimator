@@ -9,8 +9,6 @@ from django.contrib import admin
 
 
 
-
-
 # 見積の基本情報を管理するモデル
 class Estimate(models.Model):
     # 持ち帰り or 取付作業ありの選択肢を追加
@@ -111,7 +109,7 @@ class Estimate(models.Model):
         self.total_price = int(item_total + charge_total)
         # save()を呼ぶと無限ループになるのでupdateを使用
         Estimate.objects.filter(pk=self.pk).update(total_price=self.total_price)
-        
+
 
 
     def __str__(self): return f"Estimate {self.estimate_number} for {self.customer_name}" # 管理画面等表示用

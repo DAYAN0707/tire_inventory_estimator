@@ -4,7 +4,6 @@ from .estimate_charge import EstimateCharge
 from .masters.estimate_status import EstimateStatus
 from .masters.charge_master import ChargeMaster
 
-
 __all__ = [
     'Estimate',
     'EstimateItem',

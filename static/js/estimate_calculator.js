@@ -8,6 +8,19 @@
  * 5章：全体の集計 ＆ リアルタイム・バリデーション
  * 6章：ユーザー操作の監視（イベントリスナー）
  */
+let isManualEditing = false; // ★ここ！一番上に追加
+
+console.log("★★★ JSファイル読み込み成功！ ★★★");
+
+// フォーム送信時のログ出力設定
+$('#estimate-form').on('submit', function() {
+    // 完全に一致する名前で取得する
+    const qtys = $('input[name="charge_qtys[]"]').map(function(){ return $(this).val(); }).get();
+    const ids = $('input[name="charge_master_ids[]"]').map(function(){ return $(this).val(); }).get();
+    
+    console.log("🚀 送信直前！ 数量リスト:", qtys);
+    console.log("🚀 送信直前！ IDリスト:", ids);
+});
 
 $(function() {
     console.log("見積計算スクリプト始動");
@@ -81,6 +94,17 @@ $(function() {
         updateGrandTotalWithCharges();
     }
 
+    // 1. タイマー変数を関数の外（スコープの上位）に置く!!!
+    let timer = null;
+
+    // 2. デバウンス用の関数を定義
+    function updateEstimateChargesDebounced() {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            updateEstimateCharges(); // 本来の計算処理を呼ぶ
+        }, 300); // 0.3秒待つ
+    }
+
     /**
      * サーバー（Django）に現在の選択内容を送り、工賃などの諸費用を計算してもらう
      */
@@ -115,33 +139,83 @@ $(function() {
             return;
         }
 
-        // 非同期通信（AJAX）で工賃計算APIを叩く
+        // 1. 諸費用の手動入力値を集める 
+        let chargeDict = {};
+        $('.charge-qty-input').each(function() {
+            // hiddenで持っているIDと、現在の入力値をペアにする
+            const mId = $(this).closest('tr').find('input[name="charge_master_ids[]"]').val();
+            const qty = $(this).val();
+            if (mId) {
+                chargeDict[mId] = qty;
+            }
+        });
+
+        // 2. 非同期通信（AJAX）で工賃計算APIを叩く
         $.ajax({
             url: '/estimate/api/calculate-charges/',
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ items: items, purchase_type: purchaseType }),
+            // data の中に charge_qtys を含める
+            data: JSON.stringify({ 
+                items: items, 
+                purchase_type: purchaseType,
+                charge_qtys: chargeDict // ここに作った辞書を入れる(「0」がサーバーに届く！！！)
+            }),
             headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
             success: function(response) {
+                console.log("★★★ API Response ★★★", response.charges);
+
+                // 通常時（タイヤを変えた時など）の自動描画
                 $container.empty();
                 if (response.charges && response.charges.length > 0) {
                     let html = '';
                     response.charges.forEach((c) => {
+                        // 1. ランフラット判定
+                        const isRft = c.name.includes("ランフラット"); 
+                        const readonlyAttr = isRft ? "readonly style='background-color: #e9ecef;'" : "";
+
+                        // 2. HTML組み立て（既存のクラス名 charge-qty-input や data-price を維持！）
                         html += `<tr>
                             <td>${c.name}</td>
                             <td class="text-end">${Number(c.price).toLocaleString()}円</td>
                             <td class="text-center">
-                                <input type="number" class="charge-qty-input form-control form-control-sm d-inline-block" style="width: 70px;" value="${c.qty}" data-price="${c.price}">
+                                <input type="number" 
+                                    name="charge_qtys[]" 
+                                    value="${c.qty}" 
+                                    class="charge-qty-input form-control form-control-sm d-inline-block" 
+                                    style="width: 70px;" 
+                                    data-price="${c.price}"
+                                    data-master-id="${c.master_id}"
+                                    ${readonlyAttr}> <input type="hidden" name="charge_master_ids[]" value="${c.master_id}">
                             </td>
                             <td class="text-end charge-subtotal-display">${Number(c.subtotal).toLocaleString()}円</td>
                         </tr>`;
                     });
                     $container.html(html);
                 }
-                // 工賃が確定したので最終的な総合計を計算
+                finalTotalUpdateOnly();
+                
+                // 通常時（タイヤを変えた時など）の自動描画
+                $container.empty();
+                if (response.charges && response.charges.length > 0) {
+                    let html = '';
+                    response.charges.forEach((c) => {
+                        // 注意：name属性は [] 付きで統一すること！！！
+                        html += `<tr>
+                            <td>${c.name}</td>
+                            <td class="text-end">${Number(c.price).toLocaleString()}円</td>
+                            <td class="text-center">
+                                <input type="number" name="charge_qtys[]" class="charge-qty-input form-control form-control-sm d-inline-block" style="width: 70px;" value="${c.qty}" data-price="${c.price}">
+                                <input type="hidden" name="charge_master_ids[]" value="${c.master_id}">
+                            </td>
+                            <td class="text-end charge-subtotal-display">${Number(c.subtotal).toLocaleString()}円</td>
+                        </tr>`;
+                    });
+                    $container.html(html);
+                }
                 finalTotalUpdateOnly(); 
-            }
-        });
+            } // success の終わり
+        }); // $.ajax の終わり
     }
 
     // ==========================================
@@ -234,7 +308,7 @@ $(function() {
 
         // エラーがなく、かつタイヤが選択されている場合のみ、諸費用APIを叩きにいく
         if (isOk && totalQty > 0) {
-            updateEstimateCharges(); 
+            updateEstimateChargesDebounced();
         }
     }
 
@@ -282,16 +356,19 @@ $(function() {
      */
     // タイヤ選択の変更時
     $(document).on('change', 'select[name$="-tire"]', function() {
+        isManualEditing = false;
         updateTireInfo($(this).closest('tr'));
     });
 
     // 数量の変更時
     $(document).on('input change', 'input[name$="-quantity"]', function() {
+        isManualEditing = false;
         calculateRow($(this).closest('tr'));
     });
 
     // 購入区分の変更時
     $(document).on('change', 'select[name="purchase_type"]', function() {
+        isManualEditing = false;
         updateGrandTotalWithCharges();
     });
 
@@ -303,6 +380,8 @@ $(function() {
 
     // 工賃数量の手動変更時
     $(document).on('input change', '.charge-qty-input', function() {
+        isManualEditing = true; // ★ここに追加！「今人間が操作したよ」と記録
+        console.log("🛠 手動編集モードON");
         const qty = parseFloat($(this).val()) || 0;
         const price = parseFloat($(this).data('price')) || 0;
         $(this).closest('tr').find('.charge-subtotal-display').text((qty * price).toLocaleString() + "円");

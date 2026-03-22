@@ -4,10 +4,10 @@ from inventory.models import Tire
 # 内部的な計算ロジックやマスタを先頭でインポート
 from ..models import Estimate, EstimateItem, EstimateStatus
 from ..models.masters.charge_master import ChargeMaster
-from .calculator import recalc_estimate, parse_tire_spec
+from .calculator import recalc_all, parse_tire_spec
 from .calculator import sync_estimate_charges
 
-# --- バリデーションロジック ---
+#  バリデーションロジック
 def validate_estimate_rules(estimate: Estimate):
     """
     見積作成時の業務ルールチェック
@@ -28,9 +28,8 @@ class EstimateUseCase:
     """
     見積に関する業務ロジックを集約（Viewを薄く保つためのService層）
     """
-
     @staticmethod
-    def calculate_charges(items, purchase_type):
+    def calculate_charges(items, purchase_type, manual_dict=None):
         """
         JSからのリクエストに応じて工賃等の諸費用を計算する
         """
@@ -89,14 +88,27 @@ class EstimateUseCase:
         )
 
         for m in commons:
+            # 1. まずはデフォルト値（4本など）をセット
+            final_qty = total_work_qty
+    
+            # 2. 手入力（manual_charge_qtys）の中にこの項目の設定があるか確認
+            if manual_dict:
+                val = manual_dict.get(str(m.id))
+                # 0 を許可する魔法の判定！
+                if val is not None and val != "":
+                    final_qty = int(val)
+
+            # 3. 最終的な数量(final_qty)を使って追加
             results.append({
+                "master_id": m.id,
                 "name": m.name,
                 "price": int(m.unit_price),
-                "qty": total_work_qty,
-                "subtotal": int(m.unit_price) * total_work_qty
+                "qty": final_qty, # ← ここを final_qty に変更！
+                "subtotal": int(m.unit_price * final_qty)
             })
 
-            # --- RFT加算 (APIレスポンス用) ---
+
+            # RFT加算 (APIレスポンス用)
         if total_rft_qty > 0:
             rft_master = ChargeMaster.objects.filter(
                 charge_type=ChargeMaster.ChargeType.RFT,
@@ -114,7 +126,8 @@ class EstimateUseCase:
         return {"charges": results}
 
     @staticmethod
-    def create_estimate(estimate_instance, tire_formset, user):
+    @transaction.atomic
+    def create_estimate(estimate_instance, tire_formset, user, manual_data=None):
         """
         見積本体と明細をアトミックに保存し、バリデーションと再計算を行う
         """
@@ -132,11 +145,11 @@ class EstimateUseCase:
             validate_estimate_rules(estimate_instance)
             # 保存データに基づいて最終計算（サーバーサイド）recalc_all を呼ぶ！
             from .calculator import recalc_all
-            recalc_all(estimate_instance)
+            recalc_all(estimate_instance, manual_data=manual_data)
+
+            # 工賃・諸費用の同期処理
+            # ここで manual_data を渡すように修正！
+            sync_estimate_charges(estimate_instance, manual_data=manual_data)
 
             return estimate_instance
 
-
-        # --- 手動入力を守る ---
-        # 1. ユーザーが画面で明示的に入力した工賃・諸費用はそのまま維持
-        # 2. 自動計算（recalc_estimate）は、まだデータがない場合にのみ補完、もしくは「手動フラグ」がないものだけを更新するように recalc_estimate 側を改修する

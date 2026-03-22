@@ -59,41 +59,60 @@ class EstimateCreateView(CreateView):
 
         return context
 
+
     def form_valid(self, form):
         context = self.get_context_data()
         tire_formset = context['tire_formset']
 
         if tire_formset.is_valid():
             try:
-                # 1. 親モデルのインスタンスをメモリ上に作成（まだ保存しない）
+                # 1. 親モデルのインスタンスをメモリ上に作成
                 estimate = form.save(commit=False)
                 
-                # 2. 【修正箇所】文字列の 'draft' ではなく、モデルからインスタンスを取得する
-                # データベースにある EstimateStatus の中から status_name= が 'draft' のものを探します
+                # 2. ステータス設定（文字列の '作成中' ではなく、モデルからインスタンスを取得）
+                # データベースにある EstimateStatus の中から status_name= が '作成中' のものを探します
                 try:
-                    status_draft = EstimateStatus.objects.get(status_name ='作成中')
+                    status_draft = EstimateStatus.objects.get(status_name='作成中')
                     estimate.estimate_status = status_draft
                 except EstimateStatus.DoesNotExist:
-                    # もし 'draft' がなければエラーとして表示させる
-                    form.add_error(None, "ステータスマスタに 'draft' が登録されていません。")
+                    # もし '作成中' がなければエラーとして表示させる
+                    form.add_error(None, "ステータスマスタに '作成中' が登録されていません。")
                     return self.render_to_response(self.get_context_data(form=form)) 
                 
-                # 3. UseCase に渡して、詳細な計算と最終保存をお任せする
+                # --- 🔥 アドバイス反映：手入力データを取得 ---
+                # # 手入力データを取得　（JavaScript側と一致させるため [] を付ける）
+                charge_qtys = self.request.POST.getlist('charge_qtys[]')
+                charge_master_ids = self.request.POST.getlist('charge_master_ids[]')
+
+                # 🔍 デバッグログ
+                print("DEBUG charge_qtys:", charge_qtys)
+                print("DEBUG charge_master_ids:", charge_master_ids)
+
+                # manual_data を { "ID": 数量 } の辞書形式で作成
+                manual_dict = {}
+                for mid, qty in zip(charge_master_ids, charge_qtys):
+                    # 0を「False」扱いせず値として認める書き方
+                    if qty is not None and qty != "":
+                        manual_dict[str(mid)] = int(qty)
+                
+                # 3. UseCase に渡して、詳細な計算と最終保存を任せる
                 self.object = EstimateUseCase.create_estimate(
                     estimate_instance=estimate,
                     tire_formset=tire_formset,
-                    user=self.request.user
+                    user=self.request.user,
+                    manual_data=manual_dict
                 )
                 
                 return redirect(self.get_success_url())
 
             except Exception as e:
-                # ここで自作メッセージを含め、エラー内容を表示
+                # ここで自作メッセージを含め、計算中などにエラーが起きたら内容を表示
                 form.add_error(None, str(e))
                 return self.render_to_response(self.get_context_data(form=form))
         else:
+            # フォームセット自体がエラー（未入力など）の場合はここ
             return self.render_to_response(self.get_context_data(form=form))
-        
+
 # 作成された見積の最終結果を表示する画面
 class EstimateDetailView(DetailView):
     model = Estimate
