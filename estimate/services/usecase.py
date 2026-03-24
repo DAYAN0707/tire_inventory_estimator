@@ -6,6 +6,7 @@ from ..models import Estimate, EstimateItem, EstimateStatus
 from ..models.masters.charge_master import ChargeMaster
 from .calculator import recalc_all, parse_tire_spec
 from .calculator import sync_estimate_charges
+from django.db import transaction
 
 #  バリデーションロジック
 def validate_estimate_rules(estimate: Estimate):
@@ -28,102 +29,157 @@ class EstimateUseCase:
     """
     見積に関する業務ロジックを集約（Viewを薄く保つためのService層）
     """
+    
     @staticmethod
-    def calculate_charges(items, purchase_type, manual_dict=None):
-        """
-        JSからのリクエストに応じて工賃等の諸費用を計算する
-        """
-        # 持ち帰りの場合は諸費用なし
-        if purchase_type == Estimate.PurchaseType.TAKE_HOME:
-            return {"charges": [], "total": 0}
+    def calculate_purely(purchase_type, items_data, manual_charge_qtys=None):
+        # 【前提】
+        # items_data: [{'tire': Tireオブジェクト, 'quantity': 2}, ...]
+        # manual_charge_qtys: {'4_0': '2', '6_1': '0'} のような形式（JSから送信）
+        
+        # 【仕様】
+        # 工賃：手入力優先（0 OK）
+        # バルブ・廃タイヤ：手入力優先（0 OK）
+        # ランフラット：手入力不可、工賃合計に強制連動
 
-        total_work_qty = 0
-        total_rft_qty = 0  # RFTの本数を集計する変数
-        install_summary = {}
+        # =========================
+        # 0. 持ち帰りは即終了
+        # =========================
+        if purchase_type == 'take_home':
+            return []
 
-        for item in items:
-            tire_id = item.get("tire_id")
-            qty = int(item.get("quantity", 0))
+        results = []  # ← 最終的にフロントへ返す配列
 
-            if not tire_id or qty <= 0:
-                continue
+        # =========================
+        # 1. 全体の基礎データ集計
+        # =========================
+        total_tire_qty = 0   # タイヤ総本数（購入本数）
+        total_work_qty = 0   # 交換作業の合計本数（工賃ベース）
+        total_rft_qty = 0    # RFTタイヤの本数
 
-            tire = Tire.objects.get(id=tire_id)
-            spec = parse_tire_spec(tire.size_raw)
-            if spec.is_rft:
-                total_rft_qty += qty  # RFTならその本数を加算
+        # 🎯 工賃のマスタID（あなたの環境では 4）
+        INSTALL_IDS = ['4']
 
-            # インチ数に合致するアクティブな工賃を取得
-            master = ChargeMaster.objects.filter(
-                charge_type=ChargeMaster.ChargeType.INSTALL,
-                min_inch__lte=spec.inch,
-                max_inch__gte=spec.inch,
-                is_active=True
-            ).first()
+        for item in items_data:
+            # 🎯 dictで統一されている前提
+            tire = item['tire']
+            qty = int(item.get('quantity', 0))
 
-            if master:
-                if master.id not in install_summary:
-                    install_summary[master.id] = {
-                        "name": master.name,
-                        "price": int(master.unit_price),
-                        "qty": 0
-                    }
-                install_summary[master.id]["qty"] += qty
-            
-            total_work_qty += qty
+            total_tire_qty += qty
+            total_work_qty += qty  # デフォルトは購入本数＝作業本数
 
-        results = []
-        for res in install_summary.values():
+            # 🎯 RFT判定（サイズ文字列に含まれる）
+            if tire.size_raw and "RFT" in tire.size_raw:
+                total_rft_qty += qty
+
+        # =========================
+        # 2. 手入力から「工賃合計」を再計算
+        # =========================
+        # 🎯 ここがRFT連動の基礎になる超重要ポイント
+        manual_work_total = 0
+
+        if manual_charge_qtys:
+            for key, val in manual_charge_qtys.items():
+                # key例: "4_0" → "4" を取り出す
+                master_id = key.split('_')[0]
+
+                # 🎯 工賃のIDだけ拾う
+                if master_id in INSTALL_IDS:
+                    manual_work_total += int(val or 0)
+
+        # 🎯 手入力がある場合は「作業本数」を上書き
+        if manual_charge_qtys is not None:
+            total_work_qty = manual_work_total
+
+        # =========================
+        # 3. 工賃（INSTALL）
+        # =========================
+        install_masters = ChargeMaster.objects.filter(
+            charge_type=ChargeMaster.ChargeType.INSTALL,
+            is_active=True
+        )
+
+        for m in install_masters:
+            qty = 0  # 初期化
+
+            # 🎯 手入力優先（0もそのまま採用）
+            if manual_charge_qtys:
+                for key, val in manual_charge_qtys.items():
+                    if str(m.id) == key.split('_')[0]:
+                        qty = int(val or 0)
+                        break
+            else:
+                # 初期表示（デフォルト）
+                qty = total_tire_qty
+
             results.append({
-                "name": res["name"],
-                "price": res["price"],
-                "qty": res["qty"],
-                "subtotal": res["price"] * res["qty"]
+                "master_id": m.id,
+                "name": m.name,
+                "qty": qty,
+                "price": int(m.unit_price),
+                "subtotal": int(m.unit_price * qty)
             })
 
-        # 共通費用（バルブ・廃タイヤ）を取得
+        # =========================
+        # 4. 共通費用（バルブ・廃タイヤ）
+        # =========================
         commons = ChargeMaster.objects.filter(
-            charge_type__in=[ChargeMaster.ChargeType.VALVE, ChargeMaster.ChargeType.WASTE],
+            charge_type__in=[
+                ChargeMaster.ChargeType.VALVE,
+                ChargeMaster.ChargeType.WASTE
+            ],
             is_active=True
         )
 
         for m in commons:
-            # 1. まずはデフォルト値（4本など）をセット
-            final_qty = total_work_qty
-    
-            # 2. 手入力（manual_charge_qtys）の中にこの項目の設定があるか確認
-            if manual_dict:
-                val = manual_dict.get(str(m.id))
-                # 0 を許可する魔法の判定！
-                if val is not None and val != "":
-                    final_qty = int(val)
+            manual_val = None
 
-            # 3. 最終的な数量(final_qty)を使って追加
+            # 🎯 手入力の中から該当IDを探す（indexズレ対策）
+            if manual_charge_qtys:
+                for key, v in manual_charge_qtys.items():
+                    if str(m.id) == key.split('_')[0]:
+                        manual_val = v
+                        break
+
+            # 🎯 手入力あれば最優先（0 OK）
+            if manual_val is not None and manual_val != "":
+                qty = int(manual_val)
+            else:
+                # デフォルトはタイヤ本数
+                qty = total_tire_qty
+
             results.append({
                 "master_id": m.id,
                 "name": m.name,
+                "qty": qty,
                 "price": int(m.unit_price),
-                "qty": final_qty, # ← ここを final_qty に変更！
-                "subtotal": int(m.unit_price * final_qty)
+                "subtotal": int(m.unit_price * qty)
             })
 
+        # =========================
+        # 5. ランフラット加算（最重要🔥）
+        # =========================
+        rft_masters = ChargeMaster.objects.filter(
+            charge_type=ChargeMaster.ChargeType.RFT,
+            is_active=True
+        )
 
-            # RFT加算 (APIレスポンス用)
-        if total_rft_qty > 0:
-            rft_master = ChargeMaster.objects.filter(
-                charge_type=ChargeMaster.ChargeType.RFT,
-                is_active=True
-            ).first()
+        for m in rft_masters:
+            # 🎯 核ロジック：RFT数量 = min(RFTタイヤ本数, 作業本数)
+            if total_work_qty > 0:
+                qty = min(total_rft_qty, total_work_qty)
+            else:
+                qty = 0
 
-            if rft_master:
+            if qty > 0:
                 results.append({
-                    "name": rft_master.name,
-                    "price": int(rft_master.unit_price),
-                    "qty": total_rft_qty,
-                    "subtotal": int(rft_master.unit_price) * total_rft_qty
+                    "master_id": m.id,
+                    "name": m.name,
+                    "qty": qty,
+                    "price": int(m.unit_price),
+                    "subtotal": int(m.unit_price * qty)
                 })
 
-        return {"charges": results}
+        return results
 
     @staticmethod
     @transaction.atomic
@@ -140,16 +196,14 @@ class EstimateUseCase:
             tire_formset.instance = estimate_instance
             tire_formset.save()
 
-
             # 業務ルール違反がないかチェック
             validate_estimate_rules(estimate_instance)
-            # 保存データに基づいて最終計算（サーバーサイド）recalc_all を呼ぶ！
+            
+            # 保存データに基づいて最終計算
             from .calculator import recalc_all
             recalc_all(estimate_instance, manual_data=manual_data)
 
             # 工賃・諸費用の同期処理
-            # ここで manual_data を渡すように修正！
             sync_estimate_charges(estimate_instance, manual_data=manual_data)
 
             return estimate_instance
-

@@ -15,29 +15,31 @@ def calculate_charges_api(request):
     """
     try:
         data = json.loads(request.body)
+        # JavaScriptから送られてくる諸費用の数量データを取り出す
+        # JSから {'4_0': '2', '4_1': '0'} という形式で届く
+        manual_charge_qtys = data.get('charge_qtys', {})
         items = data.get("items", [])
         purchase_type = data.get("purchase_type")
-        
-        # JavaScriptから送られてくる諸費用の数量データを取り出す
-        # 例: {'2': '2', '7': '2', '6': '2'}
-        manual_charge_qtys = data.get('charge_qtys', {}) 
 
         # 1. タイヤ情報の準備
         # (これだけはDBを見る必要あり、保存はしない)
         processed_items = []
         for item in items:
-            tire_id = item.get("tire_id")
-            qty = item.get("quantity", 0)
+            tire_id = int(item.get("tire_id") or 0)
+            qty = int(item.get("quantity") or 0)
+
             if tire_id and qty > 0:
-                # タイヤマスタから情報を1回だけ引く
+                # 🎯 DBアクセスは1回だけ！
                 tire_master = Tire.objects.get(id=tire_id)
+
                 processed_items.append({
-                    'tire': tire_master,
-                    'quantity': qty
+                    "tire": tire_master,
+                    "quantity": qty
                 })
 
         # 2. 修正した計算機（Calculator）にデータを渡す
         # 引数に manual_charge_qtys を追加！
+        # 計算機にそのまま渡す（計算機側はすでに index 対応済みなのでOK）
         results = calculate_purely(
             purchase_type=purchase_type, 
             items_data=processed_items,
