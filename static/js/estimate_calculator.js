@@ -8,7 +8,7 @@
  * 5章：全体の集計 ＆ リアルタイム・バリデーション
  * 6章：ユーザー操作の監視（イベントリスナー）
  */
-let isManualEditing = false; // ★ここ！一番上に追加
+let isManualEditing = false;
 
 console.log("★★★ JSファイル読み込み成功！ ★★★");
 
@@ -68,7 +68,7 @@ $(function() {
         calculateRow($row);
     }
 
-    // ==========================================
+// ==========================================
     // --- 3章：諸費用計算ロジック ---
     // ==========================================
     /**
@@ -97,6 +97,10 @@ $(function() {
             }
         });
 
+        // 🚀 【新規追加】初回は空なら送らない（←これが超重要：廃タイヤ4本を実現するため）
+        // 画面にまだ諸費用行がない、または入力が一切ない場合は初回とみなす
+        const isFirstLoad = Object.keys(chargeDict).length === 0;
+
         // 🚀 これで Network タブの Payload に数字が載る！
         console.log("🔥 送信直前 chargeDict:", chargeDict);
         
@@ -114,9 +118,9 @@ $(function() {
                 });
             }
         });
+
         // 🔥 デバッグ：ここが空 [ ] じゃなくなれば成功！
         console.log("🔥 送信直前 items:", items);
-        console.log("🔥 送信直前 chargeDict:", chargeDict);
 
         const purchaseType = $('#id_purchase_type').val();
 
@@ -128,7 +132,8 @@ $(function() {
             data: JSON.stringify({ 
                 items: items, 
                 purchase_type: purchaseType,
-                charge_qtys: chargeDict // 🎯 手入力した「2」や「0」が入った状態で送信！
+                // 🎯 【新規追加】初回なら null を送り、Python側のデフォルト計算（合計4本など）を動かす
+                charge_qtys: isFirstLoad ? null : chargeDict 
             }),
             headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
             
@@ -169,20 +174,21 @@ $(function() {
                         const subtotal = Number(c.subtotal || 0);
 
                         /**
-                         * 1. ランフラットタイヤの工賃かどうかを判定
+                         * ランフラットタイヤの工賃かどうかを判定
                          * 名前に「ランフラット」が含まれる場合は、手入力を禁止（readonly）
                          */
                         // APIから返ってきた c.qty をそのまま使う
                         const isRft = c.name.includes("ランフラット");
                         // RFTなら「入力不可・グレー背景」、それ以外は「入力可」にする
                         const readonlyAttr = isRft 
-                        ? "readonly style='width: 70px; background-color: #e9ecef; pointer-events: none;'" 
+                        ? "readonly style='width: 70px; background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; pointer-events: none;'" 
                         : "style='width: 70px;'";
+
                         /**
-                         * 3. HTMLの組み立て
+                         * HTMLの組み立て
                          * name属性を "charge_qtys[マスターID_行番号]" 形式に設定
                          */
-                        // 3. HTMLを組み立てる（valueに APIから返った c.qty を確実に入れる）
+                        // valueに APIから返った c.qty を確実に入れる
                         html += `<tr>
                             <td>${name}</td>
                             <td class="text-end">${price.toLocaleString()}円</td>
@@ -208,7 +214,7 @@ $(function() {
                 }
 
                 /**
-                 * 3. 見積書全体の「総計（税込）」を再計算
+                 * 見積書全体の「総計（税込）」を再計算
                  */
                 finalTotalUpdateOnly();
 
@@ -220,6 +226,12 @@ $(function() {
             }
         }); 
     } // 🎯 updateEstimateCharges 終了
+
+    // リアルタイム連動のトリガー
+    // 工賃などの数量が変わったら、即座にAPIを叩いてRFT加算なども再計算させる
+    $(document).on('input', '.charge-qty-input', function() {
+        updateEstimateCharges();
+    });
 
 
     // ==========================================
