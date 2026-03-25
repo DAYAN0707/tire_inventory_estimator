@@ -97,7 +97,7 @@ def apply_manual_charges(estimate, manual_data):
 
 # 3.現場対応型：諸費用の同期ロジック
 @transaction.atomic
-def sync_estimate_charges(estimate, manual_data=None):
+def sync_estimate_charges(estimate, manual_data=None, current_work_qty=None):
     """
     前後サイズ違い・RFT対応の諸費用同期ロジック
     """
@@ -125,7 +125,8 @@ def sync_estimate_charges(estimate, manual_data=None):
     calculated_results = calculate_purely(
         purchase_type=estimate.purchase_type,
         items_data=items_data,
-        manual_charge_qtys=manual_dict
+        manual_charge_qtys=manual_dict,
+        current_work_qty=current_work_qty  # 🚀 ここでバトンを渡す！
     )
 
     # 5. 計算結果（0を含む）をすべて保存
@@ -154,19 +155,21 @@ def recalc_all(estimate, manual_data=None):
     estimate.save(update_fields=['total_price'])
 
 
-
-def calculate_purely(purchase_type, items_data, manual_charge_qtys=None):
+def calculate_purely(purchase_type, items_data, manual_charge_qtys=None, current_work_qty=None):
     print("DEBUG items_data:", items_data)
     print("DEBUG type:", type(items_data))
     print("DEBUG first item:", items_data[0])
     print("DEBUG first item type:", type(items_data[0]))
+
     # 1. 【基本制御】持ち帰りの場合は計算不要
     if purchase_type == 'take_home':
         return []
 
     results = []        # 計算結果の格納用
-    total_work_qty = 0  # 実際に「交換作業」の対象となった合計本数
-    total_rft_qty = 0 # そのうちランフラットタイヤの作業本数
+    total_rft_qty = 0  # そのうちランフラットタイヤの作業本数
+
+    # 🎯 【最重要】ここで必ず初期化（None対策）
+    current_work_qty = 0
 
     # 🎯 ポイント：全体のタイヤ総本数を1回だけ算出（キー名は 'quantity'）
     # これで「二重加算」を防ぎ、廃タイヤ・バルブの正しい基準本数（4本）を作る
@@ -193,25 +196,20 @@ def calculate_purely(purchase_type, items_data, manual_charge_qtys=None):
                 val = None
                 if manual_charge_qtys:
                     for key, v in manual_charge_qtys.items():
-                        # キー（例: "4_0"）を分割して ID 部分（"4"）だけを比較
-                        if str(work_master.id) == key.split('_')[0]:
+                        expected_key = f"{work_master.id}_{items_data.index(item)}"
+                        if key == expected_key:
                             val = v
                             break # 見つかったらループを抜ける
+
                 
-                # 画面で「0」と入力された場合も考慮して判定
-                if val is not None and val != "":
-                    work_qty = int(val) # 手動入力（2や0）を優先
-                else:
-                    work_qty = qty      # 初期状態はタイヤ本数
+                # 確定本数（手動入力があれば優先、なければタイヤ本数）
+                work_qty = int(val) if (val is not None and val != "") else qty
 
-                # 🎯 ポイント：ここがRFT連動の核
-                # 「実際に作業する本数」を足していく
-                total_work_qty += work_qty
+                # 🎯 合計作業本数をここで集計（←これが正解）
+                current_work_qty += work_qty
 
-                # そのタイヤがRFTなら、その「作業本数」をRFTカウントに加算
-                # フロント(RFT)を2本作業、リア(RFT)を0本作業なら、2+0=2本に！！！
+                # 🎯 RFTは別カウント（←修正ポイント）
                 if spec.is_rft:
-                    # RFTタイヤの行であれば、その「確定した作業本数(0も含む)」を足す
                     total_rft_qty += work_qty
 
                 results.append({
@@ -222,15 +220,18 @@ def calculate_purely(purchase_type, items_data, manual_charge_qtys=None):
                     "subtotal": int(work_master.unit_price * work_qty)
                 })
 
+
     # B: 共通諸費用（バルブ・廃タイヤ）
-    if total_work_qty > 0:
+    if current_work_qty > 0:
         # 廃タイヤやバルブのマスタを取得
         commons = ChargeMaster.objects.filter(
         charge_type__in=[ChargeMaster.ChargeType.VALVE, ChargeMaster.ChargeType.WASTE],
         is_active=True
         )
+
         for m in commons:
             manual_val = None
+
             # Viewから渡された手入力データ（manual_charge_qtys）をチェック
             if manual_charge_qtys:
                 for key, v in manual_charge_qtys.items():
@@ -260,14 +261,10 @@ def calculate_purely(purchase_type, items_data, manual_charge_qtys=None):
         )
 
         for rft_master in rft_masters:
-            # 手入力は無視（readonly）し、内部で計算された「実際の交換本数」をセット
-            qty = total_rft_qty
-
-        if rft_master:
             results.append({
                 "master_id": rft_master.id,
                 "name": rft_master.name,
-                "qty": total_rft_qty, # 🎯 確定したRFT作業本数（例：2本）をセット
+                "qty": total_rft_qty,  # 🎯 確定したRFT作業本数（例：2本）をセット
                 "price": int(rft_master.unit_price),
                 "subtotal": int(rft_master.unit_price * total_rft_qty)
             })

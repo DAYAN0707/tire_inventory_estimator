@@ -80,19 +80,27 @@ $(function() {
         // 1. 諸費用の入力値を「常に」集める
         // ユーザーが手動で打ち込んだ「廃タイヤ本数」などを、再描画後も引き継ぐための処理
         let chargeDict = {};
+        let totalWorkQty = 0; // 🔥 ユーザーが「作業する」と決めた本数の合計
 
         // 🎯 isManualEditing の判定を消して、常に画面上の input をスキャン
         // これにより、API送信時に手入力データが空 {} になるのを防ぐ
         $('.charge-qty-input').each(function() {
             const name = $(this).attr('name'); // 例: "charge_qtys[12_0]"
-            const qty = $(this).val();
+            const qtyStr = $(this).val();
+            const qty = parseInt(qtyStr, 10) || 0; // 🚀 0を許容
 
             if (name) {
                 // [ ] の中身（"12_0" など）を抽出して、Pythonが理解できるキー形式に！！！
                 const keyMatch = name.match(/\[(.*?)\]/);
                 if (keyMatch) {
                     const key = keyMatch[1];
-                    chargeDict[key] = qty; // 例 -> "12_0": "2"
+                    chargeDict[key] = (qtyStr === "") ? "0" : qtyStr;
+                }
+
+                // 🔥 重要：交換工賃の行（例えば名前に'交換'が含まれるなど）なら合計に加算
+                // これが 0 になれば、ユーザーは「持ち帰り」を選択したという意味になる
+                if ($(this).closest('tr').find('td:first').text().includes("交換工賃")) {
+                    totalWorkQty += qty;
                 }
             }
         });
@@ -101,28 +109,17 @@ $(function() {
         // 画面にまだ諸費用行がない、または入力が一切ない場合は初回とみなす
         const isFirstLoad = Object.keys(chargeDict).length === 0;
 
-        // 🚀 これで Network タブの Payload に数字が載る！
-        console.log("🔥 送信直前 chargeDict:", chargeDict);
-        
         // 🎯【ここが修正ポイント！】タイヤ明細からデータを直接集める
         const items = [];
         $('.formset-row').not('.empty-form').each(function() {
             // Djangoのname属性（items-0-tire など）から値を取得
             const tireId = $(this).find('select[name$="-tire"]').val();
-            const quantity = parseInt($(this).find('input[name$="-quantity"]').val()) || 0;
-
-            if (tireId && quantity > 0) {
-                items.push({
-                    tire_id: tireId,
-                    quantity: quantity
-                });
+            const quantity = parseInt($(this).find('input[name$="-quantity"]').val(), 10) || 0; // 🚀 0許容
+            
+            if (tireId) {
+                items.push({ tire_id: tireId, quantity: quantity });
             }
         });
-
-        // 🔥 デバッグ：ここが空 [ ] じゃなくなれば成功！
-        console.log("🔥 送信直前 items:", items);
-
-        const purchaseType = $('#id_purchase_type').val();
 
         // 2. 非同期通信（AJAX）でサーバーに計算を依頼
         $.ajax({
@@ -131,9 +128,13 @@ $(function() {
             contentType: 'application/json',
             data: JSON.stringify({ 
                 items: items, 
-                purchase_type: purchaseType,
-                // 🎯 【新規追加】初回なら null を送り、Python側のデフォルト計算（合計4本など）を動かす
-                charge_qtys: isFirstLoad ? null : chargeDict 
+                // 🚀 変数を使わず、直接IDから値を取得するように修正
+                purchase_type: $('#id_purchase_type').val(),
+                // 🎯初回なら null を送り、Python側のデフォルト計算（合計4本など）を動かす
+                // 2回目以降（手入力後）は chargeDict を送る
+                charge_qtys: isFirstLoad ? null : chargeDict,
+                // 手入力が始まったら「実際の工賃合計」を送る
+                total_work_qty: isFirstLoad ? null : totalWorkQty 
             }),
             headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
             
@@ -193,10 +194,11 @@ $(function() {
                             <td>${name}</td>
                             <td class="text-end">${price.toLocaleString()}円</td>
                             <td class="text-center">
-                                <input type="number" 
+                                <input type="number"
+                                    min="0" 
+                                    value="${qty}"
                                     name="charge_qtys[${c.master_id}_${index}]" 
                                     class="charge-qty-input form-control form-control-sm d-inline-block" 
-                                    value="${c.qty}" 
                                     data-price="${price}"
                                     ${readonlyAttr}>
                                 <input type="hidden" 
