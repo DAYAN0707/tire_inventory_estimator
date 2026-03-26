@@ -192,14 +192,23 @@ def calculate_purely(purchase_type, items_data, manual_charge_qtys=None, current
             ).first()
 
             if work_master:
-                # --- 修正後：Indexを無視してIDが一致するキーを探す ---
+                # manual_charge_qtys のキー仕様: "{masterId}_{rowIndex}"
+                # 現在処理中のアイテムのインデックスを取得
+                current_idx = items_data.index(item)
+                expected_key = f"{work_master.id}_{current_idx}"
+                # 修正後：Indexを無視してIDが一致するキーを探す
+                # manual_charge_qtys のキー仕様:
+                # "{masterId}_{rowIndex}"
+                # JSと同じルールで値を取得する
                 val = None
                 if manual_charge_qtys:
-                    for key, v in manual_charge_qtys.items():
-                        expected_key = f"{work_master.id}_{items_data.index(item)}"
-                        if key == expected_key:
-                            val = v
-                            break # 見つかったらループを抜ける
+                    # 辞書から直接 expected_key を探す（見つからなければ None）
+                    val = manual_charge_qtys.get(expected_key)
+
+                if val is not None and val != "":
+                    work_qty = int(val) 
+                else:
+                    work_qty = qty
 
                 
                 # 確定本数（手動入力があれば優先、なければタイヤ本数）
