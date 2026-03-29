@@ -72,7 +72,7 @@ $(function() {
 
             // 3. 小計表示を更新
             const $subtotalCell = $row.find('.js-subtotal, .item-subtotal-display');
-            $subtotalCell.text(subtotal.toLocaleString() + "円");
+            $subtotalCell.text(subtotal.toLocaleString());
             
             // 🎯 【重要】計算に使った数値をdata属性に保持（後で総合計の計算時に集計するため）
             $subtotalCell.data('value', subtotal);
@@ -251,70 +251,46 @@ $(function() {
     // ==========================================
     // --- 5章：総合計 ＆ バリデーション統合 ---
     // ==========================================
-    
-    /**
-     * 画面上の全数値を合算し、業務ルール（制限）をチェックする重要関数
-     */
-    function updateGrandTotalWithCharges() {
-        let totalQty = 0;
-        let tireTypes = new Set();
-
-        // 可視状態（削除されていない）のタイヤ行をスキャン
-        $('.formset-row:visible').not('.empty-form').each(function() {
-            const qty = parseInt($(this).find('input[name$="-quantity"]').val(), 10) || 0;
-            const tireId = $(this).find('select[name$="-tire"]').val();
-            if (tireId && qty > 0) {
-                totalQty += qty;
-                tireTypes.add(tireId);
-            }
-        });
-
-        // 購入区分のテキストまたはIDを取得して判定
-        const purchaseTypeText = $('select[name="purchase_type"] option:selected').text() || "";
-        const purchaseVal = $('#id_purchase_type').val() || $('select[name="purchase_type"]').val();
-        let errorMsg = "";
-
-        // 🎯 業務バリデーション：交換作業時のルール（value="exchange" または テキストに"交換"を含む場合）
-        if ((purchaseVal === "exchange" || purchaseTypeText.includes("交換")) && totalQty > 0) {
-            if (totalQty > 8) {
-                errorMsg = `【本数制限エラー】現在 ${totalQty} 本選択中です。交換作業ご希望の場合は、最大8本までにしてください。`;
-            } 
-            else if (tireTypes.size > 2) {
-                errorMsg = `【台数制限エラー】現在 ${tireTypes.size} 種類のタイヤが選択されています。交換作業ご希望の場合は、1台分(前後サイズ違いのお車など、最大2サイズ選択可能)までにしてください。`;
-            }
-        }
-
-        const isOk = updateGrandTotalDisplay(errorMsg);
-        
-        // 🎯 【復活】エラーがない場合のみ諸費用を再計算する
-        if (isOk) {
-            updateEstimateChargesDebounced();
-        } else {
-            // エラーがある場合は諸費用を隠すか薄くする
-            $('#js-charges-container').css('opacity', '0.5');
-        }
-        return isOk;
-    }
 
     /**
-     * 表示の最終合算と保存ボタンの制御
+     * 🎯 対策：総合計のリアルタイム再計算
+     * 常に「現在画面に存在し、可視状態の行」のみを集計対象にすることで
+     * 削除された行の残留データ（幽霊データ）を完全に排除!!!
      */
     function finalTotalUpdateOnly() {
         let total = 0;
-        // タイヤの小計と諸費用の小計をすべて集計
-        $('.js-subtotal, .item-subtotal-display, .charge-subtotal-display').each(function() {
+
+        // 👉 タイヤ明細の小計をすべて集計（削除されていない可視行のみ）
+        $('.formset-row:visible').not('.empty-form').find('.js-subtotal, .item-subtotal-display').each(function() {
+            // 🔥 文字列から「円」や「,」を除去して数値のみを取り出す
             const txt = $(this).text().replace(/[^\d]/g, '');
             total += parseFloat(txt) || 0;
         });
+
+        // 👉 諸費用の小計をすべて集計（可視状態の行のみ）
+        $('.charge-row:visible').find('.charge-subtotal-display').each(function() {
+            const txt = $(this).text().replace(/[^\d]/g, '');
+            total += parseFloat(txt) || 0;
+        });
+
+        // 🎯 総合計表示を即更新
         $('#js-grand-total').text(total.toLocaleString() + "円");
+        
+        console.log("💰 リアルタイム総合計更新（可視行のみ）:", total);
     }
 
+    /**
+     * バリデーション結果の表示 ＆ 保存ボタンの制御
+     * エラーがあればメッセージを表示し、見積確定ボタンを隠す（最終ガード）
+     */
     function updateGrandTotalDisplay(errorMsg) {
         const $msgArea = $('#validation-error-msg');
+        
+        // 🎯 最新の合計金額を画面に反映させる
         finalTotalUpdateOnly();
         
         if (errorMsg) {
-            // エラー表示を出し、送信ボタンを隠す
+            // 👉 エラー表示を出し、送信（見積確定）ボタンを隠す
             if ($msgArea.length === 0) {
                 // メッセージエリアがない場合は動的に作成
                 $('.tire-table').before('<div id="validation-error-msg" class="alert alert-danger"></div>');
@@ -324,11 +300,58 @@ $(function() {
             $('button[type="submit"]').hide(); 
             return false;
         } else {
+            // 👉 正常時はエラーを隠し、保存ボタンを復活させる
             $msgArea.hide();
             $('button[type="submit"]').show(); 
             $('#js-charges-container').css('opacity', '1');
             return true;
         }
+    }
+
+    /**
+     * 🎯 画面上の全数値を合算し、業務ルール（制限）をチェックする重要関数
+     * 「状態変更 → 再計算」をすべて繋げる設計の核心
+     */
+    function updateGrandTotalWithCharges() {
+        let totalQty = 0;
+        let tireTypes = new Set();
+
+        // 👉 可視状態（削除されていない）のタイヤ行をスキャン
+        $('.formset-row:visible').not('.empty-form').each(function() {
+            const qty = parseInt($(this).find('input[name$="-quantity"]').val(), 10) || 0;
+            const tireId = $(this).find('select[name$="-tire"]').val();
+            if (tireId && qty > 0) {
+                totalQty += qty;
+                tireTypes.add(tireId);
+            }
+        });
+
+        // 👉 購入区分のテキストまたはIDを取得して判定
+        const purchaseTypeText = $('select[name="purchase_type"] option:selected').text() || "";
+        const purchaseVal = $('#id_purchase_type').val() || $('select[name="purchase_type"]').val();
+        let errorMsg = "";
+
+        // 🎯 業務バリデーション：交換作業時のルール
+        if ((purchaseVal === "exchange" || purchaseTypeText.includes("交換")) && totalQty > 0) {
+            if (totalQty > 8) {
+                errorMsg = `【本数制限エラー】現在 ${totalQty} 本選択中です。交換作業ご希望の場合は、最大8本までにしてください。`;
+            } 
+            else if (tireTypes.size > 2) {
+                errorMsg = `【台数制限エラー】現在 ${tireTypes.size} 種類のタイヤが選択されています。交換作業ご希望の場合は、1台分(前後サイズ違いのお車など、最大2サイズ選択可能)までにしてください。`;
+            }
+        }
+
+        // 🎯 結論：画面表示とボタン制御を呼び出し
+        const isOk = updateGrandTotalDisplay(errorMsg);
+        
+        // 🔥 設計の核心：エラーがない場合のみ諸費用を再計算する
+        if (isOk) {
+            updateEstimateChargesDebounced();
+        } else {
+            // 👉 エラーがある場合は諸費用を薄くして入力を促す
+            $('#js-charges-container').css('opacity', '0.5');
+        }
+        return isOk;
     }
 
     // ===================================================
@@ -362,12 +385,12 @@ $(function() {
         });
 
         /**
-        * 2. 諸費用の数量を手入力した際のロック処理
-        */
+         * 2. 諸費用の数量を手入力した際のロック処理 ＆ リアルタイム再計算
+         */
         $(document).on('input', '.charge-qty-input', function() {
             const name = $(this).attr('name');
             const keyMatch = name ? name.match(/\[(.*?)\]/) : null;
-        
+
             if (keyMatch) {
                 const fullKey = keyMatch[1];
                 manualEditedKeys.add(fullKey); 
@@ -378,15 +401,21 @@ $(function() {
             const qty = parseFloat($(this).val()) || 0;
             const price = parseFloat($(this).data('price')) || 0;
 
-            $row.find('.charge-subtotal-display').text((qty * price).toLocaleString() + "円");
-        
+            // 🔥 行の小計表示を即座に更新（,カンマ区切り + 円）
+            const rowSubtotal = qty * price;
+            $row.find('.charge-subtotal-display').text(rowSubtotal.toLocaleString() + "円");
+
+            // 数量0なら見た目を薄くする処理（既存）
             if (qty == 0) {
                 $row.addClass('charge-row-zero text-muted opacity-50');
             } else {
                 $row.removeClass('charge-row-zero text-muted opacity-50');
             }
 
+            // 🎯全体の税込合計を即座に更新！これを呼ぶことで見積確定ボタンを押さなくても上の合計が変わる
             finalTotalUpdateOnly(); 
+
+            // APIを飛ばして他の項目との整合性をとる（Debounce経由）
             updateEstimateChargesDebounced();
         });
 
