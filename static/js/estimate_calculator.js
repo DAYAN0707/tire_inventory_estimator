@@ -32,7 +32,7 @@ $(function() {
     /**
      * タイヤ1行分の金額（単価・小計）を更新するメイン関数
      * 1. 選択されたタイヤを特定
-     * 2. 特価適用の判定
+     * 2. 特価適用の判定（4本単位 ＋ 端数分解ロジック）
      * 3. 画面表示の更新
      */
     function updateTireInfo($row) {
@@ -48,29 +48,37 @@ $(function() {
         console.log("🔍 選択されたタイヤデータ:", tire);
 
         if (tire) {
-            // --- 特価判定ロジック ---
-            // 🎯 【重要】プロパティ名をマスタ(unit_price / set_price)に合わせて修正
-            // 数量が4の倍数の場合に「4本特価(set_price)」を適用する
-            const isSpecialPrice = (qty > 0 && qty % 4 === 0 && tire.set_price);
-            
-            // 特価なら1本当たり単価を算出、そうでなければ通常単価を採用
-            const unitPrice = isSpecialPrice 
-                ? Math.floor(tire.set_price / 4) 
-                : (tire.unit_price || 0);
+            // --- 🎯 【修正】4本単位＋端数の分解計算ロジック ---
+            const unitPrice = tire.unit_price || 0;
+            const setPrice = tire.set_price || 0;
+
+            // 👉 本数を「4本セット(setCount) ＋ 余り(remainder)」に分解
+            const setCount = Math.floor(qty / 4);
+            const remainder = qty % 4;
+
+            // 🔥 小計の計算（セット特価分 ＋ 単品分）
+            let subtotal = 0;
+            if (setPrice > 0) {
+                // 特価がある場合：(セット数 × 特価) + (余り × 通常単価)
+                subtotal = (setPrice * setCount) + (unitPrice * remainder);
+            } else {
+                // 特価がない場合はすべて通常単価
+                subtotal = unitPrice * qty;
+            }
+
+            // 🔍 デバッグ用：計算の内訳をログ出力
+            console.log(`🧮 計算詳細: ${qty}本 = (${setCount}セット × ${setPrice}円) + (${remainder}本 × ${unitPrice}円)`);
             
             // --- 画面表示（UI）の更新 ---
             // 1. 通常単価の表示
             const $unitPriceCell = $row.find('.js-unit-price, .unit-price-display');
-            $unitPriceCell.text(Number(tire.unit_price || 0).toLocaleString() + "円");
+            $unitPriceCell.text(Number(unitPrice).toLocaleString() + "円");
 
             // 2. 4本特価の表示
             const $specialPriceCell = $row.find('.js-set-price, .special-price-display');
-            $specialPriceCell.text(tire.set_price ? Number(tire.set_price).toLocaleString() + "円" : "---");
+            $specialPriceCell.text(setPrice ? Number(setPrice).toLocaleString() + "円" : "---");
             
-            // --- 小計の計算 ---
-            const subtotal = unitPrice * qty;
-
-            // 3. 小計表示を更新
+            // 3. 小計表示を更新（「円」バグ対策として、ここでは数値と単位を整理）
             const $subtotalCell = $row.find('.js-subtotal, .item-subtotal-display');
             $subtotalCell.text(subtotal.toLocaleString());
             
