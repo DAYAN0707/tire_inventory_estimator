@@ -1,31 +1,20 @@
 /**
  * 見積計算 ＆ 動的行追加スクリプト（完全プロフェッショナル仕様）
- * * 全体の流れ：
+ * 全体の流れ：
  * 1章：データの準備と初期設定
  * 2章：タイヤ選択時のマスタデータ紐付け
  * 3章：金額計算ロジック（行単位 ＆ 諸費用API）
  * 4章：Django Formsetの整合性を保つ動的行追加
  * 5章：全体の集計 ＆ リアルタイム・バリデーション
  * 6章：ユーザー操作の監視（イベントリスナー）
+ * 7章：タイヤ行削除（Formset対応）
  */
-let isManualEditing = false;
+
+// 🔥 修正の本質：どの項目を手入力したかをキー単位（masterId_rowIndex）で記録する
+let manualEditedKeys = new Set(); 
+let chargeUpdateTimer; // Debounce（連打防止）用のタイマー
 
 console.log("★★★ JSファイル読み込み成功！ ★★★");
-
-// フォーム送信時のログ出力設定
-$('#estimate-form').on('submit', function() {
-    // 完全に一致する名前で取得する
-    const qtys = {};
-    $('input[name^="charge_qtys"]').each(function(){
-        const name = $(this).attr('name'); // charge_qtys[4_0]
-        const key = name.match(/\[(.*?)\]/)[1]; // 4_0
-        qtys[key] = $(this).val();
-    });
-    console.log("🚀 送信直前 qtys:", qtys);
-
-    const ids = $('input[name="charge_master_ids[]"]').map(function(){ return $(this).val(); }).get();
-    console.log("🚀 送信直前！ IDリスト:", ids);
-});
 
 $(function() {
     console.log("見積計算スクリプト始動");
@@ -35,244 +24,205 @@ $(function() {
     // ==========================================
     // HTML内に埋め込まれたJSON（タイヤの単価や特価情報）を取得
     const tireMasterElement = document.getElementById('tire-master-data');
-    // 要素が存在しない場合は空配列 [] を代入してエラーを防ぐ
     const tireMasterData = JSON.parse(tireMasterElement?.textContent || "[]");
 
     // ==========================================
-    // --- 2章：タイヤ情報の反映・行単価の取得 ---
+    // --- 2章：タイヤ金額計算（単価・小計） ---
     // ==========================================
     /**
-     * 選択されたタイヤIDを元に、単価情報をHTML要素の「データ属性」に保存する
-     * @param {jQuery} $row - 操作対象の明細行（tr要素など）
+     * タイヤ1行分の金額（単価・小計）を更新するメイン関数
+     * 1. 選択されたタイヤを特定
+     * 2. 特価適用の判定
+     * 3. 画面表示の更新
      */
     function updateTireInfo($row) {
         // プルダウンから現在選択されているタイヤのIDを取得
         const tireId = $row.find('select[name$="-tire"]').val();
-        // マスタデータの中からIDが一致するものを探す
-        const tireData = tireMasterData.find(t => t.id == tireId);
+        // 入力されている数量を取得
+        const qty = parseInt($row.find('input[name$="-quantity"]').val(), 10) || 0;
+        
+        // 🎯 マスタデータから該当するタイヤを探す
+        const tire = tireMasterData.find(t => t.id == tireId);
 
-        if (tireData) {
-            // 後で計算に使いやすいよう、行要素自体に単価を隠し持たせる（data属性）
-            $row.data('unit-price', tireData.unit_price || 0);
-            $row.data('set-price', tireData.set_price || 0);
+        // 🎯 デバッグ用：マスタデータの中身をコンソールに表示して確認
+        console.log("🔍 選択されたタイヤデータ:", tire);
 
-            // 画面上の「単価」と「4本特価」の表示を更新
-            $row.find('.js-unit-price').text(Number(tireData.unit_price).toLocaleString() + "円");
-            $row.find('.js-set-price').text(Number(tireData.set_price).toLocaleString() + "円");
+        if (tire) {
+            // --- 特価判定ロジック ---
+            // 🎯 【重要】プロパティ名をマスタ(unit_price / set_price)に合わせて修正
+            // 数量が4の倍数の場合に「4本特価(set_price)」を適用する
+            const isSpecialPrice = (qty > 0 && qty % 4 === 0 && tire.set_price);
+            
+            // 特価なら1本当たり単価を算出、そうでなければ通常単価を採用
+            const unitPrice = isSpecialPrice 
+                ? Math.floor(tire.set_price / 4) 
+                : (tire.unit_price || 0);
+            
+            // --- 画面表示（UI）の更新 ---
+            // 1. 通常単価の表示
+            const $unitPriceCell = $row.find('.js-unit-price, .unit-price-display');
+            $unitPriceCell.text(Number(tire.unit_price || 0).toLocaleString() + "円");
+
+            // 2. 4本特価の表示
+            const $specialPriceCell = $row.find('.js-set-price, .special-price-display');
+            $specialPriceCell.text(tire.set_price ? Number(tire.set_price).toLocaleString() + "円" : "---");
+            
+            // --- 小計の計算 ---
+            const subtotal = unitPrice * qty;
+
+            // 3. 小計表示を更新
+            const $subtotalCell = $row.find('.js-subtotal, .item-subtotal-display');
+            $subtotalCell.text(subtotal.toLocaleString() + "円");
+            
+            // 🎯 【重要】計算に使った数値をdata属性に保持（後で総合計の計算時に集計するため）
+            $subtotalCell.data('value', subtotal);
+            
+            console.log(`✅ 行計算完了: ID=${tireId}, 数量=${qty}, 小計=${subtotal}`);
         } else {
-            $row.data('unit-price', 0);
-            $row.data('set-price', 0);
-            $row.find('.js-unit-price, .js-set-price').text("-");
+            // タイヤが選択されていない、または削除された場合は表示をリセット
+            $row.find('.js-unit-price, .unit-price-display, .js-set-price, .special-price-display, .js-subtotal, .item-subtotal-display').text("---");
+            $row.find('.js-subtotal, .item-subtotal-display').data('value', 0);
         }
-        // 単価が変わったので、その行の小計を再計算する
-        calculateRow($row);
+        
+        // 🎯 タイヤの金額が変わったので、最後に総合計（タイヤ＋諸費用）を再計算
+        if (typeof finalTotalUpdateOnly === 'function') {
+            finalTotalUpdateOnly();
+        }
     }
 
     // ==========================================
-    // --- 3章：諸費用計算ロジック ---
+    // --- 3章：諸費用計算ロジック（IDベース・安定版） ---
     // ==========================================
+    
     /**
-    * manual_charge_qtys のキー仕様
-    * フォーマット: "{masterId}_{rowIndex}"
-    * 例:
-    * 4_0 → 工賃マスタID=4, 1行目
-    * 4_1 → 工賃マスタID=4, 2行目
-    * * 👉 各タイヤ行ごとに工賃数量を独立管理するためのキー（前後サイズ違い対応）
-    */
+     * 🔥 入力連打でAPIが火を吹かないよう制御（Debounce）
+     */
+    function updateEstimateChargesDebounced() {
+        clearTimeout(chargeUpdateTimer);
+        chargeUpdateTimer = setTimeout(() => {
+            updateEstimateCharges();
+        }, 200); 
+    }
+
     /**
-     * 
-     * 諸費用の計算・再描画を行う関数
-     * タイヤの選択や本数が変わるたびに呼び出され、API経由で最新の諸費用を取得
+     * 諸費用の計算・再描画を行うメイン関数
      */
     function updateEstimateCharges() {
-        
-        // 1. 諸費用の入力値を「常に」集める
-        // ユーザーが手動で打ち込んだ「廃タイヤ本数」などを、再描画後も引き継ぐための処理
         let chargeDict = {};
-        let totalWorkQty = 0; // 🔥 ユーザーが「作業する」と決めた本数の合計
+        let totalWorkQty = 0; 
 
-        // 🎯 isManualEditing の判定を消して、常に画面上の input をスキャン
-        // これにより、API送信時に手入力データが空 {} になるのを防ぐ
         $('.charge-qty-input').each(function() {
-            const name = $(this).attr('name'); // 例: "charge_qtys[12_0]"
+            const name = $(this).attr('name');
             const qtyStr = $(this).val();
-            const qty = parseInt(qtyStr, 10) || 0; // 🚀 0を許容
+            const qty = parseInt(qtyStr, 10) || 0;
 
             if (name) {
-                // [ ] の中身（"12_0" など）を抽出して、Pythonが理解できるキー形式に！！！
-                const keyMatch = name.match(/\[(.*?)\]/);
+                const keyMatch = name.match(/\[(.*?)\]/); 
                 if (keyMatch) {
                     const key = keyMatch[1];
                     chargeDict[key] = (qtyStr === "") ? "0" : qtyStr;
-                }
-
-                // 🔥 重要：交換工賃の行（例えば名前に'交換'が含まれるなど）なら合計に加算
-                // これが 0 になれば、ユーザーは「持ち帰り」を選択したという意味になる
-                if ($(this).closest('tr').find('td:first').text().includes("交換工賃")) {
-                    totalWorkQty += qty;
+                    if ($(this).closest('tr').find('td:first').text().includes("工賃")) {
+                        totalWorkQty += qty;
+                    }
                 }
             }
         });
 
-        // 🚀 【新規追加】初回は空なら送らない（←これが超重要：廃タイヤ4本を実現するため）
-        // 画面にまだ諸費用行がない、または入力が一切ない場合は初回とみなす
         const isFirstLoad = Object.keys(chargeDict).length === 0;
 
-        // 🎯【ここが修正ポイント！】タイヤ明細からデータを直接集める
         const items = [];
-        $('.formset-row').not('.empty-form').each(function() {
-            // Djangoのname属性（items-0-tire など）から値を取得
+        $('.formset-row:visible').not('.empty-form').each(function() {
             const tireId = $(this).find('select[name$="-tire"]').val();
-            const quantity = parseInt($(this).find('input[name$="-quantity"]').val(), 10) || 0; // 🚀 0許容
-            
+            const quantity = parseInt($(this).find('input[name$="-quantity"]').val(), 10) || 0;
             if (tireId) {
                 items.push({ tire_id: tireId, quantity: quantity });
             }
         });
 
-        // 2. 非同期通信（AJAX）でサーバーに計算を依頼
         $.ajax({
             url: '/estimate/api/calculate-charges/',
             type: 'POST',
             contentType: 'application/json',
+            headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
             data: JSON.stringify({ 
                 items: items, 
-                // 🚀 変数を使わず、直接IDから値を取得するように修正
-                purchase_type: $('#id_purchase_type').val(),
-                // 🎯初回なら null を送り、Python側のデフォルト計算（合計4本など）を動かす
-                // 2回目以降（手入力後）は chargeDict を送る
+                purchase_type: $('#id_purchase_type').val() || $('select[name="purchase_type"]').val(),
                 charge_qtys: isFirstLoad ? null : chargeDict,
-                // 手入力が始まったら「実際の工賃合計」を送る
                 total_work_qty: isFirstLoad ? null : totalWorkQty 
             }),
-            headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
-            
             success: function(response) {
-                /**
-                 * 🔍 デバッグ用：サーバーから届いた計算データを確認
-                 */
                 console.log("★★★ API Response ★★★", response.charges);
-
                 const $container = $('#js-charges-container');
-                
-                /**
-                 * 🔍 開発用：入れ物（tbody）が正しく見つかっているか確認
-                 */
-                if ($container.length === 0) {
-                    console.error("❌ エラー: #js-charges-container が見つかりません。");
-                    return;
-                }
+                if ($container.length === 0) return;
 
-                /**
-                 * 【重複防止】
-                 * 描画を開始する前に、必ず tbody の中身を空っぽ（更地）にする
-                 */
                 $container.empty();
 
-                // response.charges が存在し、中身がある場合のみ描画処理を行う
                 if (response.charges && response.charges.length > 0) {
                     let html = '';
+                    response.charges.forEach(function(c) { 
+                        const key = `${c.master_id}_${c.row_idx ?? 0}`;
+                        const $existing = $(`input[name="charge_qtys[${key}]"]`);
+                        
+                        let qty;
+                        if (manualEditedKeys.has(key) && $existing.length) {
+                            qty = $existing.val(); 
+                        } else {
+                            qty = Number(c.qty || 0);
+                        }
 
-                    /**
-                     * 【最重要】forEach の第2引数 'index' を受け取る
-                     * これにより、前後サイズ違いの行を 0, 1, 2... と区別
-                     */
-                    response.charges.forEach((c, index) => { 
-                        const name = c.name || "名称未設定";
-                        const price = Number(c.price || 0);
-                        const qty = Number(c.qty || 0);
-                        const subtotal = Number(c.subtotal || 0);
+                        const canEdit = c.is_editable; 
+                        const readonlyAttr = canEdit 
+                            ? "" 
+                            : "readonly tabindex='-1' style='background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; pointer-events: none;'";
 
-                        /**
-                         * ランフラットタイヤの工賃かどうかを判定
-                         * 名前に「ランフラット」が含まれる場合は、手入力を禁止（readonly）
-                         */
-                        // APIから返ってきた c.qty をそのまま使う
-                        const isRft = c.name.includes("ランフラット");
-                        // RFTなら「入力不可・グレー背景」、それ以外は「入力可」にする
-                        const readonlyAttr = isRft 
-                        ? "readonly style='width: 70px; background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; pointer-events: none;'" 
-                        : "style='width: 70px;'";
+                        const rowClass = (qty == 0) ? 'charge-row-zero text-muted opacity-50' : '';
 
-                        /**
-                         * HTMLの組み立て
-                         * name属性を "charge_qtys[マスターID_行番号]" 形式に設定
-                         */
-                        // valueに APIから返った c.qty を確実に入れる
-                        html += `<tr>
-                            <td>${name}</td>
-                            <td class="text-end">${price.toLocaleString()}円</td>
-                            <td class="text-center">
-                                <input type="number"
-                                    min="0" 
-                                    value="${qty}"
-                                    name="charge_qtys[${c.master_id}_${index}]" 
-                                    class="charge-qty-input form-control form-control-sm d-inline-block" 
-                                    data-price="${price}"
-                                    ${readonlyAttr}>
-                                <input type="hidden" 
-                                    name="charge_master_ids[${c.master_id}_${index}]" 
-                                    value="${c.master_id}">
-                            </td>
-                            <td class="text-end charge-subtotal-display">${subtotal.toLocaleString()}円</td>
-                        </tr>`;
+                        html += `
+                            <tr class="charge-row ${rowClass}">
+                                <td>${c.name}</td>
+                                <td class="text-end">${Number(c.price).toLocaleString()}円</td>
+                                <td class="text-center">
+                                    <input type="number" min="0" value="${qty}"
+                                        name="charge_qtys[${key}]" 
+                                        class="charge-qty-input form-control form-control-sm d-inline-block" 
+                                        style="width: 70px;"
+                                        data-price="${c.price}"
+                                        data-row-idx="${c.row_idx ?? 0}"
+                                        ${readonlyAttr}>
+                                    <input type="hidden" name="charge_master_ids[]" value="${c.master_id}">
+                                </td>
+                                <td class="text-end charge-subtotal-display">${(qty * c.price).toLocaleString()}円</td>
+                            </tr>`;
                     });
-
-                    // 組み立てたHTMLをテーブルへ流し込む
                     $container.html(html);
                 } else {
-                    $container.html('<tr><td colspan="4" class="text-center text-muted">諸費用データがありません</td></tr>');
+                    $container.html('<tr><td colspan="4" class="text-center text-muted py-3">タイヤを選択すると工賃が自動計算されます</td></tr>');
                 }
-
-                /**
-                 * 見積書全体の「総計（税込）」を再計算
-                 */
-                finalTotalUpdateOnly();
-
-                console.log("✅ 諸費用テーブルの描画が完了しました（Index付き）");
+                
+                finalTotalUpdateOnly(); 
             },
-
             error: function(xhr) {
                 console.error("API Error:", xhr.responseText);
             }
         }); 
-    } // 🎯 updateEstimateCharges 終了
-
-    // リアルタイム連動のトリガー
-    // 工賃などの数量が変わったら、即座にAPIを叩いてRFT加算なども再計算させる
-    $(document).on('input', '.charge-qty-input', function() {
-        updateEstimateCharges();
-    });
-
+    }
 
     // ==========================================
-    // --- 4章：タイヤ明細の行計算 (calculateRow) ---
+    // --- 4章：タイヤ明細の行計算 ＆ 行追加 ---
     // ==========================================
+    
     /**
-     * 特定のタイヤ明細行（tr）の小計を計算する
+     * 特定のタイヤ明細行（tr）の小計を算出
      */
     function calculateRow($row) {
-        // 数量と単価を取得
-        const qty = parseInt($row.find('input[name$="-quantity"]').val()) || 0;
-        const priceText = $row.find('.js-unit-price').text().replace(/[^\d]/g, '');
-        const price = parseInt(priceText) || 0;
-
-        // 小計を算出
-        const subtotal = qty * price;
-
-        // 画面の小計表示を更新
-        $row.find('.js-subtotal').text(subtotal.toLocaleString() + "円");
-
-        // 🎯 タイヤの数量が変わったので、諸費用も再計算させる
+        // 2章の新しい updateTireInfo に処理を委譲
+        updateTireInfo($row);
+        // バリデーションと諸費用の更新へ
         updateGrandTotalWithCharges();
     }
 
-
-    // ==========================================
-    // --- 4章：Formset動的行追加（プロ仕様） ---
-    // ==========================================
     /**
-     * 新しい明細行を追加する。Django Formsetの仕様(TOTAL_FORMS管理)を厳守
+     * Django Formsetの仕様に準拠した動的行追加
      */
     function addFormsetRow() {
         const $totalForms = $('#id_items-TOTAL_FORMS');
@@ -282,163 +232,203 @@ $(function() {
         const $newRow = $firstRow.clone(true); 
 
         $newRow.find('input, select').each(function() {
-            const $el = $(this);
-            const name = $el.attr('name');
-            const id = $el.attr('id');
-
-            if (name) $el.attr('name', name.replace(/-\d+-/, `-${formCount}-`));
-            if (id) $el.attr('id', id.replace(/-\d+-/, `-${formCount}-`));
-
-            if ($el.is('select')) {
-                $el.prop('selectedIndex', 0);
-            } else if ($el.attr('type') === 'checkbox') {
-                $el.prop('checked', false);
-            } else {
-                $el.val('');
-            }
+            const name = $(this).attr('name');
+            const id = $(this).attr('id');
+            if (name) $(this).attr('name', name.replace(/-\d+-/, `-${formCount}-`));
+            if (id) $(this).attr('id', id.replace(/-\d+-/, `-${formCount}-`));
+            $(this).val(""); 
         });
 
-        $newRow.find('.js-unit-price, .js-set-price, .js-subtotal').text('0'); 
-        $newRow.data('unit-price', 0).data('set-price', 0); 
+        // 初期表示をリセット
+        $newRow.find('.js-unit-price, .js-set-price, .js-subtotal, .unit-price-display, .special-price-display, .item-subtotal-display').text('---'); 
+        $newRow.find('.item-subtotal-display').data('value', 0);
 
         $('.formset-row').last().after($newRow);
-        $totalForms.val(formCount + 1);
-        
+        $totalForms.val(formCount + 1); 
         updateGrandTotalWithCharges();
     }
-
 
     // ==========================================
     // --- 5章：総合計 ＆ バリデーション統合 ---
     // ==========================================
+    
     /**
-     * 画面上の全ての金額を合算し、同時にビジネスルール（本数制限など）をチェックする
+     * 画面上の全数値を合算し、業務ルール（制限）をチェックする重要関数
      */
     function updateGrandTotalWithCharges() {
-        let tireTotal = 0;
         let totalQty = 0;
         let tireTypes = new Set();
 
-        // A. タイヤ代の集計
-        $('.formset-row').not('.empty-form').each(function() {
-            const subtotalText = $(this).find('.js-subtotal').text().replace(/[^\d]/g, '');
-            tireTotal += parseFloat(subtotalText) || 0;
-
+        // 可視状態（削除されていない）のタイヤ行をスキャン
+        $('.formset-row:visible').not('.empty-form').each(function() {
             const qty = parseInt($(this).find('input[name$="-quantity"]').val(), 10) || 0;
             const tireId = $(this).find('select[name$="-tire"]').val();
-
-            if (tireId && tireId.trim() !== "" && qty > 0) {
+            if (tireId && qty > 0) {
                 totalQty += qty;
                 tireTypes.add(tireId);
             }
         });
 
-        // B. 諸費用の集計
-        let chargeTotal = 0;
-        $('.charge-subtotal-display').each(function() {
-            const txt = $(this).text().replace(/[^\d]/g, '');
-            chargeTotal += parseFloat(txt) || 0;
-        });
-
-        const finalTotal = tireTotal + chargeTotal;
-
-        // C. バリデーション判定
+        // 購入区分のテキストまたはIDを取得して判定
         const purchaseTypeText = $('select[name="purchase_type"] option:selected').text() || "";
+        const purchaseVal = $('#id_purchase_type').val() || $('select[name="purchase_type"]').val();
         let errorMsg = "";
 
-        if (purchaseTypeText.includes("交換") && totalQty > 0) {
+        // 🎯 業務バリデーション：交換作業時のルール（value="exchange" または テキストに"交換"を含む場合）
+        if ((purchaseVal === "exchange" || purchaseTypeText.includes("交換")) && totalQty > 0) {
             if (totalQty > 8) {
                 errorMsg = `【本数制限エラー】現在 ${totalQty} 本選択中です。交換作業ご希望の場合は、最大8本までにしてください。`;
-            } else if (tireTypes.size > 2) {
-                errorMsg = `【台数制限エラー】現在 ${tireTypes.size} サイズ選択中です。交換作業ご希望の場合は、1台分（前後サイズ違いのお車など、最大2サイズ選択可能）までにしてください。`;
+            } 
+            else if (tireTypes.size > 2) {
+                errorMsg = `【台数制限エラー】現在 ${tireTypes.size} 種類のタイヤが選択されています。交換作業ご希望の場合は、1台分(前後サイズ違いのお車など、最大2サイズ選択可能)までにしてください。`;
             }
         }
 
-        // D. 画面表示への反映
-        const isOk = updateGrandTotalDisplay(finalTotal, errorMsg);
-
-        // エラーがなく、かつタイヤが選択されている場合のみ、諸費用APIを叩きにいく
-        // ※updateEstimateChargesDebounced はグローバル等で定義されている前提
-        if (isOk && totalQty > 0) {
-            if (typeof updateEstimateChargesDebounced === 'function') {
-                updateEstimateChargesDebounced();
-            } else {
-                updateEstimateCharges();
-            }
+        const isOk = updateGrandTotalDisplay(errorMsg);
+        
+        // 🎯 【復活】エラーがない場合のみ諸費用を再計算する
+        if (isOk) {
+            updateEstimateChargesDebounced();
+        } else {
+            // エラーがある場合は諸費用を隠すか薄くする
+            $('#js-charges-container').css('opacity', '0.5');
         }
+        return isOk;
     }
 
     /**
-     * API更新後などに、純粋に画面上の数値を合計して表示する補助関数
+     * 表示の最終合算と保存ボタンの制御
      */
     function finalTotalUpdateOnly() {
         let total = 0;
-        $('.js-subtotal, .charge-subtotal-display').each(function() {
+        // タイヤの小計と諸費用の小計をすべて集計
+        $('.js-subtotal, .item-subtotal-display, .charge-subtotal-display').each(function() {
             const txt = $(this).text().replace(/[^\d]/g, '');
             total += parseFloat(txt) || 0;
         });
-        $('#js-grand-total').attr('data-total', total).text(total.toLocaleString() + "円");
+        $('#js-grand-total').text(total.toLocaleString() + "円");
     }
 
-
-    // ==========================================
-    // --- 6章：表示制御 ＆ 監視 ---
-    // ==========================================
-    function updateGrandTotalDisplay(finalTotal, errorMsg) {
+    function updateGrandTotalDisplay(errorMsg) {
         const $msgArea = $('#validation-error-msg');
-        const $totalDisplay = $('#js-grand-total');
-        const $btn = $('button[type="submit"]');
-
-        $totalDisplay.attr('data-total', finalTotal).text(finalTotal.toLocaleString() + "円");
-
+        finalTotalUpdateOnly();
+        
         if (errorMsg) {
+            // エラー表示を出し、送信ボタンを隠す
+            if ($msgArea.length === 0) {
+                // メッセージエリアがない場合は動的に作成
+                $('.tire-table').before('<div id="validation-error-msg" class="alert alert-danger"></div>');
+                return updateGrandTotalDisplay(errorMsg); // 再帰呼び出し
+            }
             $msgArea.text(errorMsg).addClass('bg-danger').show();
-            $btn.hide();
+            $('button[type="submit"]').hide(); 
             return false;
         } else {
-            $msgArea.hide().text("");
-            $btn.show();
+            $msgArea.hide();
+            $('button[type="submit"]').show(); 
+            $('#js-charges-container').css('opacity', '1');
             return true;
         }
     }
 
-    /**
-     * ユーザー操作のイベントリスナー設定
-     */
-    // タイヤ選択の変更時
-    $(document).on('change', 'select[name$="-tire"]', function() {
-        isManualEditing = false; 
-        if (typeof updateTireInfo === 'function') {
-            updateTireInfo($(this).closest('tr'));
-        }
-    });
+    // ===================================================
+    // --- 6章：ユーザー操作の監視（イベントリスナー） ---
+    // ===================================================
 
-    // 数量の変更時
-    $(document).on('input change', 'input[name$="-quantity"]', function() {
-        isManualEditing = false; 
-        calculateRow($(this).closest('tr'));
-    });
+    $(document).ready(function() {
+        console.log("🚀 見積計算JS: 初期化開始");
 
-    // 購入区分の変更時
-    $(document).on('change', 'select[name="purchase_type"]', function() {
-        isManualEditing = false;
+        // ページ読み込み時に初回バリデーションと計算を実行
         updateGrandTotalWithCharges();
+
+        /**
+        * 1. タイヤの種類・本数・購入区分が変わった時の連動
+        */
+        $(document).on('change', 'select[name$="-tire"], input[name$="-quantity"], select[name="purchase_type"], #id_purchase_type', function() {
+            console.log("🔄 タイヤ構成の変更を検知しました");
+            
+            const $row = $(this).closest('tr');
+            
+            // ① 金額表示の更新
+            if ($row.hasClass('formset-row')) {
+                updateTireInfo($row); 
+            }
+
+            // ② 諸費用の手動ロックをリセット
+            manualEditedKeys.clear(); 
+        
+            // ③ バリデーション実行（この中で諸費用の再計算APIが呼ばれる）
+            updateGrandTotalWithCharges();
+        });
+
+        /**
+        * 2. 諸費用の数量を手入力した際のロック処理
+        */
+        $(document).on('input', '.charge-qty-input', function() {
+            const name = $(this).attr('name');
+            const keyMatch = name ? name.match(/\[(.*?)\]/) : null;
+        
+            if (keyMatch) {
+                const fullKey = keyMatch[1];
+                manualEditedKeys.add(fullKey); 
+                console.log("🛠 手動編集（行単位ロック）:", fullKey);
+            }
+
+            const $row = $(this).closest('tr');
+            const qty = parseFloat($(this).val()) || 0;
+            const price = parseFloat($(this).data('price')) || 0;
+
+            $row.find('.charge-subtotal-display').text((qty * price).toLocaleString() + "円");
+        
+            if (qty == 0) {
+                $row.addClass('charge-row-zero text-muted opacity-50');
+            } else {
+                $row.removeClass('charge-row-zero text-muted opacity-50');
+            }
+
+            finalTotalUpdateOnly(); 
+            updateEstimateChargesDebounced();
+        });
+
+        /**
+        * 3. 行追加・削除ボタンのイベント
+        */
+        $('#add-row-btn').on('click', function(e) { 
+            e.preventDefault(); 
+            addFormsetRow(); 
+        });
+
+        /**
+         * 4. フォーム送信時の最終防衛ライン
+         */
+        $('form').on('submit', function(e) {
+            if (!updateGrandTotalWithCharges()) {
+                e.preventDefault();
+                alert("タイヤ構成にエラーがあるため、見積を確定できません。");
+            }
+        });
+
+        console.log("✅ 全イベントリスナーの登録完了");
     });
 
-    // 明細行の追加ボタン
-    $(document).on('click', '#add-row-btn', function(e) {
-        e.preventDefault();
-        addFormsetRow();
-    });
+    // ==========================================
+    // --- 7章：タイヤ行削除（Formset対応） ---
+    // ==========================================
+    $(document).on('click', '.delete-tire-row', function() {
+        if ($('.formset-row:visible').length <= 1) {
+            alert("最低1行は残してください。");
+            return;
+        }
 
-    // 工賃数量の手動変更時
-    $(document).on('input change', '.charge-qty-input', function() {
-        isManualEditing = true; 
-        console.log("🛠 手動編集モードON");
-        const qty = parseFloat($(this).val()) || 0;
-        const price = parseFloat($(this).data('price')) || 0;
-        $(this).closest('tr').find('.charge-subtotal-display').text((qty * price).toLocaleString() + "円");
-        finalTotalUpdateOnly();
-    });
+        const $row = $(this).closest('.formset-row');
+        const $deleteInput = $row.find('input[type="checkbox"][name$="-DELETE"]');
+        if ($deleteInput.length) $deleteInput.prop('checked', true);
 
+        $row.hide(); 
+        $row.find('input[name$="-quantity"]').val(0); 
+        
+        manualEditedKeys.clear(); 
+        updateGrandTotalWithCharges();
+        console.log("🗑 行を削除し、再計算を実行しました");
+    });
 });
