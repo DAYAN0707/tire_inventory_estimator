@@ -3,20 +3,20 @@
 
 {% block content %}
 <style>
-/* 画面表示用のスタイル */
+/* --- 画面表示・印刷制御スタイル --- */
 .charge-row-zero {
-    /* 数量0の時に薄くする */
+    /* 数量0の時に薄くして、入力不要であることを示す */
     opacity: 0.5;
-    background-color: #f8f9fa; /* ほんのりグレー */
+    background-color: #f8f9fa; 
 }
 
-/* 🎯 印刷用の魔法設定 */
+/* 🎯 印刷・PDF出力用の設定 */
 @media print {
-    /* 数量0の諸費用行を紙面（印刷・PDF）から完全に消す */
+    /* 数量0の諸費用行（不要な行）を紙面から完全に消す */
     .charge-row-zero {
         display: none !important;
     }
-    /* 印刷時に薄すぎて消えないように文字色を強制的に黒にする */
+    /* 印刷時に薄すぎて消えないよう、文字色を黒に強制固定 */
     .text-muted, .opacity-50 {
         color: #000 !important;
         opacity: 1 !important;
@@ -31,20 +31,19 @@
     </div>
     <hr>
 
-    {# --- 全体エラーの表示 --- #}
-{# --- 全体エラーの表示エリア --- #}
-{% if form.non_field_errors %}
-<div class="alert alert-danger shadow-sm">
-    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-    {# 文字列として強制変換し、記号を一つずつ削る #}
-    {{ form.non_field_errors.0|stringformat:"s"|cut:"['"|cut:"']"|cut:"'" }}
-</div>
-{% endif %}
+    {# --- サーバーサイド(Django)の全体エラー表示 --- #}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger shadow-sm">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {# エラーメッセージの記号['']を削って綺麗に表示する処理 #}
+        {{ form.non_field_errors.0|stringformat:"s"|cut:"['"|cut:"']"|cut:"'" }}
+    </div>
+    {% endif %}
 
     <form method="post" id="estimate-form">
         {% csrf_token %}
         
-        {# --- 基本情報セクション --- #}
+        {# --- 基本情報セクション（購入区分・顧客名など） --- #}
         <div class="card mb-4 shadow-sm border-0 bg-light">
             <div class="card-body">
                 <div class="row g-3">
@@ -64,92 +63,90 @@
             </div>
         </div>
 
-{# --- タイヤ明細セクション --- #}
-<div class="d-flex align-items-center mb-2">
-    <h4 class="mb-0">タイヤ明細</h4>
-    {# バリデーションエラー（8本制限など）を表示するバッジ。JSからコントロール #}
-    <span id="validation-error-msg" class="badge ms-2" style="display:none;"></span>
-</div>
+        {# --- タイヤ明細セクション --- #}
+        <div class="d-flex align-items-center mb-2">
+            <h4 class="mb-0">タイヤ明細</h4>
+            {# 🎯JSから「台数制限エラー」を表示するためのバッジ #}
+            <span id="tire-validation-error" class="badge bg-danger ms-2" style="display:none;"></span>
+        </div>
 
-{# Django Formsetの門番（現在の行数や初期行数を管理する隠しフィールド） #}
-{# これがないと追加した行が保存されない #}
-{{ tire_formset.management_form }}
+        {# Django Formsetの門番（現在の行数などを管理。これがないと保存に失敗する） #}
+        {{ tire_formset.management_form }}
 
-<div class="table-responsive">
-    <table class="table table-bordered align-middle shadow-sm">
-        <thead class="table-dark">
-            <tr>
-                <th style="width: 40%;">タイヤ商品</th>
-                <th>単価</th>
-                <th>4本特価</th>
-                <th style="width: 15%;">数量</th>
-                <th class="text-center">小計</th>
-                <th style="width: 80px;"></th> </tr>
-        </thead>
-        <tbody>
-            {% for tire_form in tire_formset %}
-            {# JSはこの .formset-row を目印に 1行ずつデータを読み取ります #}
-            {# data-unit-price, data-set-price は計算用の一時保存場所です #}
-            <tr class="formset-row" data-unit-price="0" data-set-price="0">
-                <td>
-                    {# 既存データの更新に必須の隠しフィールド（idやDELETE用など）を表示 #}
-                    {% for hidden in tire_form.hidden_fields %}
-                        {{ hidden }}
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle shadow-sm tire-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 40%;">タイヤ商品</th>
+                        <th>単価</th>
+                        <th>4本特価</th>
+                        <th style="width: 15%;">数量</th>
+                        <th class="text-center">小計</th>
+                        <th style="width: 80px;"></th> 
+                    </tr>
+                </thead>
+                <tbody id="tire-formset-body">
+                    {% for tire_form in tire_formset %}
+                    {# JSはこの .formset-row を目印にデータを収集 #}
+                    <tr class="formset-row" data-unit-price="0" data-set-price="0">
+                        <td>
+                            {# 隠しフィールド：idや、削除フラグ(DELETE)用。Formsetには必須 #}
+                            {% for hidden in tire_form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+                            
+                            {# タイヤ選択。JS側で取得しやすいようクラス付与済みを想定 #}
+                            {{ tire_form.tire }}
+                            
+                            {% if tire_form.tire.errors %}
+                                <div class="text-danger small">{{ tire_form.tire.errors.0 }}</div>
+                            {% endif %}
+                        </td>
+                        
+                        {# 単価表示：JSが値を自動で流し込む #}
+                        <td class="text-end text-nowrap">
+                            <span class="js-unit-price text-muted">-</span>
+                        </td>
+                        
+                        {# 4本特価表示：JSが値を自動で流し込む #}
+                        <td class="text-end text-nowrap">
+                            <span class="js-set-price text-muted">-</span>
+                        </td>
+                        
+                        {# 数量入力 #}
+                        <td>
+                            {{ tire_form.quantity }}
+                            {% if tire_form.quantity.errors %}
+                                <div class="text-danger small">{{ tire_form.quantity.errors.0 }}</div>
+                            {% endif %}
+                        </td>
+
+                        {# 行ごとの小計表示エリア #}
+                        <td class="text-end font-monospace fw-bold text-nowrap">
+                            <span class="js-subtotal">0</span>円
+                        </td>
+
+                        <td class="text-center">
+                            {# 🎯JSからDELETEフラグを確実にONにできるよう、name$="-DELETE" を持つこのフィールドが重要 #}
+                            <div style="display:none;">{{ tire_form.DELETE }}</div>
+                            <button type="button" class="btn btn-outline-danger btn-sm delete-tire-row" title="行を削除">
+                                <i class="bi bi-trash"></i> 削除
+                            </button>
+                        </td>
+                    </tr>
                     {% endfor %}
-                    
-                    {# タイヤ選択プルダウン #}
-                    {{ tire_form.tire }}
-                    
-                    {# バリデーションエラー（個別）がある場合に表示 #}
-                    {% if tire_form.tire.errors %}
-                        <div class="text-danger small">{{ tire_form.tire.errors.0 }}</div>
-                    {% endif %}
-                </td>
-                
-                {# 単価表示エリア：JSが値を書き換えます #}
-                <td class="text-end text-nowrap">
-                    <span class="js-unit-price text-muted">-</span>
-                </td>
-                
-                {# 4本特価表示エリア：JSが値を書き換えます #}
-                <td class="text-end text-nowrap">
-                    <span class="js-set-price text-muted">-</span>
-                </td>
-                
-                {# 数量入力エリア #}
-                <td>
-                    {{ tire_form.quantity }}
-                    {% if tire_form.quantity.errors %}
-                        <div class="text-danger small">{{ tire_form.quantity.errors.0 }}</div>
-                    {% endif %}
-                </td>
-{# --- 100行目付近 --- #}
-{# 行ごとの小計表示エリア #}
-<td class="text-end font-monospace fw-bold text-nowrap">
-    <span class="js-subtotal">0</span>円
-</td>
+                </tbody>
+            </table>
+        </div>
 
-                <td class="text-center">
-                    {# DjangoのFormset削除機能に必須の隠しフィールド #}
-                    <div style="display:none;">{{ tire_form.DELETE }}</div>
-                    <button type="button" class="btn btn-outline-danger btn-sm delete-tire-row" title="行を削除">
-                        <i class="bi bi-trash"></i> 削除
-                    </button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+        {# 明細行追加ボタン #}
+        <div class="mb-4">
+            <button type="button" class="btn btn-outline-primary btn-sm" id="add-row-btn">
+                <i class="bi bi-plus-circle me-1"></i>明細行を追加
+            </button>
+        </div>
 
-{# 行追加ボタン：JS側のID名 #add-row-btn と一致させる#}
-<div class="mb-4">
-    <button type="button" class="btn btn-outline-primary btn-sm" id="add-row-btn">
-        <i class="bi bi-plus-circle me-1"></i>明細行を追加
-    </button>
-</div>
-
-        {# --- 諸費用・工賃セクション --- #}
+        {# --- 諸費用・工賃セクション（APIによる動的更新エリア） --- #}
         <div class="mt-5">
             <h4 class="border-bottom pb-2">諸費用・工賃（自動計算）</h4>
             <table class="table table-hover mt-3">
@@ -162,11 +159,11 @@
                     </tr>
                 </thead>
 
-                {# JSが計算結果（HTML）をここに流し込む #}
-                <tbody id="js-charges-container" data-state="empty">
+                {# JSが計算結果（API Response）をここに流し込む #}
+                <tbody id="js-charges-container">
                     <tr id="charges-placeholder">
                         <td colspan="4" class="text-muted text-center py-3 small">
-                            タイヤを選択し数量を入力すると、工賃が自動計算されます
+                            タイヤを選択し数量を入力すると、工賃が自動計算される
                         </td>
                     </tr>
                 </tbody>
@@ -175,29 +172,31 @@
                     <tr class="table-primary fs-3">
                         <td colspan="3" class="text-end fw-bold">総合計（税込）</td>
                         <td class="text-end font-monospace fw-bold">
-                            <span id="js-grand-total" data-total="0">0</span>
+                            <span id="js-grand-total">0</span>
                         </td>
                     </tr>
                 </tfoot>
             </table>
         </div>
 
+        {# --- 送信アクションセクション --- #}
         <div class="mt-5 mb-5">
-            <button type="submit" class="btn btn-primary btn-lg w-100 shadow py-3">
+            {# 🎯JSから表示/非表示・文言変更を行うため、id="submit-btn" を付与 #}
+            <button type="submit" id="submit-btn" class="btn btn-primary btn-lg w-100 shadow py-3">
                 <i class="bi bi-save me-2"></i>見積を保存する
             </button>
         </div>
     </form>
 </div>
 
-{# --- JavaScript用データ --- #}
+{# --- JavaScript用マスタデータ（タイヤの価格情報をJSONで渡す） --- #}
 <script id="tire-master-data" type="application/json">
 {{ tires_json|safe }}
 </script>
-{% endblock %} {# --- contentブロック終了 --- #}
+{% endblock %}
 
-{# --- base.html の最後にある {% block extra_js %} に流し込む --- #}
 {% block extra_js %}
+{# jQueryと自作JSファイルの読み込み。base.htmlの最後に出力される #}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="{% static 'js/estimate_calculator.js' %}"></script>
 {% endblock %}

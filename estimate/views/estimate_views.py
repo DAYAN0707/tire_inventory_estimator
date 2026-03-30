@@ -3,28 +3,25 @@ from django.views.generic import ListView, CreateView, DetailView
 from django.forms import inlineformset_factory
 from django.urls import reverse
 from django.shortcuts import redirect
-from django import forms
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 
 from inventory.models import Tire
 from ..models import Estimate, EstimateItem, EstimateStatus
 from ..forms import EstimateTireForm
 from ..services.usecase import EstimateUseCase
 
-# ユーザーモデルを取得（カスタムユーザーにも対応できる標準的な書き方）
+# ユーザーモデルを取得
 User = get_user_model()
 
 # ==========================================
 # 1. フォームセットの設定
 # ==========================================
-# Estimate（親）と EstimateItem（子）を1つの画面で扱うための魔法のセット
 EstimateTireFormSet = inlineformset_factory(
     Estimate,       # 親モデル
     EstimateItem,   # 子モデル
-    form=EstimateTireForm, # 各行に使用するフォーム
-    extra=1,        # 最初から表示しておく空行の数
-    can_delete=True # 行の削除を許可
+    form=EstimateTireForm, 
+    extra=1,        
+    can_delete=True # 🎯 重要：JS側の削除ボタンと連動するために必須
 )
 
 class EstimateListView(ListView):
@@ -32,73 +29,67 @@ class EstimateListView(ListView):
     model = Estimate
     template_name = 'estimate/estimate_list.html'
     context_object_name = 'estimates'
-    ordering = ['-created_at'] # 新しい順に並べる
+    ordering = ['-created_at']
 
 class EstimateCreateView(CreateView):
     """見積を新規作成するView"""
     model = Estimate
     template_name = "estimate/estimate_form.html"
-    # 画面に表示する「見積本体」の項目
     fields = ["purchase_type", "customer_name", "vehicle_name"]
 
-    # --- [保存成功後の処理] ---
-    # 保存が成功した後に、作成された見積の詳細画面(pk)へ自動で飛ばす
     def get_success_url(self):
         return reverse('estimate:estimate_detail', kwargs={'pk': self.object.pk})
 
-    # --- [画面に渡すデータの準備] ---
-    # HTMLテンプレートで使いたい変数（tires_jsonやformset）をセットする
     def get_context_data(self, **kwargs):
-        # 親クラスの標準的なcontextを取得
         context = super().get_context_data(**kwargs)
         
-        # タイヤのマスタデータを取得してJSに渡す（フロントでの単価・小計計算用）
-        tires_list = list(
-            Tire.objects.values("id", "unit_price", "set_price")
-        )
+        # タイヤのマスタデータをJSに渡す
+        tires_list = list(Tire.objects.values("id", "unit_price", "set_price"))
         context["tires_json"] = json.dumps(tires_list)
 
-        # 画面に表示する「タイヤ明細（フォームセット）」を準備
+        # フォームセットの準備
         if self.request.POST:
-            # 保存ボタンが押された時（入力データがある時）
             context['tire_formset'] = EstimateTireFormSet(self.request.POST)
         else:
-            # 最初に画面を開いた時（空のフォームを表示する時）
             context['tire_formset'] = EstimateTireFormSet()
-
         return context
 
-    # --- [保存ボタンが押された時のバリデーションと実行] ---
-    # フォームの入力内容に問題がなければ、この関数が呼ばれる
+    # --- [保存ボタンが押された時の処理] ---
     def form_valid(self, form):
-        # get_context_dataを呼び出して、現在のフォームセットの状態を取得
         context = self.get_context_data()
         tire_formset = context['tire_formset']
+        purchase_type = form.cleaned_data.get('purchase_type')
 
-        # 1. タイヤ明細（フォームセット）の入力チェック（必須項目漏れなどがないか）
+        # 1. タイヤ明細の入力チェック
         if tire_formset.is_valid():
             try:
-                # 親モデル（Estimate）のインスタンスを「保存直前」の状態で生成
+                # 🎯 修正2 & 3：サーバー側でのバリデーション（削除・数量0の除外と台数制限）
+                valid_items_count = 0
+                for tire_form in tire_formset:
+                    # 削除フラグがON、または数量が0（空欄含む）のデータはカウントしない
+                    if tire_form.cleaned_data.get('DELETE') or tire_form.cleaned_data.get('quantity', 0) == 0:
+                        continue
+                    valid_items_count += 1
+
+                # 交換作業ありの場合のみ、2種類制限をかける（持ち帰りはスルー）
+                if purchase_type == 'exchange' and valid_items_count > 2:
+                    form.add_error(None, "【台数制限】交換作業ありの場合、タイヤは2種類までです。")
+                    return self.render_to_response(self.get_context_data(form=form))
+
+                # --- 基本情報の準備 ---
                 estimate = form.save(commit=False)
                 
-                # --- ✅ 作成者（created_by）のセットロジック ---
-                # ログイン状態によってセットするユーザーを切り替える（IntegrityError対策）
+                # 作成者セット（安全策込み）
                 if self.request.user.is_authenticated:
-                    # ログイン中ならそのユーザーをセット
                     estimate.created_by = self.request.user
                 else:
-                    # 未ログインならDB内の「最初の一人（管理者等）」を自動割り当て
-                    # 開発環境やログイン機能未実装時でも保存を止めないための安全策
                     first_user = User.objects.first()
-                    if first_user:
-                        estimate.created_by = first_user
-                    else:
-                        # ユーザーが一人もいない致命的な状況
+                    if not first_user:
                         form.add_error(None, "ユーザーが登録されていないため保存できません。")
                         return self.render_to_response(self.get_context_data(form=form))
+                    estimate.created_by = first_user
 
-                # --- 2. ステータスの初期値セット ---
-                # マスタから「作成中」を取得。なければエラーを表示。
+                # ステータスセット
                 try:
                     status_draft = EstimateStatus.objects.get(status_name='作成中')
                     estimate.estimate_status = status_draft
@@ -106,21 +97,24 @@ class EstimateCreateView(CreateView):
                     form.add_error(None, "マスタに '作成中' というステータスが必要です。")
                     return self.render_to_response(self.get_context_data(form=form))
                 
-                # --- 👐 手入力データの解析（諸費用テーブルから集約） ---
-                # JS側で input name="charge_qtys[ID_Index]" となっている値を辞書にまとめる
+                # --- 🎯 修正1：手入力された諸費用データの収集 ---
+                # JSのsubmitイベントで作られた hidden input (charge_qtys[...]) をすべて拾う
                 manual_dict = {}
                 for key, val in self.request.POST.items():
                     if key.startswith("charge_qtys["):
-                        # "charge_qtys[4_0]" -> "4_0" というキーを取り出す
+                        # キーの整形: "charge_qtys[4_0]" -> "4_0"
                         manual_key = key.replace("charge_qtys[", "").replace("]", "")
+                        # 値が存在する場合のみ整数として格納
                         if val is not None and val != "":
-                            manual_dict[manual_key] = int(val)
+                            try:
+                                manual_dict[manual_key] = int(val)
+                            except ValueError:
+                                continue
 
-                # デバッグ：サーバー側のターミナルで手入力内容を確認できる
-                print(f"DEBUG: 受信した手入力データ -> {manual_dict}")
+                print(f"DEBUG: サーバー受信(手入力諸費用) -> {manual_dict}")
 
-                # --- 3. 【心臓部】UseCaseの呼び出し ---
-                # 計算ロジック（ランフラット判定や合計計算など）を実行し、最終的なDB保存を行う
+                # --- 3. UseCaseの呼び出し ---
+                # 最終的な保存処理。manual_dataに手入力値が渡され、UseCase内で計算結果を上書きします。
                 self.object = EstimateUseCase.create_estimate(
                     estimate_instance=estimate,
                     tire_formset=tire_formset,
@@ -128,15 +122,12 @@ class EstimateCreateView(CreateView):
                     manual_data=manual_dict
                 )
                 
-                # 全て完了したら詳細画面へリダイレクト
                 return redirect(self.get_success_url())
 
             except Exception as e:
-                # UseCase内や保存処理でエラーが出た場合のキャッチ
                 form.add_error(None, f"システムエラーが発生しました: {str(e)}")
                 return self.render_to_response(self.get_context_data(form=form))
         else:
-            # タイヤ明細（フォームセット）の入力内容に不備がある場合
             return self.render_to_response(self.get_context_data(form=form))
 
 class EstimateDetailView(DetailView):

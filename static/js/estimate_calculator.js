@@ -13,6 +13,8 @@
 // 🔥 修正の本質：どの項目を手入力したかをキー単位（masterId_rowIndex）で記録する
 let manualEditedKeys = new Set(); 
 let chargeUpdateTimer; // Debounce（連打防止）用のタイマー
+let logCounter = 0;    // 💥 修正②：console暴走対策用のログカウンター
+let isInitialLoad = true; // 🚀 修正：初回ロード時のAPIループ防止フラグ
 
 console.log("★★★ JSファイル読み込み成功！ ★★★");
 
@@ -78,11 +80,11 @@ $(function() {
             const $specialPriceCell = $row.find('.js-set-price, .special-price-display');
             $specialPriceCell.text(setPrice ? Number(setPrice).toLocaleString() + "円" : "---");
             
-            // 3. 小計表示を更新（「円」バグ対策として、ここでは数値と単位を整理）
+            // 3. 小計表示を更新
             const $subtotalCell = $row.find('.js-subtotal, .item-subtotal-display');
             $subtotalCell.text(subtotal.toLocaleString());
             
-            // 🎯 【重要】計算に使った数値をdata属性に保持（後で総合計の計算時に集計するため）
+            // 🎯 【重要】✅ 修正①：計算結果をdata属性に保持（後で総合計の計算時に高速集計するため）
             $subtotalCell.data('value', subtotal);
             
             console.log(`✅ 行計算完了: ID=${tireId}, 数量=${qty}, 小計=${subtotal}`);
@@ -91,19 +93,16 @@ $(function() {
             $row.find('.js-unit-price, .unit-price-display, .js-set-price, .special-price-display, .js-subtotal, .item-subtotal-display').text("---");
             $row.find('.js-subtotal, .item-subtotal-display').data('value', 0);
         }
-        
-        // 🎯 タイヤの金額が変わったので、最後に総合計（タイヤ＋諸費用）を再計算
-        if (typeof finalTotalUpdateOnly === 'function') {
-            finalTotalUpdateOnly();
-        }
     }
 
     // ==========================================
     // --- 3章：諸費用計算ロジック（IDベース・安定版） ---
     // ==========================================
-    
+    let isUpdatingCharges = false; // 🔄 無限ループ防止用フラグ
+
     /**
      * 🔥 入力連打でAPIが火を吹かないよう制御（Debounce）
+     * 数量を「4」に打ち込む際、「4」への変更1回だけを拾うように200ms待機する
      */
     function updateEstimateChargesDebounced() {
         clearTimeout(chargeUpdateTimer);
@@ -113,56 +112,73 @@ $(function() {
     }
 
     /**
-     * 諸費用の計算・再描画を行うメイン関数
+     * 諸費用・工賃をAPI経由で更新する（セレクタ強化版）
      */
     function updateEstimateCharges() {
-        let chargeDict = {};
-        let totalWorkQty = 0; 
-
-        $('.charge-qty-input').each(function() {
-            const name = $(this).attr('name');
-            const qtyStr = $(this).val();
-            const qty = parseInt(qtyStr, 10) || 0;
-
-            if (name) {
-                const keyMatch = name.match(/\[(.*?)\]/); 
-                if (keyMatch) {
-                    const key = keyMatch[1];
-                    chargeDict[key] = (qtyStr === "") ? "0" : qtyStr;
-                    if ($(this).closest('tr').find('td:first').text().includes("工賃")) {
-                        totalWorkQty += qty;
-                    }
-                }
-            }
-        });
-
-        const isFirstLoad = Object.keys(chargeDict).length === 0;
+        // 🎯 修正：無限ループ防止
+        if (isUpdatingCharges) return;
+        isUpdatingCharges = true;
 
         const items = [];
-        $('.formset-row:visible').not('.empty-form').each(function() {
-            const tireId = $(this).find('select[name$="-tire"]').val();
-            const quantity = parseInt($(this).find('input[name$="-quantity"]').val(), 10) || 0;
-            if (tireId) {
-                items.push({ tire_id: tireId, quantity: quantity });
+        const chargeQtysForApi = {}; 
+
+        // 💥 修正：API側でエラー表示を勝手に隠さない（表示管理は5章に一任）
+        const $submitBtn = $('#submit-btn');               
+
+        // 💥 問題③：購入区分の判定強化
+        const purchaseVal = $('#id_purchase_type').val() || $('select[name="purchase_type"]').val() || "";
+        const isExchange = String(purchaseVal).toLowerCase() === 'install' || purchaseVal == '1' || purchaseVal == 'exchange';
+        
+        if (logCounter % 20 === 0) console.log("🔍 purchaseVal 最終判定(isExchange):", isExchange);
+
+        // 🎯 manualEditedKeys から現在の画面上の手動編集値を収集
+        if (typeof manualEditedKeys !== 'undefined') {
+            manualEditedKeys.forEach(key => {
+                const $input = $(`input[name="charge_qtys[${key}]"]`);
+                if ($input.length) chargeQtysForApi[key] = $input.val();
+            });
+        }
+    
+        $('.formset-row').not('.empty-form').each(function() {
+            if ($(this).find('input[name$="-DELETE"]').prop('checked')) return; 
+
+            const tireId = $(this).find('.js-tire-select').val();
+            const qty = parseInt($(this).find('.js-quantity-input').val(), 10) || 0;
+
+            // 💥 修正：API送信用データ（タイヤが選ばれていれば追加）
+            if (tireId && tireId !== "") {
+                items.push({ tire_id: tireId, quantity: qty });
             }
         });
 
+        // 🎯 種類エラー判定（API計算前に即座に出す）
+        if (isExchange && items.length > 2) {
+            updateGrandTotalWithCharges(); 
+            $('#js-charges-container').html('<tr><td colspan="4" class="text-center text-muted py-3">種類を減らしてください</td></tr>');
+            isUpdatingCharges = false; 
+            return;
+        }
+
+        if (items.length === 0) {
+            console.log("⚠️ itemsが空です。計算をスキップします。");
+            $('#js-charges-container').html('<tr><td colspan="4" class="text-center text-muted py-3">タイヤを選択すると工賃が自動計算されます</td></tr>');
+            finalTotalUpdateOnly();
+            isUpdatingCharges = false; 
+            return; 
+        }
+
+        // 2. API呼び出し
         $.ajax({
-            url: '/estimate/api/calculate-charges/',
-            type: 'POST',
+            url: '/estimate/api/calculate-charges/', 
+            method: 'POST',
             contentType: 'application/json',
             headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
-            data: JSON.stringify({ 
-                items: items, 
-                purchase_type: $('#id_purchase_type').val() || $('select[name="purchase_type"]').val(),
-                charge_qtys: isFirstLoad ? null : chargeDict,
-                total_work_qty: isFirstLoad ? null : totalWorkQty 
-            }),
+            data: JSON.stringify({ items: items, purchase_type: purchaseVal, charge_qtys: chargeQtysForApi }),
             success: function(response) {
-                console.log("★★★ API Response ★★★", response.charges);
                 const $container = $('#js-charges-container');
-                if ($container.length === 0) return;
+                if ($container.length === 0) { isUpdatingCharges = false; return; }
 
+                isUpdatingCharges = true;
                 $container.empty();
 
                 if (response.charges && response.charges.length > 0) {
@@ -170,72 +186,48 @@ $(function() {
                     response.charges.forEach(function(c) { 
                         const key = `${c.master_id}_${c.row_idx ?? 0}`;
                         const $existing = $(`input[name="charge_qtys[${key}]"]`);
-                        
-                        let qty;
-                        if (manualEditedKeys.has(key) && $existing.length) {
-                            qty = $existing.val(); 
-                        } else {
-                            qty = Number(c.qty || 0);
-                        }
+                        let qty = (manualEditedKeys.has(key) && $existing.length) ? $existing.val() : Number(c.qty || 0);
 
                         const canEdit = c.is_editable; 
-                        const readonlyAttr = canEdit 
-                            ? "" 
-                            : "readonly tabindex='-1' style='background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; pointer-events: none;'";
-
+                        const readonlyAttr = canEdit ? "" : "readonly tabindex='-1' style='background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; pointer-events: none;'";
                         const rowClass = (qty == 0) ? 'charge-row-zero text-muted opacity-50' : '';
 
                         html += `
                             <tr class="charge-row ${rowClass}">
-                                <td>${c.name}</td>
-                                <td class="text-end">${Number(c.price).toLocaleString()}円</td>
-                                <td class="text-center">
-                                    <input type="number" min="0" value="${qty}"
-                                        name="charge_qtys[${key}]" 
+                                <td class="align-middle">${c.name}</td>
+                                <td class="text-end align-middle">${Number(c.price).toLocaleString()}円</td>
+                                <td class="text-center align-middle">
+                                    <input type="number" value="${qty}" name="charge_qtys[${key}]" 
                                         class="charge-qty-input form-control form-control-sm d-inline-block" 
-                                        style="width: 70px;"
-                                        data-price="${c.price}"
-                                        data-row-idx="${c.row_idx ?? 0}"
-                                        ${readonlyAttr}>
+                                        style="width: 70px;" min="0" data-price="${c.price}" ${readonlyAttr}>
                                     <input type="hidden" name="charge_master_ids[]" value="${c.master_id}">
                                 </td>
-                                <td class="text-end charge-subtotal-display">${(qty * c.price).toLocaleString()}円</td>
+                                <td class="text-end align-middle charge-subtotal-display">${(qty * c.price).toLocaleString()}円</td>
                             </tr>`;
                     });
                     $container.html(html);
-                } else {
-                    $container.html('<tr><td colspan="4" class="text-center text-muted py-3">タイヤを選択すると工賃が自動計算されます</td></tr>');
                 }
-                
                 finalTotalUpdateOnly(); 
+
+                // 🔄 修正：AJAX終了後に確実にフラグを解除（setTimeout 0）
+                setTimeout(() => { isUpdatingCharges = false; }, 0); 
             },
-            error: function(xhr) {
-                console.error("API Error:", xhr.responseText);
-            }
+            error: function() { isUpdatingCharges = false; }
         }); 
     }
 
     // ==========================================
-    // --- 4章：タイヤ明細の行計算 ＆ 行追加 ---
+    // --- 4章：Django Formsetの整合性を保つ動的行追加 ---
     // ==========================================
-    
     /**
-     * 特定のタイヤ明細行（tr）の小計を算出
+     * 行追加ボタンの処理
+     * 1. TOTAL_FORMSのカウントアップ
+     * 2. テンプレート行の複製とID/Nameの置換
      */
-    function calculateRow($row) {
-        // 2章の新しい updateTireInfo に処理を委譲
-        updateTireInfo($row);
-        // バリデーションと諸費用の更新へ
-        updateGrandTotalWithCharges();
-    }
-
-    /**
-     * Django Formsetの仕様に準拠した動的行追加
-     */
-    function addFormsetRow() {
+    $('#add-row-btn').on('click', function(e) { 
+        e.preventDefault(); 
         const $totalForms = $('#id_items-TOTAL_FORMS');
         const formCount = parseInt($totalForms.val());
-
         const $firstRow = $('.formset-row').first();
         const $newRow = $firstRow.clone(true); 
 
@@ -246,226 +238,177 @@ $(function() {
             if (id) $(this).attr('id', id.replace(/-\d+-/, `-${formCount}-`));
             $(this).val(""); 
         });
-
-        // 初期表示をリセット
-        $newRow.find('.js-unit-price, .js-set-price, .js-subtotal, .unit-price-display, .special-price-display, .item-subtotal-display').text('---'); 
+        $newRow.find('.js-unit-price, .js-subtotal, .unit-price-display, .special-price-display, .item-subtotal-display').text('---'); 
         $newRow.find('.item-subtotal-display').data('value', 0);
+        
+        $newRow.removeClass('deleted').show();
+        $newRow.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', false).val('');
 
         $('.formset-row').last().after($newRow);
         $totalForms.val(formCount + 1); 
         updateGrandTotalWithCharges();
-    }
+    });
 
     // ==========================================
-    // --- 5章：総合計 ＆ バリデーション統合 ---
+    // --- 5章：全体の集計 ＆ リアルタイム・バリデーション ---
     // ==========================================
 
     /**
-     * 🎯 対策：総合計のリアルタイム再計算
-     * 常に「現在画面に存在し、可視状態の行」のみを集計対象にすることで
-     * 削除された行の残留データ（幽霊データ）を完全に排除!!!
+     * ✅ 修正①：総合計のリアルタイム再計算（爆速 data属性集計版）
      */
     function finalTotalUpdateOnly() {
         let total = 0;
-
-        // 👉 タイヤ明細の小計をすべて集計（削除されていない可視行のみ）
         $('.formset-row:visible').not('.empty-form').find('.js-subtotal, .item-subtotal-display').each(function() {
-            // 🔥 文字列から「円」や「,」を除去して数値のみを取り出す
-            const txt = $(this).text().replace(/[^\d]/g, '');
-            total += parseFloat(txt) || 0;
+            total += Number($(this).data('value')) || 0;
         });
-
-        // 👉 諸費用の小計をすべて集計（可視状態の行のみ）
-        $('.charge-row:visible').find('.charge-subtotal-display').each(function() {
-            const txt = $(this).text().replace(/[^\d]/g, '');
-            total += parseFloat(txt) || 0;
+        $('.charge-row:visible').find('.charge-qty-input').each(function() {
+            total += (Number($(this).val()) || 0) * (Number($(this).data('price')) || 0);
         });
-
-        // 🎯 総合計表示を即更新
         $('#js-grand-total').text(total.toLocaleString() + "円");
         
-        console.log("💰 リアルタイム総合計更新（可視行のみ）:", total);
+        if (logCounter++ % 20 === 0) {
+            console.log("💰 リアルタイム総合計（data集計）:", total);
+        }
     }
 
     /**
      * バリデーション結果の表示 ＆ 保存ボタンの制御
-     * エラーがあればメッセージを表示し、見積確定ボタンを隠す（最終ガード）
      */
     function updateGrandTotalDisplay(errorMsg) {
-        const $msgArea = $('#validation-error-msg');
+        let $msgArea = $('#validation-error-msg');
         
-        // 🎯 最新の合計金額を画面に反映させる
-        finalTotalUpdateOnly();
+        // 🎯 修正：.table-responsiveを基準にエラーエリアを探す（HTMLにtire-tableクラスがなくても動く保険）
+        if ($msgArea.length === 0) {
+            $('.table-responsive').first().before('<div id="validation-error-msg" class="alert alert-danger" style="display:none; font-weight:bold;"></div>');
+            $msgArea = $('#validation-error-msg');
+        }
+
+        finalTotalUpdateOnly(); 
         
         if (errorMsg) {
-            // 👉 エラー表示を出し、送信（見積確定）ボタンを隠す
-            if ($msgArea.length === 0) {
-                // メッセージエリアがない場合は動的に作成
-                $('.tire-table').before('<div id="validation-error-msg" class="alert alert-danger"></div>');
-                return updateGrandTotalDisplay(errorMsg); // 再帰呼び出し
-            }
-            $msgArea.text(errorMsg).addClass('bg-danger').show();
+            console.log("🚨 エラー表示中:", errorMsg);
+            $msgArea.text(errorMsg).show();
             $('button[type="submit"]').hide(); 
             return false;
         } else {
-            // 👉 正常時はエラーを隠し、保存ボタンを復活させる
             $msgArea.hide();
             $('button[type="submit"]').show(); 
-            $('#js-charges-container').css('opacity', '1');
             return true;
         }
     }
 
     /**
      * 🎯 画面上の全数値を合算し、業務ルール（制限）をチェックする重要関数
-     * 「状態変更 → 再計算」をすべて繋げる設計の核心
      */
     function updateGrandTotalWithCharges() {
         let totalQty = 0;
         let tireTypes = new Set();
+        const purchaseVal = $('#id_purchase_type').val() || $('select[name="purchase_type"]').val() || "";
+        const isExchange = String(purchaseVal).toLowerCase() === 'install' || purchaseVal == '1' || purchaseVal == 'exchange';
 
-        // 👉 可視状態（削除されていない）のタイヤ行をスキャン
         $('.formset-row:visible').not('.empty-form').each(function() {
             const qty = parseInt($(this).find('input[name$="-quantity"]').val(), 10) || 0;
             const tireId = $(this).find('select[name$="-tire"]').val();
-            if (tireId && qty > 0) {
-                totalQty += qty;
+            
+            if (tireId && tireId !== "") {
                 tireTypes.add(tireId);
+                if (qty > 0) {
+                    totalQty += qty;
+                }
             }
         });
 
-        // 👉 購入区分のテキストまたはIDを取得して判定
-        const purchaseTypeText = $('select[name="purchase_type"] option:selected').text() || "";
-        const purchaseVal = $('#id_purchase_type').val() || $('select[name="purchase_type"]').val();
-        let errorMsg = "";
+        // 🧪 デバッグログ
+        console.log(`🧪 検証中... 種類数: ${tireTypes.size}, 合計本数: ${totalQty}`);
 
-        // 🎯 業務バリデーション：交換作業時のルール
-        if ((purchaseVal === "exchange" || purchaseTypeText.includes("交換")) && totalQty > 0) {
-            if (totalQty > 8) {
-                errorMsg = `【本数制限エラー】現在 ${totalQty} 本選択中です。交換作業ご希望の場合は、最大8本までにしてください。`;
-            } 
-            else if (tireTypes.size > 2) {
+        let errorMsg = "";
+        if (isExchange) {
+            if (tireTypes.size > 2) {
                 errorMsg = `【台数制限エラー】現在 ${tireTypes.size} 種類のタイヤが選択されています。交換作業ご希望の場合は、1台分(前後サイズ違いのお車など、最大2サイズ選択可能)までにしてください。`;
             }
+            else if (totalQty > 8) {
+                errorMsg = `【本数制限エラー】現在 ${totalQty} 本選択中です。交換作業ご希望の場合は、最大8本までにしてください。`;
+            }
         }
-
-        // 🎯 結論：画面表示とボタン制御を呼び出し
-        const isOk = updateGrandTotalDisplay(errorMsg);
-        
-        // 🔥 設計の核心：エラーがない場合のみ諸費用を再計算する
-        if (isOk) {
-            updateEstimateChargesDebounced();
-        } else {
-            // 👉 エラーがある場合は諸費用を薄くして入力を促す
-            $('#js-charges-container').css('opacity', '0.5');
-        }
-        return isOk;
+        return updateGrandTotalDisplay(errorMsg);
     }
-
+    
     // ===================================================
     // --- 6章：ユーザー操作の監視（イベントリスナー） ---
     // ===================================================
-
     $(document).ready(function() {
         console.log("🚀 見積計算JS: 初期化開始");
-
-        // ページ読み込み時に初回バリデーションと計算を実行
-        updateGrandTotalWithCharges();
-
-        /**
-        * 1. タイヤの種類・本数・購入区分が変わった時の連動
-        */
-        $(document).on('change', 'select[name$="-tire"], input[name$="-quantity"], select[name="purchase_type"], #id_purchase_type', function() {
-            console.log("🔄 タイヤ構成の変更を検知しました");
-            
-            const $row = $(this).closest('tr');
-            
-            // ① 金額表示の更新
-            if ($row.hasClass('formset-row')) {
-                updateTireInfo($row); 
-            }
-
-            // ② 諸費用の手動ロックをリセット
-            manualEditedKeys.clear(); 
         
-            // ③ バリデーション実行（この中で諸費用の再計算APIが呼ばれる）
+        updateGrandTotalWithCharges();
+        
+        if (isInitialLoad) {
+            updateEstimateCharges();
+            isInitialLoad = false;
+        }
+
+        $(document).on('change', 'select[name="purchase_type"], #id_purchase_type', function() {
+            manualEditedKeys.clear(); 
             updateGrandTotalWithCharges();
+            updateEstimateChargesDebounced();
+        });
+            
+        $(document).on('change', '.js-tire-select, .js-quantity-input', function() {
+            const $row = $(this).closest('tr');
+            if ($row.hasClass('formset-row')) { updateTireInfo($row); }
+            manualEditedKeys.clear(); 
+            updateGrandTotalWithCharges();
+            updateEstimateChargesDebounced();
         });
 
-        /**
-         * 2. 諸費用の数量を手入力した際のロック処理 ＆ リアルタイム再計算
-         */
         $(document).on('input', '.charge-qty-input', function() {
+            if (isUpdatingCharges) return;
             const name = $(this).attr('name');
             const keyMatch = name ? name.match(/\[(.*?)\]/) : null;
-
-            if (keyMatch) {
-                const fullKey = keyMatch[1];
-                manualEditedKeys.add(fullKey); 
-                console.log("🛠 手動編集（行単位ロック）:", fullKey);
-            }
+            if (keyMatch) manualEditedKeys.add(keyMatch[1]);
 
             const $row = $(this).closest('tr');
             const qty = parseFloat($(this).val()) || 0;
             const price = parseFloat($(this).data('price')) || 0;
+            $row.find('.charge-subtotal-display').text((qty * price).toLocaleString() + "円");
 
-            // 🔥 行の小計表示を即座に更新（,カンマ区切り + 円）
-            const rowSubtotal = qty * price;
-            $row.find('.charge-subtotal-display').text(rowSubtotal.toLocaleString() + "円");
+            if (qty == 0) $row.addClass('charge-row-zero text-muted opacity-50');
+            else $row.removeClass('charge-row-zero text-muted opacity-50');
 
-            // 数量0なら見た目を薄くする処理（既存）
-            if (qty == 0) {
-                $row.addClass('charge-row-zero text-muted opacity-50');
-            } else {
-                $row.removeClass('charge-row-zero text-muted opacity-50');
-            }
-
-            // 🎯全体の税込合計を即座に更新！これを呼ぶことで見積確定ボタンを押さなくても上の合計が変わる
             finalTotalUpdateOnly(); 
-
-            // APIを飛ばして他の項目との整合性をとる（Debounce経由）
-            updateEstimateChargesDebounced();
         });
 
-        /**
-        * 3. 行追加・削除ボタンのイベント
-        */
-        $('#add-row-btn').on('click', function(e) { 
-            e.preventDefault(); 
-            addFormsetRow(); 
-        });
-
-        /**
-         * 4. フォーム送信時の最終防衛ライン
-         */
         $('form').on('submit', function(e) {
             if (!updateGrandTotalWithCharges()) {
                 e.preventDefault();
                 alert("タイヤ構成にエラーがあるため、見積を確定できません。");
             }
         });
-
-        console.log("✅ 全イベントリスナーの登録完了");
     });
 
-    // ==========================================
-    // --- 7章：タイヤ行削除（Formset対応） ---
-    // ==========================================
+    // ===================================================
+    // --- 7章：タイヤ行削除（Django Formset 完全対応版）---
+    // ===================================================
     $(document).on('click', '.delete-tire-row', function() {
-        if ($('.formset-row:visible').length <= 1) {
-            alert("最低1行は残してください。");
-            return;
-        }
-
+        if ($('.formset-row:visible').length <= 1) { alert("最低1行は残してください。"); return; }
         const $row = $(this).closest('.formset-row');
-        const $deleteInput = $row.find('input[type="checkbox"][name$="-DELETE"]');
-        if ($deleteInput.length) $deleteInput.prop('checked', true);
 
-        $row.hide(); 
-        $row.find('input[name$="-quantity"]').val(0); 
-        
+        // ✅ 1. Djangoの削除フラグを立てる（最重要）
+        const $deleteInput = $row.find('input[type="checkbox"][name$="-DELETE"]');
+        if ($deleteInput.length) { $deleteInput.prop('checked', true).val('on'); }
+
+        // ✅ 2. バリデーションエラーを回避し、数量を0に
+        $row.find('input, select').each(function() {
+            $(this).prop('required', false);
+            if ($(this).attr('name')?.includes('-quantity')) {
+                $(this).val(0); $(this).attr('min', 0);
+            }
+        });
+
+        // ✅ 3. 見た目上の削除
+        $row.addClass('deleted').hide(); 
         manualEditedKeys.clear(); 
-        updateGrandTotalWithCharges();
-        console.log("🗑 行を削除し、再計算を実行しました");
+        updateGrandTotalWithCharges(); 
+        updateEstimateChargesDebounced(); 
+        console.log("🗑 DELETEフラグを立て、行を削除しました");
     });
 });
