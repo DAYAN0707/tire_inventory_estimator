@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.db import models, transaction
 from django.contrib import admin
-
+from datetime import timedelta # 日付計算用
 
 
 # 見積の基本情報を管理するモデル
@@ -54,6 +54,15 @@ class Estimate(models.Model):
     # 作成日時と更新日時を自動で管理するフィールド
     created_at = models.DateTimeField('作成日時', auto_now_add=True)
     updated_at = models.DateTimeField('更新日時', auto_now=True)
+
+    # --- 【新規追加】見積書の有効期限を計算するプロパティ ---
+    @property
+    def valid_until(self):
+        """作成日時から30日後の日付を計算して返す"""
+        if self.created_at:
+            return self.created_at + timedelta(days=30)
+        # まだ保存されていない（created_atがない）場合は、今日から30日後を暫定で返す
+        return timezone.now() + timedelta(days=30)
 
     def save(self, *args, **kwargs):
         

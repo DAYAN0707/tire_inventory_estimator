@@ -1,0 +1,57 @@
+{% load static %}
+{% load humanize %}  <!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>見積書_{{ estimate.estimate_number }}</title>
+    </head>
+<body>
+    <div class="print-container">
+        <div class="total-amount-box">
+            <span class="total-amount-label">見積合計金額</span>
+            <span class="total-amount-value">¥ {{ estimate.total_price|intcomma }}<small style="font-size: 12pt; margin-left: 5px;">(税込)</small></span>
+        </div>
+
+        <table class="table table-sm mb-4">
+            <thead>
+                <tr>
+                    <th>項目・詳細</th>
+                    <th class="text-end">金額(税込)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>
+                        <strong>{{ item.tire.brand }}</strong><br>
+                        <small>{{ item.tire.size_raw }}</small>
+                        <span class="ms-3 text-muted">¥ {{ item.unit_price|intcomma }} × {{ item.quantity }}本</span>
+                    </td>
+                    <td class="text-end align-middle">¥ {{ item.subtotal|intcomma }}</td>
+                </tr>
+                {% endfor %}
+
+                {% for charge in charges %}
+                <tr class="{% if charge.subtotal == 0 %}zero-row{% endif %}">
+                    <td>
+                        {{ charge.charge_master.charge_name }}
+                        <span class="ms-3 text-muted">¥ {{ charge.unit_price|intcomma }} × {{ charge.quantity }}</span>
+                    </td>
+                    <td class="text-end align-middle">¥ {{ charge.subtotal|intcomma }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="note-area">
+            <strong style="color: #856404; display: block; margin-bottom: 10px; font-size: 1.1rem;">
+                【ご案内・納期について】
+            </strong>
+            <div style="color: #333;">
+                {{ delivery_message|safe }}
+            </div>
+        </div>
+
+        </div>
+</body>
+</html>

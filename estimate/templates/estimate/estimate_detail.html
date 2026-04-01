@@ -3,24 +3,21 @@
 
 {% block content %}
 <style>
-    /* 🎨 見た目の微調整（CSS） */
-    
     /* 1. 総合計金額（右側の青いカード内）の文字色 */
     .display-5.fw-bold {
-        /* bg-primary(青)の中に白文字。不透明度を100%にして、グレーっぽさを消す 🎯 */
         color: #ffffff !important; 
         opacity: 1 !important;
     }
 
-    /* 2. 0円の時に適用する「薄グレー」のスタイル */
+    /* 2. 0円の時に適用する「薄グレー」のスタイル（印刷対応版） */
     .text-zero {
-        /* 普通の黒(#000)より薄く、背景の白に馴染む色にする 🎯 */
-        color: #bbbbbb !important; 
+        color: #999999 !important; 
+        opacity: 0.6 !important;
     }
 </style>
 
 <div class="container mt-4 mb-5">
-    {# --- ヘッダー部分（タイトルと一覧戻るボタン） --- #}
+    {# --- ヘッダー部分 --- #}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>見積詳細</h2>
         <div>
@@ -28,7 +25,7 @@
         </div>
     </div>
 
-    {# --- 1. 基本情報（見積番号や顧客名） --- #}
+    {# --- 1. 基本情報 --- #}
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -53,10 +50,8 @@
     </div>
 
     <div class="row">
-        {# --- 2. 左側：メイン明細（タイヤ ＆ 諸費用） --- #}
+        {# --- 2. 左側：メイン明細 --- #}
         <div class="col-lg-8">
-            
-            {# --- タイヤ明細セクション --- #}
             <h5 class="mb-3"><i class="bi bi-tire me-2"></i>タイヤ明細</h5>
             <div class="card shadow-sm border-0 mb-4">
                 <div class="table-responsive">
@@ -73,10 +68,7 @@
                             {% for item in estimate.items.all %}
                             <tr>
                                 <td>
-                                    {# 🎯 修正：メーカー名・ブランド名・商品名 を表示！ #}
-                                    {# item.tire（タイヤモデル）からmanufacturerとbrandとnameを順番に呼び出す #}
-                                    {{ item.tire.manufacturer }} {{ item.tire.brand }} {{ item.tire.name }}</div>
-                                    {# 補足情報としてサイズを表示 #}
+                                    {{ item.tire.manufacturer }} {{ item.tire.brand }} {{ item.tire.name }}
                                     <div class="small text-muted">{{ item.tire.size_raw }}</div>
                                 </td>
                                 <td class="text-center">{{ item.quantity }}本</td>
@@ -89,7 +81,6 @@
                 </div>
             </div>
 
-            {# --- 諸費用セクション --- #}
             <h5 class="mb-3"><i class="bi bi-tools me-2"></i>作業工賃・諸費用</h5>
             <div class="card shadow-sm border-0">
                 <div class="table-responsive">
@@ -104,9 +95,7 @@
                         </thead>
                         <tbody>
                             {% for charge in estimate.charges.all %}
-                            {# 🎯 修正：もし小計が 0 なら、文字を薄くするクラス「text-zero」を付ける！ #}
-                            {# {% if ... %} はDjangoテンプレート独自の条件分岐ルール #}
-                            <tr class="{% if charge.subtotal == 0 %}text-zero{% endif %}">
+                            <tr class="{% if charge.subtotal|default:0 == 0 %}text-zero{% endif %}">
                                 <td>{{ charge.charge_master.name }}</td>
                                 <td class="text-center">{{ charge.quantity }}</td>
                                 <td class="text-end text-nowrap">{{ charge.unit_price|intcomma }}円</td>
@@ -119,25 +108,20 @@
             </div>
         </div>
 
-        {# --- 3. 右側：合計 ＆ アクションエリア --- #}
+        {# --- 3. 右側：合計 ＆ 印刷エリア --- #}
         <div class="col-lg-4">
-            {# sticky-top を使って、画面をスクロールしても合計金額がついてくるように設定 🎯 #}
             <div class="card shadow border-0 bg-primary text-white sticky-top" style="top: 20px;">
                 <div class="card-body p-4">
                     <h5 class="card-title opacity-75">総合計（税込）</h5>
-                    
-                    {# 🎯 金額部分：intcomma で「,」を入れ、fw-bold で一番目立たせる #}
                     <div class="display-5 fw-bold mb-0 text-end">
                         {{ estimate.total_price|intcomma }}<span class="fs-4">円</span>
                     </div>
-                    
                     <hr class="my-4">
-                    
                     <div class="d-grid gap-2">
-                        {# window.print() はブラウザの印刷機能を呼び出すJavaScriptコマンド 🎯 #}
-                        <button class="btn btn-light btn-lg fw-bold" onclick="window.print();">
-                            <i class="bi bi-printer me-2"></i>印刷する
-                        </button>
+                        {# 🎯 印刷専用ページを別タブで開くボタンに差し替え #}
+                        <a href="{% url 'estimate:estimate_print' estimate.pk %}" target="_blank" class="btn btn-light btn-lg fw-bold text-decoration-none text-primary">
+                            <i class="bi bi-printer me-2"></i>印刷用ページを開く
+                        </a>
                     </div>
                 </div>
             </div>

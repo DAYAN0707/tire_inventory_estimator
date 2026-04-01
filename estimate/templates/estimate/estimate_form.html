@@ -5,20 +5,24 @@
 <style>
 /* --- 画面表示・印刷制御スタイル --- */
 .charge-row-zero {
-    /* 数量0の時に薄くして、入力不要であることを示す */
+    /* 数量0の時に薄くして、0円の項目であることを示す */
     opacity: 0.5;
     background-color: #f8f9fa; 
 }
 
 /* 🎯 印刷・PDF出力用の設定 */
 @media print {
-    /* 数量0の諸費用行（不要な行）を紙面から完全に消す */
+    /* 印刷時は薄いグレーで表示 */
     .charge-row-zero {
-        display: none !important;
+        display: table-row !important;
+        color: #999 !important;
+        opacity: 1 !important;
+        background-color: transparent !important;
     }
-    /* 印刷時に薄すぎて消えないよう、文字色を黒に強制固定 */
+
+    /* Bootstrapの .text-muted は印刷時に見づらくなるため、より濃いグレーに上書き */
     .text-muted, .opacity-50 {
-        color: #000 !important;
+        color: #999 !important;
         opacity: 1 !important;
     }
 }

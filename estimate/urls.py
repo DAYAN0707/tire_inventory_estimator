@@ -11,4 +11,5 @@ urlpatterns = [
 
     # --- API（JSON）系 ---
     path('api/calculate-charges/', api_views.calculate_charges_api, name='calculate_charges_api'),
+    path('<int:pk>/print/', estimate_views.estimate_print, name='estimate_print'),
 ]

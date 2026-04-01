@@ -2,7 +2,7 @@ import json
 from django.views.generic import ListView, CreateView, DetailView
 from django.forms import inlineformset_factory
 from django.urls import reverse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404, render
 from django.contrib.auth import get_user_model
 
 from inventory.models import Tire
@@ -14,7 +14,52 @@ from ..services.usecase import EstimateUseCase
 User = get_user_model()
 
 # ==========================================
-# 1. フォームセットの設定
+# 1. 補助関数の設定（在庫ステータス連動メッセージ）
+# ==========================================
+def get_delivery_message(estimate):
+    """
+    admin.pyの在庫管理ルールと完全に同期したメッセージ判定。
+    1. 在庫あり (stock_qty > 0)
+    2. 取り寄せ (reorder_point が 0 または None) ※キャンセル不可
+    3. 入荷待ち (上記以外 = 常備在庫だが欠品中)
+    """
+    # 見積に紐づく最初のタイヤを取得（複数ある場合は最初の1本を基準に判定）
+    first_item = estimate.items.first()
+    
+    if not first_item or not first_item.tire:
+        return "在庫状況・納期については、店舗までお問い合わせください。"
+
+    tire = first_item.tire
+    main_message = ""
+
+    # --- admin.py の stock_status と同じロジックで分岐 ---
+    
+    # ① 在庫あり (obj.stock_qty > 0)
+    if tire.stock_qty > 0:
+        main_message = "現在、こちらの商品は店舗に在庫がございます。即日のお渡しが可能でございます。"
+    
+    # ② 取り寄せ (obj.reorder_point in (None, 0))
+    elif tire.reorder_point in (None, 0):
+        main_message = (
+            "こちらの商品はお取り寄せとなります。納期については、受け取りご希望の店舗までお問い合わせください。"
+            "<br><b>また、取り寄せ商品の性質上、ご注文後のキャンセル・返金は一切お受けできません。</b>"
+        )
+    
+    # ③ 入荷待ち (それ以外：在庫0かつ発注点あり)
+    else:
+        main_message = "現在、こちらの商品は入荷待ちです。納期については、店舗までお問い合わせください。"
+
+    # 全パターン共通の赤文字フッター
+    warning_footer = (
+        '<br><span style="color: #dc3545; font-weight: bold;">'
+        '※在庫状況は常に変動いたします。お早めのご検討をお願いいたします。'
+        '</span>'
+    )
+    
+    return main_message + warning_footer
+
+# ==========================================
+# 2. フォームセットの設定
 # ==========================================
 EstimateTireFormSet = inlineformset_factory(
     Estimate,       # 親モデル
@@ -135,3 +180,27 @@ class EstimateDetailView(DetailView):
     model = Estimate
     template_name = 'estimate/estimate_detail.html'
     context_object_name = 'estimate'
+
+    def get_context_data(self, **kwargs):
+        """詳細画面でも納期メッセージを表示するために追加"""
+        context = super().get_context_data(**kwargs)
+        context['delivery_message'] = get_delivery_message(self.object)
+        return context
+
+# ==========================================
+# 3. 印刷専用Viewの追加
+# ==========================================
+def estimate_print(request, pk):
+    """
+    【新規追加】印刷専用ページを表示する関数ベースView。
+    A4印刷に最適化されたテンプレート（estimate_print.html）を返します。
+    """
+    estimate = get_object_or_404(Estimate, pk=pk)
+    
+    context = {
+        "estimate": estimate,
+        "items": estimate.items.all(),
+        "charges": estimate.charges.all(),
+        "delivery_message": get_delivery_message(estimate), # 納期案内
+    }
+    return render(request, "estimate/estimate_print.html", context)
