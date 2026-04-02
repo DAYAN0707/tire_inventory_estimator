@@ -1,21 +1,248 @@
 {% load static %}
-{% load humanize %}  <!DOCTYPE html>
+{% load humanize %}
+<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>見積書_{{ estimate.estimate_number }}</title>
-    </head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* 全体のフォント設定 */
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            background-color: #f5f5f5;
+            padding: 40px 0;
+        }
+
+        /* A4サイズの白枠再現 */
+        .print-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* 見出し */
+        .doc-title {
+            font-size: 32pt;
+            font-weight: bold;
+            letter-spacing: 5px;
+            border-bottom: 3px solid #333;
+            margin-bottom: 10px;
+        }
+
+        /* 顧客・車両情報 */
+        .info-line {
+            border-bottom: 1px solid #333;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            font-size: 14pt;
+        }
+
+        /* 合計金額（黒グラデーション） */
+        .total-amount-box {
+            background: linear-gradient(90deg, #1a1a1a 0%, #444 100%);
+            color: white;
+            padding: 15px 30px;
+            margin: 30px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 4px;
+        }
+
+        /* テーブル */
+        .table thead th {
+            border-top: 2px solid #333;
+            border-bottom: 1px solid #333;
+            background-color: #fff !important;
+        }
+        .table tbody td {
+            padding: 12px 8px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        /* 納期案内ボックス */
+        .note-area {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #fff9e6; /* 薄い黄色 */
+            border: 1px solid #ffeeba;
+            border-radius: 4px;
+        }
+
+        /* 印刷ボタン（画面上のみ表示） */
+        .no-print-area {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* 0円項目のグレーアウト用クラス（Bootstrap対策込み） */
+        .zero-amount td,
+        .zero-amount td * {
+            color: #999999 !important;
+            font-weight: normal !important;
+        }
+
+
+/* --- 印刷時の設定（1ページに収めて印刷） --- */
+@media print {
+
+    /* 用紙サイズと余白設定 */
+    @page {
+        size: A4;           /* A4固定 */
+        margin: 8mm; /* ← 余白をさらに削る（10→8） */
+    }
+
+        /* 背景と余白リセット */
+    body {
+        background-color: white;
+        padding: 0;
+        font-size: 10pt; /* ← 全体を少し小さく */
+    }
+
+    /* メインコンテナ調整（1ページに収めるため） */
+    .print-container {
+        width: 100%;        /* 印刷時はフル幅 */
+        margin: 0;
+        padding: 6mm; /* ← ここも削る（10→6） */
+        min-height: auto;   /* ← ⭐高さ固定を解除 */
+        box-shadow: none;   /* 影は不要 */
+    }
+
+    /* 見出しのサイズダウン */
+    .doc-title {
+        font-size: 24pt;      /* 32 → 24 */
+        margin-bottom: 5px;
+    }
+
+    /* 行間を詰める */
+    .info-line {
+        font-size: 11pt;
+        margin-bottom: 8px;
+        padding-bottom: 3px;
+    }
+
+    /* 合計金額コンパクト化 */
+    .total-amount-box {
+        padding: 10px 15px;
+        margin: 15px 0;
+    }
+
+    /* 合計金額のフォントサイズ調整 */
+    .total-amount-box span:first-child {
+        font-size: 14pt;
+    }
+
+    /* 金額部分は少し大きめにして強調 */
+    .total-amount-box span:last-child {
+        font-size: 22pt;
+    }
+
+    /* テーブル圧縮 */
+    .table thead th {
+        font-size: 10pt;
+        padding: 6px;
+    }
+
+    /* 0円項目はさらに薄くして、印刷での視認性を確保 */
+    .table tbody td {
+        padding: 6px 4px;   /* ← 12px → 6pxに削減 */
+        font-size: 10pt;
+    }
+
+    /* 商品名 */
+    .table td .fw-bold {
+        font-size: 10pt !important;
+    }
+
+    /* サイズ・内訳 */
+    .table td .text-muted {
+        font-size: 8.5pt !important;
+    }
+
+    /* 納期案内 */
+    .note-area {
+        margin-top: 20px;
+        padding: 10px;
+        font-size: 9.5pt;
+    }
+
+    /* 印刷時に不要なボタン・UIを非表示 */
+    .no-print-area {
+        display: none;
+    }
+
+    /* テーブル途中で改ページされるのを防ぐ */
+    table, tr, td {
+        page-break-inside: avoid;
+    }
+
+    /* 合計金額・注意書きも分断されないようにする */
+    .total-amount-box,
+    .note-area {
+        page-break-inside: avoid;
+    }
+
+    /* カラー印刷を有効化（ブラウザ依存あり） */
+    /*「*」= 全要素に適用の意味（今回は「印刷時の色崩れ防止」のため）*/
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+
+    </style>
+</head>
 <body>
+
     <div class="print-container">
-        <div class="total-amount-box">
-            <span class="total-amount-label">見積合計金額</span>
-            <span class="total-amount-value">¥ {{ estimate.total_price|intcomma }}<small style="font-size: 12pt; margin-left: 5px;">(税込)</small></span>
+        <div class="row">
+            <div class="col-7">
+                <h1 class="doc-title">御見積書</h1>
+                <p class="text-muted small">見積番号：{{ estimate.estimate_number }}</p>
+                
+                <div class="info-line mt-5">
+                    お客様名 <span class="mx-4" style="font-size: 20pt; font-weight: bold;">{{ estimate.customer_name }}</span> 様
+                </div>
+                <div class="info-line">
+                    車種 <span class="mx-5">{{ estimate.vehicle_name|default:"—" }}</span>
+                </div>
+            </div>
+            
+            <div class="col-5 text-end">
+                <div class="mb-4">
+                    見積発行日：{{ estimate.created_at|date:"Y年n月j日" }}<br>
+                    <span style="color: #dc3545; font-weight: bold;">見積有効期限：{{ estimate.valid_until|date:"Y年n月j日" }}</span>
+                </div>
+                
+                <div class="company-info">
+                    <h4 class="fw-bold">株式会社〇〇</h4>
+                    <p>
+                        〒000-0000<br>
+                        兵庫県姫路市1-2-3<br>
+                        Tel：999-999-9999<br>
+                        <small class="text-muted">担当者ID：{{ user.id|default:"123456" }}</small>
+                    </p>
+                </div>
+            </div>
         </div>
 
-        <table class="table table-sm mb-4">
+        <div class="total-amount-box">
+            <span style="font-size: 18pt; font-weight: bold;">見積合計金額</span>
+            <span style="font-size: 28pt; font-weight: bold;">
+                ¥ {{ estimate.total_price|intcomma }}<small style="font-size: 14pt; margin-left: 10px;">(税込)</small>
+            </span>
+        </div>
+
+        <table class="table mt-4">
             <thead>
                 <tr>
-                    <th>項目・詳細</th>
+                    <th style="width: 70%;">項目・詳細</th>
                     <th class="text-end">金額(税込)</th>
                 </tr>
             </thead>
@@ -23,35 +250,72 @@
                 {% for item in items %}
                 <tr>
                     <td>
-                        <strong>{{ item.tire.brand }}</strong><br>
-                        <small>{{ item.tire.size_raw }}</small>
-                        <span class="ms-3 text-muted">¥ {{ item.unit_price|intcomma }} × {{ item.quantity }}本</span>
+                        <div class="d-flex align-items-center">
+                            <div class="fw-bold" style="font-size: 11pt;">{{ item.tire.brand }}</div>
+                            {% if item.has_set_price_applied %}
+                                <span class="badge bg-danger ms-2" style="font-size: 0.7rem;">4本特価適用</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted" style="font-size: 10pt; margin-bottom: 5px;">
+                            {{ item.tire.size_raw }}
+                        </div>
+                        <div style="font-size: 9pt; line-height: 1.4; color: #666;">
+                            {% for line in item.price_breakdown_list %}
+                                <div>{{ line }}</div>
+                            {% endfor %}
+                        </div>
                     </td>
-                    <td class="text-end align-middle">¥ {{ item.subtotal|intcomma }}</td>
+                    <td class="text-end align-middle fw-bold" style="font-size: 11pt;">
+                        ¥ {{ item.subtotal|intcomma }}
+                    </td>
                 </tr>
                 {% endfor %}
-
                 {% for charge in charges %}
-                <tr class="{% if charge.subtotal == 0 %}zero-row{% endif %}">
-                    <td>
-                        {{ charge.charge_master.charge_name }}
-                        <span class="ms-3 text-muted">¥ {{ charge.unit_price|intcomma }} × {{ charge.quantity }}</span>
+                <tr class="{% if charge.subtotal == 0 %}zero-amount{% endif %}">
+                    <td class="align-middle">
+                        <div style="font-size: 11pt; font-weight: 500;">
+                            <div style="font-size: 11pt; font-weight: 500;">
+                                {% if charge.charge_master %}
+                                    {{ charge.charge_master.name }}
+                                {% else %}
+                                    {{ charge.name|default:"諸費用" }}
+                                {% endif %}
+</div>
+                        </div>
+            
+                        <div class="text-muted" style="font-size: 9pt;">
+                            ¥ {{ charge.unit_price|intcomma }} × {{ charge.quantity }}
+                        </div>
                     </td>
-                    <td class="text-end align-middle">¥ {{ charge.subtotal|intcomma }}</td>
+                    <td class="text-end align-middle" style="font-size: 11pt;">
+                        ¥ {{ charge.subtotal|intcomma }}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
 
         <div class="note-area">
-            <strong style="color: #856404; display: block; margin-bottom: 10px; font-size: 1.1rem;">
+            <strong style="color: #856404; display: block; margin-bottom: 10px; font-size: 1.2rem;">
                 【ご案内・納期について】
             </strong>
-            <div style="color: #333;">
+            <div style="font-size: 11pt; line-height: 1.8;">
                 {{ delivery_message|safe }}
             </div>
         </div>
+    </div>
 
+    
+        <div class="no-print-area">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-5 mb-5 no-print">
+                <button type="button" class="btn btn-primary btn-lg px-5 me-md-2" onclick="window.print();">
+                    🖨️ 見積書を印刷する / PDF保存
+                </button>
+                <a href="{% url 'estimate:estimate_detail' estimate.id %}" class="btn btn-outline-secondary btn-lg px-5">
+                    詳細に戻る
+                </a>
+            </div>
         </div>
+
 </body>
 </html>
