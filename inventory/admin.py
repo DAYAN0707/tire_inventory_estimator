@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from django.db.models import Sum, Q  # 集計（Sum）に必要
 from import_export.admin import ImportExportModelAdmin
 from import_export import resources
-from .models import Tire, TireStatus
+from .models import Tire, TireStatus, Brand
 
 
 # 予約確定の見積に紐づく見積明細の件数をカウントするための定数(将来の拡張性のため、ハードコードせず定数化)
@@ -41,6 +41,10 @@ class ReorderPointFilter(admin.SimpleListFilter):
         if self.value() == 'set':
             return queryset.filter(reorder_point__gt=0) # 発注点が0より大きいものを抽出
         return queryset # フィルタ未選択時は全件表示
+    
+@admin.register(Brand)
+class BrandAdmin(admin.ModelAdmin):
+    list_display = ('name', 'comment') # 管理画面の一覧に表示する項目
 
 
     # マスタ管理（タイヤ・在庫）
@@ -56,6 +60,7 @@ class TireAdmin(ImportExportModelAdmin):
     # リスト表示項目
     list_display = (
         'brand_display',   # ブランドとサイズをまとめた列(廃盤判定込)
+        'brand_link',      # ブランドの外部キーを直接表示（管理画面でのブランド名の確認用）
         'stock_qty',       # 在庫数量表示
         'reserved_info',   # 予約数表示(見積連動)
         'stock_status',    # 有効在庫(取り寄せ・赤字判定込み)

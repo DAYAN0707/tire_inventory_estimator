@@ -204,3 +204,22 @@ def estimate_print(request, pk):
         "delivery_message": get_delivery_message(estimate), # 納期案内
     }
     return render(request, "estimate/estimate_print.html", context)
+
+
+#==========================================
+# 4. APIで呼び出すための関数ベースView（add_item）
+#========================================== 
+def add_item(request):
+    if request.method == "POST":
+        # フォームからデータを受け取る
+        tire_id = request.POST.get('tire_id')
+        quantity = request.POST.get('quantity')
+        position = request.POST.get('position')
+        
+        # デバッグ用（ターミナルに表示されます）
+        print(f"DEBUG: タイヤID {tire_id} を {quantity}本 ({position}) 追加リクエスト")
+
+        # 保存ロジックは後で作るとして、一旦一覧に戻す
+        return redirect('inventory:tire_list')
+    
+    return redirect('inventory:tire_list')

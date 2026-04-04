@@ -21,6 +21,16 @@ class EstimateItem(models.Model):
     # 工賃マスタと紐づけるための項目 (ここも文字列で指定)
     cost_master = models.ForeignKey('estimate.ChargeMaster', on_delete=models.PROTECT, null=True, blank=True, related_name="estimate_items")
 
+
+    # 🌟 装着位置を保存
+    POSITION_CHOICES = [
+        ('all', '前後共通'),
+        ('front', '前輪'),
+        ('rear', '後輪'),
+    ]
+    position = models.CharField('装着位置', max_length=10, choices=POSITION_CHOICES, default='all')
+
+
     # --- 追加：計算ロジック（プロパティ） ---
 
     @property
@@ -86,6 +96,8 @@ class EstimateItem(models.Model):
 
         # 発注点があり在庫数が定数以下の場合は「入荷待ち」と赤色で表示
         return "入荷待ち"
+
+
 
     # 見積時点の小計(単価×本数)を自動計算し、見積履歴としてDB保存
     def save(self, *args, **kwargs):  # 親クラスの save() メソッドをオーバーライド
