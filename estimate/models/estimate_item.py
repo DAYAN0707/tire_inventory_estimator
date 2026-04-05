@@ -24,11 +24,21 @@ class EstimateItem(models.Model):
 
     # 🌟 装着位置を保存
     POSITION_CHOICES = [
-        ('all', '前後共通'),
-        ('front', '前輪'),
-        ('rear', '後輪'),
+        ('all', '前後同サイズ'),
+        ('front', '前輪用'),
+        ('rear', '後輪用'),
     ]
-    position = models.CharField('装着位置', max_length=10, choices=POSITION_CHOICES, default='all')
+    position = models.CharField(
+        '装着位置', 
+        max_length=10, 
+        choices=POSITION_CHOICES, 
+        default='all'
+    )
+
+    # 🎯 管理画面などで「中身」を分かりやすく表示する魔法のメソッド
+    def __str__(self):
+        # get_position_display() を使うと、'all' ではなく '前後同サイズ' と表示してくれます
+        return f"{self.tire.brand} ({self.get_position_display()})"
 
 
     # --- 追加：計算ロジック（プロパティ） ---

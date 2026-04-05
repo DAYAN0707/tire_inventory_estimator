@@ -9,6 +9,7 @@ from django.contrib import admin
 from datetime import timedelta # 日付計算用
 
 
+
 # 見積の基本情報を管理するモデル
 class Estimate(models.Model):
     # 持ち帰り or 取付作業ありの選択肢を追加
@@ -79,7 +80,6 @@ class Estimate(models.Model):
                 # select_for_update() で、銀行レベルのロック!!(このレコードは処理が終わるまで他の処理が触れない)
                 last_estimate = (
                     Estimate.objects
-                    .select_for_update()
                     .filter(estimate_number__startswith=f"EST-{today_str}")
                     .aggregate(Max("estimate_number"))
                 )

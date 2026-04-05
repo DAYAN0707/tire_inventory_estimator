@@ -143,10 +143,17 @@
             </table>
         </div>
 
-        {# 明細行追加ボタン #}
-        <div class="mb-4">
-            <button type="button" class="btn btn-outline-primary btn-sm" id="add-row-btn">
-                <i class="bi bi-plus-circle me-1"></i>明細行を追加
+
+        <p>estimate_id: {{ estimate_id }}</p>
+        <p>tire_id: {{ tire.id }}</p>
+        {# 明細行追加エリア #}
+        <div class="mb-4 d-flex gap-2">
+            <a href="{% url 'inventory:tire_list' %}?estimate_id={{ object.id }}" class="btn btn-primary">
+                <i class="bi bi-search me-1"></i> 在庫からタイヤを選択
+            </a>
+
+            <button type="button" class="btn btn-outline-primary" id="add-row-btn">
+                <i class="bi bi-plus-circle me-1"></i> 自由入力行を追加
             </button>
         </div>
 

@@ -4,6 +4,22 @@
 <div class="container mt-4">
     <h2 class="mb-4 text-center">タイヤ在庫検索</h2>
     
+    {# --- 戻るボタンエリア --- #}
+    <div class="mb-3">
+        {% if estimate_id %}
+            {# 見積から来た場合：その見積詳細に戻る #}
+            <a href="{% url 'estimate:estimate_detail' pk=estimate_id %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>見積詳細に戻る
+            </a>
+        {% else %}
+            {# 直接来た場合：見積一覧に戻る #}
+            <a href="{% url 'estimate:estimate_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-list me-1"></i>見積一覧へ
+            </a>
+        {% endif %}
+    </div>
+
+    {# --- 検索フォームエリア --- #}
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3">
@@ -22,20 +38,23 @@
         </div>
     </div>
 
+    {# --- タイヤカード一覧エリア --- #}
     <div class="row row-cols-1 row-cols-md-3 g-4">
         {% for tire in tires %}
             {% with status=tire.get_stock_status %}
             <div class="col">
                 <div class="card h-100 shadow-sm border-0">
+                    {# カードヘッダー：在庫ステータス #}
                     <div class="card-header bg-transparent border-0 d-flex justify-content-end">
                         <span class="badge rounded-pill bg-{{ status.color }} px-3">
                             {{ status.text }}
                         </span>
                     </div>
 
+                    {# カードボディ：タイヤ詳細情報 #}
                     <div class="card-body pt-0">
-                            <h6 class="text-primary mb-1 mt-n1" style="font-size: 0.8rem; letter-spacing: 0.05rem;">
-                                {{ tire.manufacturer }}
+                        <h6 class="text-primary mb-1 mt-n1" style="font-size: 0.8rem; letter-spacing: 0.05rem;">
+                            {{ tire.manufacturer }}
                         </h6>
                         <h5 class="card-title fw-bold mb-3">{{ tire.brand }}</h5>
 
@@ -49,9 +68,7 @@
                             </div>
                         {% endif %}
 
-
                         {% load humanize %}
-
                         <div class="mt-3 p-3 bg-light rounded border-0">
                             <div class="d-flex align-items-baseline justify-content-between">
                                 <span class="small text-muted fw-bold">1本単価</span>
@@ -62,23 +79,24 @@
                             </div>
 
                             {% if tire.set_price %}
-                                <div class="mt-2 py-1 px-2 border-0 text-center"> <small class="text-danger fw-bold"> <i class="bi bi-stars"></i>☆お得な４本セット購入特価☆ ¥{{ tire.set_price|intcomma }} (税込)
+                                <div class="mt-2 py-1 px-2 border-0 text-center">
+                                    <small class="text-danger fw-bold">
+                                        <i class="bi bi-stars"></i>☆お得な４本セット購入特価☆ ¥{{ tire.set_price|intcomma }} (税込)
                                     </small>
                                 </div>
                             {% endif %}
                         </div>
-
-
-                        {% if tire.description %}
-                            <p class="small text-muted mt-2">{{ tire.description|truncatechars:40 }}</p>
-                        {% endif %}
                     </div>
 
+                    {# カードフッター：見積追加フォーム #}
                     <div class="card-footer bg-transparent border-0 pb-3">
-                        <form method="POST" action="{% url 'estimate:add_item' %}" class="row g-2">
+                        {# 🎯 URLは常に一つ：新しいViewに合わせて変更 #}
+                        <form method="POST" action="{% url 'estimate:add_item' tire.id %}" class="row g-2">
                             {% csrf_token %}
-                            <input type="hidden" name="tire_id" value="{{ tire.id }}">
                             
+                            {# 🎯 重要：estimate_idを隠しデータとして送る #}
+                            <input type="hidden" name="estimate_id" value="{{ estimate_id }}">
+
                             <div class="col-8">
                                 <select name="position" class="form-select form-select-sm">
                                     <option value="all">前後同サイズ</option>
@@ -102,7 +120,7 @@
                         </form>
                     </div>
                 </div>
-            </div> 
+            </div>
             {% endwith %}
         {% empty %}
             <div class="col-12 text-center py-5">
@@ -113,14 +131,8 @@
 </div>
 
 <style>
-    /* カードにマウスホバーの効果を付与 */
     .card { transition: transform 0.2s; }
     .card:hover { transform: translateY(-5px); box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15)!important; }
     .badge { font-size: 0.85rem; }
-    
-    /* ブランドコメントの微調整 */
-    .brand-comment {
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-    }
 </style>
 {% endblock %}

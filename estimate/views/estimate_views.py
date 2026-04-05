@@ -1,14 +1,18 @@
-import json
-from django.views.generic import ListView, CreateView, DetailView
-from django.forms import inlineformset_factory
-from django.urls import reverse
-from django.shortcuts import redirect, get_object_or_404, render
-from django.contrib.auth import get_user_model
+import json # タイヤマスタの価格情報をJSに渡すために使用
+from django.views.generic import ListView, CreateView, DetailView # クラスベースView用
+from django.forms import inlineformset_factory # フォームセット用
+from django.urls import reverse # URLリバース用
+from django.shortcuts import redirect, get_object_or_404, render # リダイレクトとオブジェクト取得用
 
-from inventory.models import Tire
-from ..models import Estimate, EstimateItem, EstimateStatus
-from ..forms import EstimateTireForm
-from ..services.usecase import EstimateUseCase
+
+from django.contrib import messages  # 通知用
+from django.contrib.auth import get_user_model  # ユーザーモデル用
+
+from inventory.models import Tire # タイヤマスタの情報を取得するためにインポート
+from ..forms import EstimateTireForm # タイヤ明細用のフォーム
+from ..services.usecase import EstimateUseCase # ビジネスロジックを担うUseCaseクラス
+from ..models import Estimate, EstimateItem, EstimateStatus, ChargeMaster  # 見積関連のモデルをインポート
+
 
 # ユーザーモデルを取得
 User = get_user_model()
@@ -209,17 +213,70 @@ def estimate_print(request, pk):
 #==========================================
 # 4. APIで呼び出すための関数ベースView（add_item）
 #========================================== 
-def add_item(request):
+# 画面上の「タイヤ追加」ボタンからPOSTリクエストで呼び出される
+def add_item(request, tire_id):
     if request.method == "POST":
-        # フォームからデータを受け取る
-        tire_id = request.POST.get('tire_id')
-        quantity = request.POST.get('quantity')
-        position = request.POST.get('position')
+        User = get_user_model() # ユーザーモデルを取得
         
-        # デバッグ用（ターミナルに表示されます）
-        print(f"DEBUG: タイヤID {tire_id} を {quantity}本 ({position}) 追加リクエスト")
+        # 🎯 フォームの hidden input から見積IDを取得
+        estimate_id = request.POST.get("estimate_id")
 
-        # 保存ロジックは後で作るとして、一旦一覧に戻す
-        return redirect('inventory:tire_list')
-    
-    return redirect('inventory:tire_list')
+        # 1. 見積オブジェクトを特定または新規作成
+        if estimate_id and estimate_id != "None" and estimate_id != "":
+            # 既存の見積に追加する場合
+            estimate = get_object_or_404(Estimate, id=estimate_id)
+        else:
+            # --- 🎯 開発用の超安全ユーザー取得 ---
+            # ログイン状態に関わらず、DBに存在する「最初のユーザー」を強制的に取得する
+            current_user = User.objects.first() 
+            
+            # もしユーザーが1人もいなければ、処理を中断して一覧に戻す
+            if not current_user:
+                messages.error(request, "管理画面からユーザー（superuser）を1人以上作成してください。")
+                return redirect('inventory:tire_list')
+
+            # 新規見積を作成
+            estimate = Estimate.objects.create(
+                customer_name="新規顧客",
+                created_by=current_user  # 👈 これで実在するIDが100%入ります
+            )
+        
+        # 2. 追加するタイヤを取得
+        tire = get_object_or_404(Tire, id=tire_id)
+        
+        # 3. フォームから数量と装着位置を取得
+        # 数字以外の変な値が入ってきてもエラーにならないよう try-except で囲む
+        try:
+            qty = int(request.POST.get("quantity", 4))
+        except (ValueError, TypeError):
+            qty = 4
+        
+        # 装着位置を取得（all, front, rear）
+        pos = request.POST.get("position", "all")
+
+        # 🎯 最後の落とし穴対策：工賃マスタの存在チェック
+        # マスタが0件だと、後続の保存処理でFOREIGN KEYエラーになるため事前に防ぐ
+        master = ChargeMaster.objects.first()
+        if not master:
+            messages.error(request, "工賃マスタが存在しません。管理画面またはシェルから登録してください。")
+            return redirect('inventory:tire_list')
+
+        # 4. 見積明細（EstimateItem）を作成または更新
+        # position も検索条件に含めることで、同じタイヤでも前輪と後輪を別々に保存
+        item, created = EstimateItem.objects.get_or_create(
+            estimate=estimate,
+            tire=tire,
+            position=pos, # 👈 モデルに追加した position と連動！
+            defaults={
+                'quantity': qty, 
+                'cost_master': master # 👈 Noneではなく有効なマスタをセット
+            }
+        )
+        
+        # すでに同じタイヤ・同じ位置のものがカートにあれば、数量だけ増やす
+        if not created:
+            item.quantity += qty
+            item.save()
+            
+        # 5. 完成した見積の詳細画面へリダイレクト
+        return redirect('estimate:estimate_detail', pk=estimate.id)

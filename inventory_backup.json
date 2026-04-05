@@ -1,0 +1,4860 @@
+[
+{
+  "model": "inventory.brand",
+  "pk": 1,
+  "fields": {
+    "name": "ブルーアース RV RV03CK",
+    "comment": "コンパクトミニバン・軽ハイトワゴン専用タイヤ\r\nふらつきや偏摩耗も抑え、安心・安全が長く続く\r\nウェットグリップ性能“a”で雨でも安心！"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 2,
+  "fields": {
+    "name": "プラクティバ",
+    "comment": "イエローハットオリジナル国産タイヤ\r\nリーズナブルな価格を実現！"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 3,
+  "fields": {
+    "name": "エナセーブ EC204",
+    "comment": "タイヤ寿命の延長に焦点を当てた長持ちタイヤ\r\n左右非対称パターン採用で耐摩耗性能向上！\r\n燃費性能を重視する方にもおすすめ\r\n転がり抵抗性能：AA"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 4,
+  "fields": {
+    "name": "ブルーアース RV RV03",
+    "comment": "ミニバン向けタイヤ\r\nふらつきや偏摩耗も抑え、安心・安全が長く続く\r\nウェットグリップ性能“a”で、雨でも安心！"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 5,
+  "fields": {
+    "name": "エコファイン",
+    "comment": "イエローハットオリジナル国産低燃費タイヤ\r\n転がり抵抗性能：A\r\nウェットグリップ性能：ｃ"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 6,
+  "fields": {
+    "name": "ル・マン LM5+",
+    "comment": "バランスの取れたコンポートタイヤ\r\n特殊吸音スポンジにより静粛性に優れており、燃費節約も実現！\r\n転がり抵抗性能：AA\r\nウェットグリップ性能：b"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 7,
+  "fields": {
+    "name": "キナジーエコ RV",
+    "comment": "経済的なミニバン専用タイヤ\r\n走行時のふらつきを抑え、安定性と優れたハンドリング性能を実現\r\nミニバンの運転をより快適に！"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 8,
+  "fields": {
+    "name": "エコス ES31",
+    "comment": "低燃費を実現するために、転がり抵抗の少ないタイヤ構造を採用\r\n転がり抵抗性能：A\r\n車外通過騒音の低減によって周辺生活環境にも配慮したトータルバランス実現のタイヤ"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 9,
+  "fields": {
+    "name": "Cinturato ROSSO",
+    "comment": "乗り心地・静粛性を重視したコンフォートタイヤ\r\n日常の運転から長距離ドライブまで高い安全性と快適性を求めるユーザー向け\r\nウエットグリップ性能は最高グレードの”a”取得！"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 10,
+  "fields": {
+    "name": "エナセーブ RV505",
+    "comment": "安定性と快適性を重視したミニバン・小型SUV用タイヤ\r\nアウト側のブロックを大きく設計することで、コーナリング時も操縦が安定！\r\n低燃費も実現\r\n転がり抵抗性能：AA"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 11,
+  "fields": {
+    "name": "エナセーブ VAN01",
+    "comment": "軽トラ・バン専用タイヤ\r\n耐摩耗性に優れたゴムを採用で偏摩耗を抑制！\r\n特殊なパターン設計によりロードノイズを低減し、燃費も向上"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 12,
+  "fields": {
+    "name": "エコピア NH200C",
+    "comment": "軽自動車・コンパクトカー専用タイヤ\r\n頻繁な発進・停止や小回りの多い市街地走行に最適\r\n静粛性と乗り心地を重視した設計"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 13,
+  "fields": {
+    "name": "レグノ GR-XⅢ",
+    "comment": "静粛性・乗り心地・走行性能・サステナビリティの4つの性能軸で特別な設計がなされたプレミアムコンフォートタイヤ\r\n街乗りから長距離ドライブまで、クルマで過ごす時間を快適に！\r\nウェットグリップ性能：a"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 14,
+  "fields": {
+    "name": "Ventus Prime4",
+    "comment": "静粛性・乗り心地・グリップ力・ハンドリング・価格のバランスが取れた非常に優れたタイヤ\r\nドライ路面でのスムーズなハンドリングを実現\r\nスムーズな接地でハンドリング性能が長持ち"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 15,
+  "fields": {
+    "name": "Ventus Prime3",
+    "comment": "コンフォートタイヤとスポーツタイヤの中間に位置するタイヤ\r\n高速走行時でも優れたグリップ力と快適な乗り心地\r\nブレーキをかけると瞬間的に接地面が広がり優れたトラクション性能を発揮！"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 16,
+  "fields": {
+    "name": "アレンザ 001",
+    "comment": "SUV専用の高性能タイヤ\r\nドライ・ウェット両路面で高いグリップ力を発揮、高速でもぶれない安定性も追求！\r\n低燃費・長寿命でSUVのパフォーマンスを最大限に引き出す設計"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 17,
+  "fields": {
+    "name": "アレンザ LX100",
+    "comment": "静粛性と耐久性に優れたSUV専用タイヤ\r\n進化したサイレントテクノロジーを搭載\r\n安定した走行を維持し、ロードノイズやパターンノイズを大幅に抑えることで静かな車内環境を実現"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 18,
+  "fields": {
+    "name": "グラントレック PT5",
+    "comment": "幅広いシーンで活躍するオンロード向けのSUV用タイヤ\r\n走りの安定性と、ウエット性能を特に高めた設計\r\nゲリラ豪雨のような激しい雨の中でも排水性が高く、ブレーキを踏んだ際のしっかり路面を掴んでいる感覚を実感"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 19,
+  "fields": {
+    "name": "Earth-1 EP400",
+    "comment": "イエローハット専売タイヤ\r\nオレンジオイル配合コンパウンドにより、タイヤ表面を路面にしなやかに密着させ、摩擦力を高め確かなグリップ力を発揮"
+  }
+},
+{
+  "model": "inventory.brand",
+  "pk": 20,
+  "fields": {
+    "name": "Y355D",
+    "comment": "軽トラック・軽バン向け商用タイヤ\r\n街乗りから長距離配送まで幅広く対応\r\nコストパフォーマンスが良く、根強い人気！"
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 1,
+  "fields": {
+    "product_code": "324894",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "145/80R13 75S",
+    "unit_price": 6160,
+    "set_price": 14800,
+    "reorder_point": 8,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 2,
+  "fields": {
+    "product_code": "324895",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "165/70R14 81S",
+    "unit_price": 7480,
+    "set_price": 19800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 3,
+  "fields": {
+    "product_code": "324896",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "175/70R14 84S",
+    "unit_price": 8030,
+    "set_price": 19800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 4,
+  "fields": {
+    "product_code": "330802",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "185/70R14 88S",
+    "unit_price": 8470,
+    "set_price": 22800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 5,
+  "fields": {
+    "product_code": "324897",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "155/65R13 73S",
+    "unit_price": 5060,
+    "set_price": 10800,
+    "reorder_point": 8,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 6,
+  "fields": {
+    "product_code": "324898",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "155/65R14 75S",
+    "unit_price": 6490,
+    "set_price": 15800,
+    "reorder_point": 20,
+    "stock_qty": 30,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 7,
+  "fields": {
+    "product_code": "324899",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "175/65R14 82S",
+    "unit_price": 7810,
+    "set_price": 17800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 8,
+  "fields": {
+    "product_code": "359407",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "175/65R15 84S",
+    "unit_price": 9680,
+    "set_price": 24800,
+    "reorder_point": 4,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 9,
+  "fields": {
+    "product_code": "330803",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "185/65R15 88S",
+    "unit_price": 10230,
+    "set_price": 24800,
+    "reorder_point": 12,
+    "stock_qty": 10,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 10,
+  "fields": {
+    "product_code": "324900",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "195/65R15 91S",
+    "unit_price": 11110,
+    "set_price": 25800,
+    "reorder_point": 12,
+    "stock_qty": 10,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 11,
+  "fields": {
+    "product_code": "359408",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "185/60R15 84H",
+    "unit_price": 12100,
+    "set_price": 32800,
+    "reorder_point": 12,
+    "stock_qty": 12,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 12,
+  "fields": {
+    "product_code": "359409",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "205/60R16 92H",
+    "unit_price": 13970,
+    "set_price": 37800,
+    "reorder_point": 4,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 13,
+  "fields": {
+    "product_code": "330804",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "215/60R16 95H",
+    "unit_price": 14300,
+    "set_price": 43800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 14,
+  "fields": {
+    "product_code": "324901",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "165/55R14 72V",
+    "unit_price": 9020,
+    "set_price": 21800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 15,
+  "fields": {
+    "product_code": "324902",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "165/55R15 75V",
+    "unit_price": 10120,
+    "set_price": 24800,
+    "reorder_point": 16,
+    "stock_qty": 20,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 16,
+  "fields": {
+    "product_code": "330805",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "205/55R16 91V",
+    "unit_price": 13970,
+    "set_price": 33800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 17,
+  "fields": {
+    "product_code": "330806",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "215/55R17 94V",
+    "unit_price": 15510,
+    "set_price": 39800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 18,
+  "fields": {
+    "product_code": "330807",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "215/45R17 87W",
+    "unit_price": 14740,
+    "set_price": 35800,
+    "reorder_point": 4,
+    "stock_qty": 12,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 19,
+  "fields": {
+    "product_code": "324903",
+    "manufacturer": "PRACTIVA",
+    "brand_link": 2,
+    "brand": "プラクティバ",
+    "size_raw": "225/45R18 91W",
+    "unit_price": 21340,
+    "set_price": 61800,
+    "reorder_point": 4,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 20,
+  "fields": {
+    "product_code": "316355",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 20,
+    "brand": "Y355D",
+    "size_raw": "145R12 6PR",
+    "unit_price": 9900,
+    "set_price": 15800,
+    "reorder_point": 8,
+    "stock_qty": 16,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 21,
+  "fields": {
+    "product_code": "324719",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "145/80R13 75S",
+    "unit_price": 6820,
+    "set_price": 21800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 22,
+  "fields": {
+    "product_code": "324720",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "155/80R13 79S",
+    "unit_price": 7920,
+    "set_price": 27800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 23,
+  "fields": {
+    "product_code": "324721",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "165/70R14 81S",
+    "unit_price": 8910,
+    "set_price": 25800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 24,
+  "fields": {
+    "product_code": "324722",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "175/70R14 84S",
+    "unit_price": 9900,
+    "set_price": 29800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 25,
+  "fields": {
+    "product_code": "324723",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "185/70R14 88S",
+    "unit_price": 10450,
+    "set_price": 32800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 26,
+  "fields": {
+    "product_code": "324724",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "155/65R13 73S",
+    "unit_price": 6600,
+    "set_price": 18800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 27,
+  "fields": {
+    "product_code": "324725",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "155/65R14 75S",
+    "unit_price": 7920,
+    "set_price": 21800,
+    "reorder_point": 20,
+    "stock_qty": 24,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 28,
+  "fields": {
+    "product_code": "324726",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "175/65R14 82S",
+    "unit_price": 9240,
+    "set_price": 27800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 29,
+  "fields": {
+    "product_code": "324727",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "185/65R14 86S",
+    "unit_price": 10670,
+    "set_price": 37800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 30,
+  "fields": {
+    "product_code": "324728",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "175/65R15 84H",
+    "unit_price": 11110,
+    "set_price": 33800,
+    "reorder_point": 4,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 31,
+  "fields": {
+    "product_code": "324729",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "185/65R15 88S",
+    "unit_price": 12100,
+    "set_price": 35800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 32,
+  "fields": {
+    "product_code": "324730",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "195/65R15 91H",
+    "unit_price": 12430,
+    "set_price": 37800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 33,
+  "fields": {
+    "product_code": "324731",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "205/65R15 94H",
+    "unit_price": 13310,
+    "set_price": 47800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 34,
+  "fields": {
+    "product_code": "324732",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "185/60R15 84H",
+    "unit_price": 13860,
+    "set_price": 43800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 35,
+  "fields": {
+    "product_code": "324733",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "175/60R16 82H",
+    "unit_price": 12320,
+    "set_price": 46800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 36,
+  "fields": {
+    "product_code": "324734",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "195/60R16 89H",
+    "unit_price": 15620,
+    "set_price": 49800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 37,
+  "fields": {
+    "product_code": "324735",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "205/60R16 92H",
+    "unit_price": 16280,
+    "set_price": 49800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 38,
+  "fields": {
+    "product_code": "324736",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "215/60R16 95H",
+    "unit_price": 16500,
+    "set_price": 52800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 39,
+  "fields": {
+    "product_code": "324737",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "165/55R14 72V",
+    "unit_price": 10010,
+    "set_price": 31800,
+    "reorder_point": 4,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 40,
+  "fields": {
+    "product_code": "324738",
+    "manufacturer": "ECOFINE",
+    "brand_link": 5,
+    "brand": "エコファイン",
+    "size_raw": "165/55R15 75V",
+    "unit_price": 10890,
+    "set_price": 33800,
+    "reorder_point": 8,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 41,
+  "fields": {
+    "product_code": "354037",
+    "manufacturer": "Hankook",
+    "brand_link": 7,
+    "brand": "キナジーエコ RV",
+    "size_raw": "195/65R15 91H",
+    "unit_price": 20790,
+    "set_price": 44800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 42,
+  "fields": {
+    "product_code": "354039",
+    "manufacturer": "Hankook",
+    "brand_link": 7,
+    "brand": "キナジーエコ RV",
+    "size_raw": "195/60R16 89H",
+    "unit_price": 21230,
+    "set_price": 50800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 43,
+  "fields": {
+    "product_code": "354040",
+    "manufacturer": "Hankook",
+    "brand_link": 7,
+    "brand": "キナジーエコ RV",
+    "size_raw": "205/60R16 92H",
+    "unit_price": 23100,
+    "set_price": 55800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 44,
+  "fields": {
+    "product_code": "349427",
+    "manufacturer": "Hankook",
+    "brand_link": 7,
+    "brand": "キナジーエコ RV",
+    "size_raw": "215/60R17 100H",
+    "unit_price": 27280,
+    "set_price": 64800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 45,
+  "fields": {
+    "product_code": "349431",
+    "manufacturer": "Hankook",
+    "brand_link": 7,
+    "brand": "キナジーエコ RV",
+    "size_raw": "235/50R18 101W",
+    "unit_price": 31460,
+    "set_price": 79800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 46,
+  "fields": {
+    "product_code": "407464",
+    "manufacturer": "Hankook",
+    "brand_link": 14,
+    "brand": "Ventus Prime4",
+    "size_raw": "225/65R17 102H",
+    "unit_price": 27280,
+    "set_price": 59800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 47,
+  "fields": {
+    "product_code": "403948",
+    "manufacturer": "Hankook",
+    "brand_link": 15,
+    "brand": "Ventus Prime3",
+    "size_raw": "225/55R18 98V",
+    "unit_price": 31460,
+    "set_price": 79800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 48,
+  "fields": {
+    "product_code": "403950",
+    "manufacturer": "Hankook",
+    "brand_link": 15,
+    "brand": "Ventus Prime3",
+    "size_raw": "225/50R18 95W",
+    "unit_price": 31900,
+    "set_price": 77800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 49,
+  "fields": {
+    "product_code": "290199",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "155/65R14 75S",
+    "unit_price": 12430,
+    "set_price": 24800,
+    "reorder_point": 4,
+    "stock_qty": 12,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 50,
+  "fields": {
+    "product_code": "297439",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "165/65R14 79S",
+    "unit_price": 13750,
+    "set_price": 36800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 51,
+  "fields": {
+    "product_code": "290200",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "175/65R14 82S",
+    "unit_price": 15620,
+    "set_price": 35800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 52,
+  "fields": {
+    "product_code": "297442",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "175/65R15 84S",
+    "unit_price": 17270,
+    "set_price": 41800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 53,
+  "fields": {
+    "product_code": "290203",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "185/65R15 88S",
+    "unit_price": 19030,
+    "set_price": 44800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 54,
+  "fields": {
+    "product_code": "290204",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "195/65R15 91S",
+    "unit_price": 21780,
+    "set_price": 47800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 55,
+  "fields": {
+    "product_code": "238460",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 19,
+    "brand": "Earth-1 EP400",
+    "size_raw": "165/60R15 77H",
+    "unit_price": 17490,
+    "set_price": 39800,
+    "reorder_point": 4,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 56,
+  "fields": {
+    "product_code": "290209",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "185/60R15 84H",
+    "unit_price": 20790,
+    "set_price": 49800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 57,
+  "fields": {
+    "product_code": "290211",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "175/60R16 82H",
+    "unit_price": 22330,
+    "set_price": 52800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 58,
+  "fields": {
+    "product_code": "290212",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "205/60R16 92H",
+    "unit_price": 25520,
+    "set_price": 55800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 59,
+  "fields": {
+    "product_code": "324282",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "165/55R14 72V",
+    "unit_price": 16500,
+    "set_price": 38800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 60,
+  "fields": {
+    "product_code": "290214",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "165/55R15 75V",
+    "unit_price": 18370,
+    "set_price": 40800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 61,
+  "fields": {
+    "product_code": "290215",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "185/55R15 82V",
+    "unit_price": 22770,
+    "set_price": 57800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 62,
+  "fields": {
+    "product_code": "297450",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "185/55R16 83V",
+    "unit_price": 26730,
+    "set_price": 64800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 63,
+  "fields": {
+    "product_code": "290216",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "205/55R16 91V",
+    "unit_price": 28600,
+    "set_price": 59800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 64,
+  "fields": {
+    "product_code": "290217",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "215/55R17 94V",
+    "unit_price": 31130,
+    "set_price": 69800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 65,
+  "fields": {
+    "product_code": "297454",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "215/50R17 91V",
+    "unit_price": 36410,
+    "set_price": 74800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 66,
+  "fields": {
+    "product_code": "290219",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "215/45R17 91W",
+    "unit_price": 36520,
+    "set_price": 79800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 67,
+  "fields": {
+    "product_code": "290220",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 8,
+    "brand": "エコス ES31",
+    "size_raw": "225/45R18 95W",
+    "unit_price": 41800,
+    "set_price": 85800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 68,
+  "fields": {
+    "product_code": "360203",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "145/80R13 75S",
+    "unit_price": 11110,
+    "set_price": 24800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 69,
+  "fields": {
+    "product_code": "360209",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "165/70R14 81S",
+    "unit_price": 13200,
+    "set_price": 31800,
+    "reorder_point": 4,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 70,
+  "fields": {
+    "product_code": "360210",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "175/70R14 84S",
+    "unit_price": 14630,
+    "set_price": 35800,
+    "reorder_point": 4,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 71,
+  "fields": {
+    "product_code": "360211",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "185/70R14 88C",
+    "unit_price": 17270,
+    "set_price": 39800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 72,
+  "fields": {
+    "product_code": "360216",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "155/65R13 73S",
+    "unit_price": 11770,
+    "set_price": 25800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 73,
+  "fields": {
+    "product_code": "360218",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "155/65R14 75S",
+    "unit_price": 13090,
+    "set_price": 25800,
+    "reorder_point": 16,
+    "stock_qty": 24,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 74,
+  "fields": {
+    "product_code": "360219",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "165/65R14 79S",
+    "unit_price": 13200,
+    "set_price": 31800,
+    "reorder_point": 4,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 75,
+  "fields": {
+    "product_code": "360220",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "175/65R14 82S",
+    "unit_price": 16170,
+    "set_price": 36800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 76,
+  "fields": {
+    "product_code": "360224",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "165/65R15 81S",
+    "unit_price": 15180,
+    "set_price": 36800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 77,
+  "fields": {
+    "product_code": "360225",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "175/65R15 84H",
+    "unit_price": 17270,
+    "set_price": 38800,
+    "reorder_point": 4,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 78,
+  "fields": {
+    "product_code": "360226",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "185/65R15 88S",
+    "unit_price": 19690,
+    "set_price": 42800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 79,
+  "fields": {
+    "product_code": "360227",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "195/65R15 91H",
+    "unit_price": 21560,
+    "set_price": 46800,
+    "reorder_point": 4,
+    "stock_qty": 6,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 80,
+  "fields": {
+    "product_code": "360235",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "165/60R15 77H",
+    "unit_price": 17380,
+    "set_price": 42800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 81,
+  "fields": {
+    "product_code": "360237",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "185/60R15 84H",
+    "unit_price": 21230,
+    "set_price": 47800,
+    "reorder_point": 4,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 82,
+  "fields": {
+    "product_code": "360247",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "165/55R14 72V",
+    "unit_price": 16170,
+    "set_price": 36800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 83,
+  "fields": {
+    "product_code": "360248",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "165/55R15 75V",
+    "unit_price": 17380,
+    "set_price": 39800,
+    "reorder_point": 8,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 84,
+  "fields": {
+    "product_code": "360266",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "215/45R18 93W",
+    "unit_price": 47190,
+    "set_price": 130800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 85,
+  "fields": {
+    "product_code": "360267",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "225/45R18 95W",
+    "unit_price": 47190,
+    "set_price": 104800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 86,
+  "fields": {
+    "product_code": "360264",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "225/50R18 95V",
+    "unit_price": 43560,
+    "set_price": 120800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 87,
+  "fields": {
+    "product_code": "360265",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "215/45R17 91W",
+    "unit_price": 40480,
+    "set_price": 89800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 88,
+  "fields": {
+    "product_code": "360261",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "205/50R17 89V",
+    "unit_price": 34870,
+    "set_price": 77800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 89,
+  "fields": {
+    "product_code": "360262",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "215/50R17 91V",
+    "unit_price": 38610,
+    "set_price": 86800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 90,
+  "fields": {
+    "product_code": "360256",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "215/55R17 94V",
+    "unit_price": 32560,
+    "set_price": 72800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 91,
+  "fields": {
+    "product_code": "360257",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "225/55R17 97W",
+    "unit_price": 26410,
+    "set_price": 100800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 92,
+  "fields": {
+    "product_code": "401754",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "195/60R17 90H",
+    "unit_price": 30910,
+    "set_price": 89800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 93,
+  "fields": {
+    "product_code": "360245",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "215/60R17 96H",
+    "unit_price": 31570,
+    "set_price": 87800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 94,
+  "fields": {
+    "product_code": "360252",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "185/55R16 83V",
+    "unit_price": 26730,
+    "set_price": 59800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 95,
+  "fields": {
+    "product_code": "360253",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "195/55R16 87V",
+    "unit_price": 28380,
+    "set_price": 63800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 96,
+  "fields": {
+    "product_code": "360254",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "205/55R16 91V",
+    "unit_price": 29700,
+    "set_price": 65800,
+    "reorder_point": 4,
+    "stock_qty": 12,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 97,
+  "fields": {
+    "product_code": "360240",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "175/60R16 82H",
+    "unit_price": 22550,
+    "set_price": 62800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 98,
+  "fields": {
+    "product_code": "360241",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "185/60R16 86H",
+    "unit_price": 25190,
+    "set_price": 65800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 99,
+  "fields": {
+    "product_code": "360242",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "195/60R16 89H",
+    "unit_price": 25740,
+    "set_price": 70800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 100,
+  "fields": {
+    "product_code": "360243",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "205/60R16 92H",
+    "unit_price": 25740,
+    "set_price": 59800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 101,
+  "fields": {
+    "product_code": "360244",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "215/60R16 95H",
+    "unit_price": 28270,
+    "set_price": 63800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 102,
+  "fields": {
+    "product_code": "360230",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "205/65R16 95H",
+    "unit_price": 30030,
+    "set_price": 82800,
+    "reorder_point": 4,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 103,
+  "fields": {
+    "product_code": "360231",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "215/65R16 98H",
+    "unit_price": 31790,
+    "set_price": 87800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 104,
+  "fields": {
+    "product_code": "360249",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "175/55R15 77V",
+    "unit_price": 23430,
+    "set_price": 56800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 105,
+  "fields": {
+    "product_code": "360250",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "185/55R15 82V",
+    "unit_price": 24200,
+    "set_price": 58800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 106,
+  "fields": {
+    "product_code": "360228",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "205/65R15 94H",
+    "unit_price": 25190,
+    "set_price": 69800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 107,
+  "fields": {
+    "product_code": "360217",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "165/65R13 77S",
+    "unit_price": 14630,
+    "set_price": 39800,
+    "reorder_point": 0,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 108,
+  "fields": {
+    "product_code": "360206",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "155/70R13 75S",
+    "unit_price": 12320,
+    "set_price": 31800,
+    "reorder_point": 4,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 109,
+  "fields": {
+    "product_code": "360204",
+    "manufacturer": "DUNLOP",
+    "brand_link": 3,
+    "brand": "エナセーブ EC204",
+    "size_raw": "155/80R13 79S",
+    "unit_price": 13750,
+    "set_price": 32800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 110,
+  "fields": {
+    "product_code": "408527",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "215/65R16 98H",
+    "unit_price": 17450,
+    "set_price": 69800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 111,
+  "fields": {
+    "product_code": "400208",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/65R17 102H",
+    "unit_price": 18700,
+    "set_price": 74800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 112,
+  "fields": {
+    "product_code": "421468",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "205/60R16 92V",
+    "unit_price": 15700,
+    "set_price": 62800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 113,
+  "fields": {
+    "product_code": "421469",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "215/60R16 99V",
+    "unit_price": 16450,
+    "set_price": 65800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 114,
+  "fields": {
+    "product_code": "408528",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/60R17 99H",
+    "unit_price": 18700,
+    "set_price": 74800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 115,
+  "fields": {
+    "product_code": "400210",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/60R18 100H",
+    "unit_price": 24950,
+    "set_price": 99800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 116,
+  "fields": {
+    "product_code": "408529",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "235/60R18 107V",
+    "unit_price": 27000,
+    "set_price": 108000,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 117,
+  "fields": {
+    "product_code": "408530",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "165/55R15 75V",
+    "unit_price": 18700,
+    "set_price": 48800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 118,
+  "fields": {
+    "product_code": "400211",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "205/55R16 91V",
+    "unit_price": 16200,
+    "set_price": 59800,
+    "reorder_point": 4,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 119,
+  "fields": {
+    "product_code": "400212",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "215/55R17 94V",
+    "unit_price": 17700,
+    "set_price": 70800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 120,
+  "fields": {
+    "product_code": "400213",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/55R17 97Y",
+    "unit_price": 22200,
+    "set_price": 88800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 121,
+  "fields": {
+    "product_code": "408531",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/55R18 98H",
+    "unit_price": 24700,
+    "set_price": 98800,
+    "reorder_point": 0,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 122,
+  "fields": {
+    "product_code": "400214",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "235/55R18 104V",
+    "unit_price": 24450,
+    "set_price": 97800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 123,
+  "fields": {
+    "product_code": "400215",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "235/55R19 105W",
+    "unit_price": 29950,
+    "set_price": 119800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 124,
+  "fields": {
+    "product_code": "408532",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "205/50R17 93V",
+    "unit_price": 202000,
+    "set_price": 80800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 125,
+  "fields": {
+    "product_code": "421470",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "215/50R17 95W",
+    "unit_price": 20700,
+    "set_price": 82800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 126,
+  "fields": {
+    "product_code": "400216",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/50R17 98Y",
+    "unit_price": 23700,
+    "set_price": 94800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 127,
+  "fields": {
+    "product_code": "400217",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/50R18 99W",
+    "unit_price": 21700,
+    "set_price": 86800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 128,
+  "fields": {
+    "product_code": "400218",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "235/50R18 97V",
+    "unit_price": 22700,
+    "set_price": 90800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 129,
+  "fields": {
+    "product_code": "408533",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "235/50R19 99V",
+    "unit_price": 32450,
+    "set_price": 129800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 130,
+  "fields": {
+    "product_code": "400219",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "205/45R17 88W",
+    "unit_price": 24950,
+    "set_price": 99800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 131,
+  "fields": {
+    "product_code": "421471",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "215/45R17 91W",
+    "unit_price": 20450,
+    "set_price": 69800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 132,
+  "fields": {
+    "product_code": "400220",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/45R17 94W",
+    "unit_price": 26450,
+    "set_price": 105800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 133,
+  "fields": {
+    "product_code": "400221",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "215/45R18 93W",
+    "unit_price": 29450,
+    "set_price": 117800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 134,
+  "fields": {
+    "product_code": "400222",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/45R18 95W",
+    "unit_price": 24500,
+    "set_price": 98000,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 135,
+  "fields": {
+    "product_code": "400223",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "235/45R18 98W",
+    "unit_price": 31450,
+    "set_price": 125800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 136,
+  "fields": {
+    "product_code": "408534",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/45R19 96W",
+    "unit_price": 34700,
+    "set_price": 138800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 137,
+  "fields": {
+    "product_code": "400224",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "245/45R19 102Y",
+    "unit_price": 35700,
+    "set_price": 142800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 138,
+  "fields": {
+    "product_code": "400225",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/40R18 92W",
+    "unit_price": 33200,
+    "set_price": 132800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 139,
+  "fields": {
+    "product_code": "400226",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "245/40R18 97Y",
+    "unit_price": 14850,
+    "set_price": 145800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 140,
+  "fields": {
+    "product_code": "408535",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "225/40R19 93Y",
+    "unit_price": 35700,
+    "set_price": 142800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 141,
+  "fields": {
+    "product_code": "400227",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "245/40R19 98W",
+    "unit_price": 43700,
+    "set_price": 174800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 142,
+  "fields": {
+    "product_code": "408536",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "255/40R19 100Y",
+    "unit_price": 411950,
+    "set_price": 167800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 143,
+  "fields": {
+    "product_code": "408537",
+    "manufacturer": "PIRELLI",
+    "brand_link": 9,
+    "brand": "Cinturato ROSSO",
+    "size_raw": "255/35R19 96Y",
+    "unit_price": 48700,
+    "set_price": 194800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 144,
+  "fields": {
+    "product_code": "376323",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "155/65R14 75H",
+    "unit_price": 15180,
+    "set_price": 32800,
+    "reorder_point": 16,
+    "stock_qty": 24,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 145,
+  "fields": {
+    "product_code": "376324",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "165/65R14 79S",
+    "unit_price": 16280,
+    "set_price": 44800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 146,
+  "fields": {
+    "product_code": "376329",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "195/65R15 91H",
+    "unit_price": 25960,
+    "set_price": 55800,
+    "reorder_point": 8,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 147,
+  "fields": {
+    "product_code": "376337",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "195/60R16 89H",
+    "unit_price": 26290,
+    "set_price": 62800,
+    "reorder_point": 8,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 148,
+  "fields": {
+    "product_code": "416345",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "205/60R16 96H",
+    "unit_price": 27610,
+    "set_price": 66800,
+    "reorder_point": 8,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 149,
+  "fields": {
+    "product_code": "376339",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "215/60R16 95H",
+    "unit_price": 28930,
+    "set_price": 69800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 150,
+  "fields": {
+    "product_code": "376340",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "215/60R17 96H",
+    "unit_price": 32340,
+    "set_price": 74800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 151,
+  "fields": {
+    "product_code": "376341",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "225/60R17 99H",
+    "unit_price": 31900,
+    "set_price": 77800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 152,
+  "fields": {
+    "product_code": "376342",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "165/55R15 75V",
+    "unit_price": 20680,
+    "set_price": 54800,
+    "reorder_point": 4,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 153,
+  "fields": {
+    "product_code": "416346",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "205/55R17 95V",
+    "unit_price": 33780,
+    "set_price": 91800,
+    "reorder_point": 4,
+    "stock_qty": 3,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 154,
+  "fields": {
+    "product_code": "376346",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "215/55R17 94V",
+    "unit_price": 33440,
+    "set_price": 85800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 155,
+  "fields": {
+    "product_code": "376356",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "225/50R18 95V",
+    "unit_price": 45540,
+    "set_price": 114800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 156,
+  "fields": {
+    "product_code": "376357",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "235/50R18 97W",
+    "unit_price": 41800,
+    "set_price": 105800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 157,
+  "fields": {
+    "product_code": "376360",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "225/45R18 95W",
+    "unit_price": 376360,
+    "set_price": 136800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 158,
+  "fields": {
+    "product_code": "376349",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "225/55R18 98V",
+    "unit_price": 44220,
+    "set_price": 122800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 159,
+  "fields": {
+    "product_code": "376350",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "235/55R18 100V",
+    "unit_price": 42020,
+    "set_price": 116800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 160,
+  "fields": {
+    "product_code": "376358",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "215/45R17 91W",
+    "unit_price": 40920,
+    "set_price": 113800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 161,
+  "fields": {
+    "product_code": "376352",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "205/50R17 93V",
+    "unit_price": 35310,
+    "set_price": 97800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 162,
+  "fields": {
+    "product_code": "376353",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "215/50R17 95V",
+    "unit_price": 39600,
+    "set_price": 103800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 163,
+  "fields": {
+    "product_code": "376354",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "225/50R17 98V",
+    "unit_price": 43450,
+    "set_price": 120800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 164,
+  "fields": {
+    "product_code": "376347",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "225/55R17 97W",
+    "unit_price": 39930,
+    "set_price": 110800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 165,
+  "fields": {
+    "product_code": "376344",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "205/55R16 91V",
+    "unit_price": 30030,
+    "set_price": 82800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 166,
+  "fields": {
+    "product_code": "376336",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "175/60R16 82H",
+    "unit_price": 24090,
+    "set_price": 66800,
+    "reorder_point": 0,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 167,
+  "fields": {
+    "product_code": "376332",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "205/65R16 95H",
+    "unit_price": 30360,
+    "set_price": 79800,
+    "reorder_point": 0,
+    "stock_qty": 5,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 168,
+  "fields": {
+    "product_code": "376333",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "215/65R16 98H",
+    "unit_price": 32450,
+    "set_price": 89800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 169,
+  "fields": {
+    "product_code": "376343",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "175/55R15 77V",
+    "unit_price": 25190,
+    "set_price": 69800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 170,
+  "fields": {
+    "product_code": "376334",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "165/60R15 77H",
+    "unit_price": 20900,
+    "set_price": 57800,
+    "reorder_point": 0,
+    "stock_qty": 3,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 171,
+  "fields": {
+    "product_code": "393491",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "185/60R15 84H",
+    "unit_price": 22330,
+    "set_price": 61800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 172,
+  "fields": {
+    "product_code": "376327",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "175/65R15 84H",
+    "unit_price": 19360,
+    "set_price": 53800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 173,
+  "fields": {
+    "product_code": "393490",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "185/65R15 92H",
+    "unit_price": 22330,
+    "set_price": 71800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 174,
+  "fields": {
+    "product_code": "376330",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "205/65R15 94H",
+    "unit_price": 25520,
+    "set_price": 70800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 175,
+  "fields": {
+    "product_code": "376325",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "175/65R14 82H",
+    "unit_price": 17380,
+    "set_price": 47800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 176,
+  "fields": {
+    "product_code": "376326",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "185/65R14 86H",
+    "unit_price": 18150,
+    "set_price": 49800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 177,
+  "fields": {
+    "product_code": "376319",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "185/70R14 88H",
+    "unit_price": 19250,
+    "set_price": 53800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 178,
+  "fields": {
+    "product_code": "376322",
+    "manufacturer": "DUNLOP",
+    "brand_link": 10,
+    "brand": "エナセーブ RV505",
+    "size_raw": "155/65R13 73H",
+    "unit_price": 14630,
+    "set_price": 39800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 179,
+  "fields": {
+    "product_code": "408933",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "155/65R14 75H",
+    "unit_price": 15730,
+    "set_price": 35800,
+    "reorder_point": 8,
+    "stock_qty": 12,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 180,
+  "fields": {
+    "product_code": "408934",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "165/65R14 79H",
+    "unit_price": 16500,
+    "set_price": 47800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 181,
+  "fields": {
+    "product_code": "408937",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "175/65R15 84H",
+    "unit_price": 19580,
+    "set_price": 54800,
+    "reorder_point": 0,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 182,
+  "fields": {
+    "product_code": "408938",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "185/65R15 88H",
+    "unit_price": 22660,
+    "set_price": 61800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 183,
+  "fields": {
+    "product_code": "408939",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "195/65R15 91H",
+    "unit_price": 25520,
+    "set_price": 66800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 184,
+  "fields": {
+    "product_code": "408944",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "185/60R15 84H",
+    "unit_price": 23540,
+    "set_price": 65800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 185,
+  "fields": {
+    "product_code": "408948",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "205/60R16 92H",
+    "unit_price": 29920,
+    "set_price": 73800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 186,
+  "fields": {
+    "product_code": "408951",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "165/55R15 75V",
+    "unit_price": 21340,
+    "set_price": 55800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 187,
+  "fields": {
+    "product_code": "408955",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "185/55R16 83V",
+    "unit_price": 30580,
+    "set_price": 84800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 188,
+  "fields": {
+    "product_code": "408957",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "205/55R16 91V",
+    "unit_price": 32010,
+    "set_price": 84800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 189,
+  "fields": {
+    "product_code": "408959",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "215/55R17 94V",
+    "unit_price": 37290,
+    "set_price": 95800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 190,
+  "fields": {
+    "product_code": "408973",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "215/45R17 91W",
+    "unit_price": 44000,
+    "set_price": 114800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 191,
+  "fields": {
+    "product_code": "408977",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "225/45R18 95W",
+    "unit_price": 53460,
+    "set_price": 124800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 192,
+  "fields": {
+    "product_code": "408989",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "225/40R19 89W",
+    "unit_price": 68860,
+    "set_price": 190800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 193,
+  "fields": {
+    "product_code": "408991",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "245/40R19 98W",
+    "unit_price": 72710,
+    "set_price": 201800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 194,
+  "fields": {
+    "product_code": "408980",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "225/45R19 96W",
+    "unit_price": 58520,
+    "set_price": 162800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 195,
+  "fields": {
+    "product_code": "408981",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "245/45R19 98W",
+    "unit_price": 63690,
+    "set_price": 176800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 196,
+  "fields": {
+    "product_code": "408985",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "225/40R18 92W",
+    "unit_price": 61160,
+    "set_price": 166800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 197,
+  "fields": {
+    "product_code": "408987",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "245/40R18 93W",
+    "unit_price": 65120,
+    "set_price": 180800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 198,
+  "fields": {
+    "product_code": "408976",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "215/45R18 93W",
+    "unit_price": 50820,
+    "set_price": 140800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 199,
+  "fields": {
+    "product_code": "408978",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "235/45R18 94W",
+    "unit_price": 58630,
+    "set_price": 162800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 200,
+  "fields": {
+    "product_code": "408972",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "205/45R17 88W",
+    "unit_price": 43010,
+    "set_price": 119800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 201,
+  "fields": {
+    "product_code": "408974",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "225/45R17 94W",
+    "unit_price": 47410,
+    "set_price": 131800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 202,
+  "fields": {
+    "product_code": "408964",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "205/50R17 93V",
+    "unit_price": 38940,
+    "set_price": 107800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 203,
+  "fields": {
+    "product_code": "408965",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "215/50R17 95V",
+    "unit_price": 41690,
+    "set_price": 115800,
+    "reorder_point": 0,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 204,
+  "fields": {
+    "product_code": "408966",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "225/50R17 98V",
+    "unit_price": 44110,
+    "set_price": 121800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 205,
+  "fields": {
+    "product_code": "408958",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "205/55R17 91V",
+    "unit_price": 35750,
+    "set_price": 98800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 206,
+  "fields": {
+    "product_code": "408960",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "225/55R17 101W",
+    "unit_price": 42680,
+    "set_price": 118800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 207,
+  "fields": {
+    "product_code": "408956",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "195/55R16 87V",
+    "unit_price": 30800,
+    "set_price": 85800,
+    "reorder_point": 0,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 208,
+  "fields": {
+    "product_code": "408945",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "175/60R16 82H",
+    "unit_price": 25630,
+    "set_price": 70800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 209,
+  "fields": {
+    "product_code": "408947",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "195/60R16 89H",
+    "unit_price": 27610,
+    "set_price": 76800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 210,
+  "fields": {
+    "product_code": "408949",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "215/60R16 95H",
+    "unit_price": 31790,
+    "set_price": 87800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 211,
+  "fields": {
+    "product_code": "408941",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "205/65R16 95H",
+    "unit_price": 33440,
+    "set_price": 92800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 212,
+  "fields": {
+    "product_code": "408952",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "175/55R15 77V",
+    "unit_price": 25960,
+    "set_price": 71800,
+    "reorder_point": 4,
+    "stock_qty": 2,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 213,
+  "fields": {
+    "product_code": "408953",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "185/55R15 82V",
+    "unit_price": 26400,
+    "set_price": 72800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 214,
+  "fields": {
+    "product_code": "408943",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "165/60R15 77H",
+    "unit_price": 21340,
+    "set_price": 58800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 215,
+  "fields": {
+    "product_code": "408936",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "165/65R15 81S",
+    "unit_price": 18700,
+    "set_price": 51800,
+    "reorder_point": 4,
+    "stock_qty": 3,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 216,
+  "fields": {
+    "product_code": "408940",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "205/65R15 94H",
+    "unit_price": 27610,
+    "set_price": 76800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 217,
+  "fields": {
+    "product_code": "408950",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "165/55R14 72V",
+    "unit_price": 20570,
+    "set_price": 56800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 218,
+  "fields": {
+    "product_code": "408935",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "175/65R14 82H",
+    "unit_price": 18260,
+    "set_price": 50800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 219,
+  "fields": {
+    "product_code": "408930",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "165/70R14 81S",
+    "unit_price": 16610,
+    "set_price": 45800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 220,
+  "fields": {
+    "product_code": "408931",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "175/70R14 84H",
+    "unit_price": 18040,
+    "set_price": 49800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 221,
+  "fields": {
+    "product_code": "408932",
+    "manufacturer": "DUNLOP",
+    "brand_link": 6,
+    "brand": "ル・マン LM5+",
+    "size_raw": "185/70R14 88H",
+    "unit_price": 19800,
+    "set_price": 54800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 222,
+  "fields": {
+    "product_code": "409004",
+    "manufacturer": "DUNLOP",
+    "brand_link": 18,
+    "brand": "グラントレック PT5",
+    "size_raw": "225/65R17 102V",
+    "unit_price": 33550,
+    "set_price": 86800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 223,
+  "fields": {
+    "product_code": "409010",
+    "manufacturer": "DUNLOP",
+    "brand_link": 18,
+    "brand": "グラントレック PT5",
+    "size_raw": "215/60R17 96H",
+    "unit_price": 38390,
+    "set_price": 91800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 224,
+  "fields": {
+    "product_code": "409011",
+    "manufacturer": "DUNLOP",
+    "brand_link": 18,
+    "brand": "グラントレック PT5",
+    "size_raw": "225/60R17 99V",
+    "unit_price": 40040,
+    "set_price": 99800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 225,
+  "fields": {
+    "product_code": "409012",
+    "manufacturer": "DUNLOP",
+    "brand_link": 18,
+    "brand": "グラントレック PT5",
+    "size_raw": "225/60R18 100H",
+    "unit_price": 40920,
+    "set_price": 107800,
+    "reorder_point": 0,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 226,
+  "fields": {
+    "product_code": "409016",
+    "manufacturer": "DUNLOP",
+    "brand_link": 18,
+    "brand": "グラントレック PT5",
+    "size_raw": "225/55R18 98V",
+    "unit_price": 43670,
+    "set_price": 109800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 227,
+  "fields": {
+    "product_code": "409017",
+    "manufacturer": "DUNLOP",
+    "brand_link": 18,
+    "brand": "グラントレック PT5",
+    "size_raw": "235/55R18 100V",
+    "unit_price": 43670,
+    "set_price": 114800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 228,
+  "fields": {
+    "product_code": "409018",
+    "manufacturer": "DUNLOP",
+    "brand_link": 18,
+    "brand": "グラントレック PT5",
+    "size_raw": "225/55R19 99V",
+    "unit_price": 46090,
+    "set_price": 119800,
+    "reorder_point": 4,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 229,
+  "fields": {
+    "product_code": "416978",
+    "manufacturer": "DUNLOP",
+    "brand_link": 18,
+    "brand": "グラントレック PT5",
+    "size_raw": "215/50R18 92V",
+    "unit_price": 45540,
+    "set_price": 114800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 230,
+  "fields": {
+    "product_code": "409019",
+    "manufacturer": "DUNLOP",
+    "brand_link": 18,
+    "brand": "グラントレック PT5",
+    "size_raw": "235/55R19 101V",
+    "unit_price": 49500,
+    "set_price": 137800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 231,
+  "fields": {
+    "product_code": "409013",
+    "manufacturer": "DUNLOP",
+    "brand_link": 18,
+    "brand": "グラントレック PT5",
+    "size_raw": "235/60R18 V107V XL",
+    "unit_price": 43230,
+    "set_price": 119800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 232,
+  "fields": {
+    "product_code": "287778",
+    "manufacturer": "DUNLOP",
+    "brand_link": 11,
+    "brand": "エナセーブ VAN01",
+    "size_raw": "145R12R 6PR",
+    "unit_price": 10670,
+    "set_price": 19800,
+    "reorder_point": 4,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 233,
+  "fields": {
+    "product_code": "335045",
+    "manufacturer": "DUNLOP",
+    "brand_link": 11,
+    "brand": "エナセーブ VAN01",
+    "size_raw": "145/80R12 80/78N",
+    "unit_price": 10670,
+    "set_price": 19800,
+    "reorder_point": 4,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 234,
+  "fields": {
+    "product_code": "320710",
+    "manufacturer": "DUNLOP",
+    "brand_link": 11,
+    "brand": "エナセーブ VAN01",
+    "size_raw": "155/80R14 88/86N",
+    "unit_price": 15840,
+    "set_price": 55800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 235,
+  "fields": {
+    "product_code": "335048",
+    "manufacturer": "DUNLOP",
+    "brand_link": 11,
+    "brand": "エナセーブ VAN01",
+    "size_raw": "165/80R14 97/95N",
+    "unit_price": 18150,
+    "set_price": 62800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 236,
+  "fields": {
+    "product_code": "276238",
+    "manufacturer": "DUNLOP",
+    "brand_link": 11,
+    "brand": "エナセーブ VAN01",
+    "size_raw": "195/80R15 107/105L",
+    "unit_price": 25520,
+    "set_price": 89800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 237,
+  "fields": {
+    "product_code": "400444",
+    "manufacturer": "BRIDGESTONE",
+    "brand_link": 12,
+    "brand": "エコピア NH200C",
+    "size_raw": "155/65R14 75H",
+    "unit_price": 13750,
+    "set_price": 41800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 238,
+  "fields": {
+    "product_code": "400450",
+    "manufacturer": "BRIDGESTONE",
+    "brand_link": 12,
+    "brand": "エコピア NH200C",
+    "size_raw": "185/65R15 88S",
+    "unit_price": 20900,
+    "set_price": 59800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 239,
+  "fields": {
+    "product_code": "400454",
+    "manufacturer": "BRIDGESTONE",
+    "brand_link": 12,
+    "brand": "エコピア NH200C",
+    "size_raw": "185/60R15 84H",
+    "unit_price": 22110,
+    "set_price": 69800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 240,
+  "fields": {
+    "product_code": "400458",
+    "manufacturer": "BRIDGESTONE",
+    "brand_link": 12,
+    "brand": "エコピア NH200C",
+    "size_raw": "165/55R15 75V",
+    "unit_price": 18700,
+    "set_price": 56800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 241,
+  "fields": {
+    "product_code": "416682",
+    "manufacturer": "BRIDGESTONE",
+    "brand_link": 13,
+    "brand": "レグノ GR-XⅢ",
+    "size_raw": "195/65R15 91H",
+    "unit_price": 28270,
+    "set_price": 96800,
+    "reorder_point": 0,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 242,
+  "fields": {
+    "product_code": "422782",
+    "manufacturer": "BRIDGESTONE",
+    "brand_link": 13,
+    "brand": "レグノ GR-XⅢ",
+    "size_raw": "205/65R16 95H",
+    "unit_price": 37290,
+    "set_price": 126800,
+    "reorder_point": 0,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 243,
+  "fields": {
+    "product_code": "349266",
+    "manufacturer": "BRIDGESTONE",
+    "brand_link": 16,
+    "brand": "アレンザ 001",
+    "size_raw": "225/65R17 102H",
+    "unit_price": 37950,
+    "set_price": 114800,
+    "reorder_point": 0,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 244,
+  "fields": {
+    "product_code": "382051",
+    "manufacturer": "BRIDGESTONE",
+    "brand_link": 17,
+    "brand": "アレンザ LX100",
+    "size_raw": "225/60Ｒ18 100H",
+    "unit_price": 49060,
+    "set_price": 168800,
+    "reorder_point": 0,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 245,
+  "fields": {
+    "product_code": "400495",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 1,
+    "brand": "ブルーアース RV RV03CK",
+    "size_raw": "155/65R14 75H",
+    "unit_price": 16280,
+    "set_price": 33800,
+    "reorder_point": 4,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 246,
+  "fields": {
+    "product_code": "400464",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "195/65R15 91H",
+    "unit_price": 22660,
+    "set_price": 55800,
+    "reorder_point": 8,
+    "stock_qty": 16,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 247,
+  "fields": {
+    "product_code": "400468",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "215/65R16 98H",
+    "unit_price": 32010,
+    "set_price": 79800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 248,
+  "fields": {
+    "product_code": "400470",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "195/60R16 89V",
+    "unit_price": 26730,
+    "set_price": 65800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 249,
+  "fields": {
+    "product_code": "400473",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "215/60R17 96H",
+    "unit_price": 32010,
+    "set_price": 79800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 250,
+  "fields": {
+    "product_code": "400474",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "225/60R17 99H",
+    "unit_price": 33440,
+    "set_price": 83800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 251,
+  "fields": {
+    "product_code": "400501",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 1,
+    "brand": "ブルーアース RV RV03CK",
+    "size_raw": "165/55R15 75V",
+    "unit_price": 21230,
+    "set_price": 51800,
+    "reorder_point": 4,
+    "stock_qty": 12,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 252,
+  "fields": {
+    "product_code": "400477",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "215/55R17 94V",
+    "unit_price": 33990,
+    "set_price": 84800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 253,
+  "fields": {
+    "product_code": "400478",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "225/55R17 101V",
+    "unit_price": 40040,
+    "set_price": 93800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 254,
+  "fields": {
+    "product_code": "400479",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "225/55R18 98V",
+    "unit_price": 43780,
+    "set_price": 104800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 255,
+  "fields": {
+    "product_code": "400480",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "215/50R17 95V",
+    "unit_price": 39820,
+    "set_price": 94800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 256,
+  "fields": {
+    "product_code": "400481",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "225/50R18 95V",
+    "unit_price": 45320,
+    "set_price": 107800,
+    "reorder_point": 4,
+    "stock_qty": 4,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 257,
+  "fields": {
+    "product_code": "400482",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "235/50R18 101V",
+    "unit_price": 43340,
+    "set_price": 103800,
+    "reorder_point": 4,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 258,
+  "fields": {
+    "product_code": "400496",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 1,
+    "brand": "ブルーアース RV RV03CK",
+    "size_raw": "165/65R14 79S",
+    "unit_price": 16610,
+    "set_price": 42800,
+    "reorder_point": 4,
+    "stock_qty": 8,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 259,
+  "fields": {
+    "product_code": "400499",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 1,
+    "brand": "ブルーアース RV RV03CK",
+    "size_raw": "165/60R15 77H",
+    "unit_price": 21230,
+    "set_price": 52800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 260,
+  "fields": {
+    "product_code": "416765",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "205/60R16 96H",
+    "unit_price": 27500,
+    "set_price": 66800,
+    "reorder_point": 8,
+    "stock_qty": 12,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+},
+{
+  "model": "inventory.tire",
+  "pk": 261,
+  "fields": {
+    "product_code": "411784",
+    "manufacturer": "YOKOHAMA",
+    "brand_link": 4,
+    "brand": "ブルーアース RV RV03",
+    "size_raw": "205/55R17 95V",
+    "unit_price": 32010,
+    "set_price": 79800,
+    "reorder_point": 0,
+    "stock_qty": 0,
+    "description": "",
+    "cost_price": null,
+    "tire_status": null
+  }
+}
+]
