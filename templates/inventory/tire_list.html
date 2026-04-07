@@ -2,21 +2,17 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4 text-center">タイヤ在庫検索</h2>
+    <h2 class="mb-4 text-center fw-bold">タイヤ在庫検索</h2>
     
-    {# --- 戻るボタンエリア --- #}
+    {# --- 🎯 戻るボタンエリア --- #}
     <div class="mb-3">
         {% if estimate_id %}
-            {# 見積から来た場合：その見積詳細に戻る #}
+            {# 見積から来た場合：その見積詳細に戻る（店員さん用） #}
             <a href="{% url 'estimate:estimate_detail' pk=estimate_id %}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left me-1"></i>見積詳細に戻る
             </a>
-        {% else %}
-            {# 直接来た場合：見積一覧に戻る #}
-            <a href="{% url 'estimate:estimate_list' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-list me-1"></i>見積一覧へ
-            </a>
         {% endif %}
+        {# ❌ セキュリティ保護のため、ここにあった「見積一覧へ」ボタンは完全に削除しました #}
     </div>
 
     {# --- 検索フォームエリア --- #}
@@ -24,16 +20,18 @@
         <div class="card-body">
             <form method="GET" class="row g-3">
                 <div class="col-md-5">
-                    <label class="form-label">前輪サイズ (必須)</label>
+                    <label class="form-label fw-bold">前輪サイズ (必須)</label>
                     <input type="text" name="front_size" class="form-control" placeholder="例: 225/45R18" value="{{ front_size }}">
                 </div>
                 <div class="col-md-5">
-                    <label class="form-label">後輪サイズ (前後で違う場合のみ)</label>
+                    <label class="form-label fw-bold">後輪サイズ (前後で違う場合のみ)</label>
                     <input type="text" name="rear_size" class="form-control" placeholder="例: 255/40R18" value="{{ rear_size }}">
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">検索する</button>
                 </div>
+                {# 🎯 裏側で見積IDを保持（画面には出ません） #}
+                <input type="hidden" name="estimate_id" value="{{ estimate_id|default:'' }}">
             </form>
         </div>
     </div>
@@ -134,5 +132,6 @@
     .card { transition: transform 0.2s; }
     .card:hover { transform: translateY(-5px); box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15)!important; }
     .badge { font-size: 0.85rem; }
+    .fw-bold { font-weight: 700 !important; }
 </style>
 {% endblock %}

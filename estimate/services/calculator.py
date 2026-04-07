@@ -210,7 +210,7 @@ def calculate_purely(purchase_type, items_data, manual_charge_qtys=None, current
                 results.append({
                     "master_id": work_master.id,
                     "row_idx": idx, # フロント側での制御用
-                    "name": f"{work_master.name} ({spec.inch}インチ)", 
+                    "name": f"{work_master.name} {spec.inch}インチ", # 正確なインチ数を表示に含む
                     "qty": work_qty,
                     "price": int(work_master.unit_price),
                     "subtotal": int(work_master.unit_price * work_qty),

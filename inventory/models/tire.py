@@ -14,6 +14,7 @@ class Tire(models.Model):
     brand_link = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True) # 新データ用のブランド外部キー
     brand = models.CharField(max_length=100) # 既存データ移行用or予備
     size_raw = models.CharField('サイズ', max_length=50)
+    is_runflat = models.BooleanField(default=False) 
 
     unit_price = models.IntegerField('1本単価') # 円単位・税込固定
     set_price = models.IntegerField('4本特価', null=True, blank=True) # 円単位・税込固定

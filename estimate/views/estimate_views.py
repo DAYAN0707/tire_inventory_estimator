@@ -4,14 +4,15 @@ from django.forms import inlineformset_factory # フォームセット用
 from django.urls import reverse # URLリバース用
 from django.shortcuts import redirect, get_object_or_404, render # リダイレクトとオブジェクト取得用
 
-
 from django.contrib import messages  # 通知用
 from django.contrib.auth import get_user_model  # ユーザーモデル用
 
+
 from inventory.models import Tire # タイヤマスタの情報を取得するためにインポート
-from ..forms import EstimateTireForm # タイヤ明細用のフォーム
-from ..services.usecase import EstimateUseCase # ビジネスロジックを担うUseCaseクラス
-from ..models import Estimate, EstimateItem, EstimateStatus, ChargeMaster  # 見積関連のモデルをインポート
+from estimate.forms import EstimateTireForm # タイヤ明細用のフォーム
+from estimate.services.usecase import EstimateUseCase # ビジネスロジックを担うUseCaseクラス
+from estimate.models import Estimate, EstimateItem, EstimateStatus, ChargeMaster  # 見積関連のモデルをインポート
+from estimate.services.calculator import sync_estimate_charges # 諸費用計算サービスをインポート
 
 
 # ユーザーモデルを取得
@@ -81,27 +82,92 @@ class EstimateListView(ListView):
     ordering = ['-created_at']
 
 class EstimateCreateView(CreateView):
-    """見積を新規作成するView"""
+    """
+    見積を新規作成し、タイヤ明細（Formset）を同時に管理するView
+    在庫一覧からの「追加」による復元ロジックと、手入力の両方に対応
+    """
     model = Estimate
     template_name = "estimate/estimate_form.html"
     fields = ["purchase_type", "customer_name", "vehicle_name"]
 
     def get_success_url(self):
+        """保存成功後のリダイレクト先（詳細画面）"""
         return reverse('estimate:estimate_detail', kwargs={'pk': self.object.pk})
 
     def get_context_data(self, **kwargs):
+        """
+        画面表示に必要なデータを準備する
+        特に『在庫から追加』された場合のデータ復元用JSON作成が重要
+        """
         context = super().get_context_data(**kwargs)
         
-        # タイヤのマスタデータをJSに渡す
-        tires_list = list(Tire.objects.values("id", "unit_price", "set_price"))
-        context["tires_json"] = json.dumps(tires_list)
+        # 1. URLパラメータから 'estimate_id' を取得（在庫一覧からの遷移時に付与される）
+        estimate_id = self.request.GET.get('estimate_id')
+        
+        # JSに渡すための初期データ構造
+        estimate_data = {"items": []}
+        estimate_obj = None
 
-        # フォームセットの準備
+        # --- 🎯 在庫連動時のデータ復元ロジック ---
+        if estimate_id:
+            try:
+                # 関連するアイテム（タイヤ）と諸費用を効率的に取得
+                estimate_obj = Estimate.objects.prefetch_related('items__tire').get(id=estimate_id)
+                
+                # 取得したアイテムをループして、JavaScriptが処理しやすいリスト形式に変換
+                for item in estimate_obj.items.all():
+                    # 💡 安全策: フィールド名が 'name' か 'product_name' か不明な場合でも
+                    # getattr を使うことで AttributeError によるクラッシュを防ぐ
+                    t_brand = getattr(item.tire, 'brand', '')
+                    t_name = getattr(item.tire, 'name', getattr(item.tire, 'product_name', ''))
+                    t_size = getattr(item.tire, 'size', '')
+
+                    estimate_data["items"].append({
+                        "tire_id": item.tire.id,
+                        "tire_name": f"{t_brand} {t_name} {t_size}".strip(),
+                        "quantity": item.quantity,
+                        "unit_price": float(item.unit_price or 0),
+                        "subtotal": float(item.subtotal or 0),
+                    })
+            except Estimate.DoesNotExist:
+                # IDが不正な場合は無視して新規作成として扱う
+                pass
+
+        # 2. テンプレートへ渡す変数をセット
+        context['estimate'] = estimate_obj
+        # 💡 これがテンプレートの <script id="estimate-data"> 内で {{ estimate_json|safe }} として使われる
+        context['estimate_json'] = json.dumps(estimate_data)
+
+        # --- 🎯 Formset（タイヤ入力行）の動的制御 ---
         if self.request.POST:
+            # 保存ボタン押下時（バリデーションNGで戻ってきた場合など）
             context['tire_formset'] = EstimateTireFormSet(self.request.POST)
         else:
-            context['tire_formset'] = EstimateTireFormSet()
+            # 画面表示時：復元するタイヤの数に合わせて初期行数（extra）を調整
+            # 1つもデータがなければ1行、あればその数だけ「入力箱」を作る
+            initial_count = len(estimate_data["items"]) if estimate_id else 1
+            
+            # extraを動的に変更したフォームセットをその場で生成
+            DynamicFormSet = inlineformset_factory(
+                Estimate, EstimateItem, 
+                form=EstimateTireForm, # 定義済みのフォームを使用
+                extra=max(1, initial_count), # 最低1行は確保
+                can_delete=True
+            )
+            context['tire_formset'] = DynamicFormSet()
+
+        # --- 🎯 3. 【最重要】計算用のタイヤマスタデータを追加 ---
+        tires_queryset = Tire.objects.all().values(
+            "id",
+            "unit_price",
+            "set_price",
+            "is_runflat",
+        )
+
+        context["tires_json"] = json.dumps(list(tires_queryset), default=str)
+
         return context
+
 
     # --- [保存ボタンが押された時の処理] ---
     def form_valid(self, form):
@@ -209,7 +275,6 @@ def estimate_print(request, pk):
     }
     return render(request, "estimate/estimate_print.html", context)
 
-
 #==========================================
 # 4. APIで呼び出すための関数ベースView（add_item）
 #========================================== 
@@ -226,57 +291,63 @@ def add_item(request, tire_id):
             # 既存の見積に追加する場合
             estimate = get_object_or_404(Estimate, id=estimate_id)
         else:
-            # --- 🎯 開発用の超安全ユーザー取得 ---
-            # ログイン状態に関わらず、DBに存在する「最初のユーザー」を強制的に取得する
+            # --- 🎯 開発用の安全ユーザー取得 ---
             current_user = User.objects.first() 
             
-            # もしユーザーが1人もいなければ、処理を中断して一覧に戻す
             if not current_user:
-                messages.error(request, "管理画面からユーザー（superuser）を1人以上作成してください。")
+                messages.error(request, "管理画面からユーザーを1人以上作成してください。")
                 return redirect('inventory:tire_list')
 
-            # 新規見積を作成
+            # --- 🎯 新規見積を作成 ---
+            # 開発中は確実に諸費用（工賃等）が計算されるよう 'install' (店舗付け) を指定
             estimate = Estimate.objects.create(
                 customer_name="新規顧客",
-                created_by=current_user  # 👈 これで実在するIDが100%入ります
+                created_by=current_user,
+                purchase_type="install"  # 👈 ここで工賃計算のフラグを立てる！
             )
         
         # 2. 追加するタイヤを取得
         tire = get_object_or_404(Tire, id=tire_id)
         
         # 3. フォームから数量と装着位置を取得
-        # 数字以外の変な値が入ってきてもエラーにならないよう try-except で囲む
         try:
             qty = int(request.POST.get("quantity", 4))
         except (ValueError, TypeError):
             qty = 4
         
-        # 装着位置を取得（all, front, rear）
         pos = request.POST.get("position", "all")
 
-        # 🎯 最後の落とし穴対策：工賃マスタの存在チェック
-        # マスタが0件だと、後続の保存処理でFOREIGN KEYエラーになるため事前に防ぐ
+        # 🎯 工賃マスタの存在チェック（最低1件必要）
         master = ChargeMaster.objects.first()
         if not master:
-            messages.error(request, "工賃マスタが存在しません。管理画面またはシェルから登録してください。")
+            messages.error(request, "諸費用マスタが登録されていません。管理画面から登録してください。")
             return redirect('inventory:tire_list')
 
         # 4. 見積明細（EstimateItem）を作成または更新
-        # position も検索条件に含めることで、同じタイヤでも前輪と後輪を別々に保存
         item, created = EstimateItem.objects.get_or_create(
             estimate=estimate,
             tire=tire,
-            position=pos, # 👈 モデルに追加した position と連動！
+            position=pos,
             defaults={
                 'quantity': qty, 
-                'cost_master': master # 👈 Noneではなく有効なマスタをセット
+                'cost_master': master
             }
         )
         
-        # すでに同じタイヤ・同じ位置のものがカートにあれば、数量だけ増やす
         if not created:
             item.quantity += qty
             item.save()
-            
-        # 5. 完成した見積の詳細画面へリダイレクト
-        return redirect('estimate:estimate_detail', pk=estimate.id)
+
+        # 🎯 諸費用の自動生成と合計金額の反映
+        # ① タイヤ構成に合わせて「廃タイヤ」「バルブ」などを自動生成
+        sync_estimate_charges(estimate)
+        
+        # ② 生成された諸費用も含めて、見積全体の最終合計金額を算出
+        estimate.recalc_total_price()
+
+
+        # 5. 完成した見積の詳細画面へ
+        #詳細画面ではなく、作成画面(create)へIDを持って戻る ---
+        # 'estimate:estimate_create' とすることで、app_name='estimate' 内の 'estimate_create' を探す
+        redirect_url = reverse('estimate:estimate_create')
+        return redirect(f"{redirect_url}?estimate_id={estimate.id}")
