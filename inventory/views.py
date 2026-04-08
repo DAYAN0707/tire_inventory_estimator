@@ -21,6 +21,8 @@ def tire_list(request):
     elif front_size:
         # 1種類だけ入力された場合
         tires = tires.filter(size_raw__icontains=front_size)
+    elif rear_size:
+        tires = tires.filter(size_raw__icontains=rear_size)
 
     # 画面にタイヤ情報と検索条件、および見積IDを渡してレンダリング
     return render(request, 'inventory/tire_list.html', {
