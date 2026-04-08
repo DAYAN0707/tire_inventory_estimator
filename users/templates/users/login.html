@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-sm" style="width: 100%; max-width: 400px; border-radius: 10px;">
+        <div class="card-body p-5">
+            <h3 class="text-center mb-4" style="font-weight: bold; color: #333;">在庫管理画面</h3>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                    <div class="alert alert-danger p-2 small">
+                        IDまたはパスワードが正しくありません。
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    {{ form.username.label_tag }}
+                    {{ form.username }}
+                </div>
+                
+                <div class="mb-4">
+                    {{ form.password.label_tag }}
+                    {{ form.password }}
+                </div>
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-dark btn-block py-2" style="letter-spacing: 2px;">
+                        Enter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
