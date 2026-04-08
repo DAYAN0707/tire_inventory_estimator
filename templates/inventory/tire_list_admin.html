@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="bi bi-box-seam me-2"></i>在庫管理画面 <small class="text-muted fs-6">(店員用)</small></h2>
+        
+        {# --- ユーザー情報表示エリア --- #}
+        {% if user.is_authenticated %}
+        <div class="alert alert-secondary py-2 px-3 mb-0">
+            <strong>{{ user.staff_name }}</strong> さん 
+            <span class="badge {% if user.is_superuser %}bg-danger{% else %}bg-primary{% endif %} ms-1">
+                {% if user.is_superuser %}店長モード{% else %}店員モード{% endif %}
+            </span>
+            <a href="{% url 'users:logout' %}" class="btn btn-sm btn-link text-decoration-none text-dark ms-2">ログアウト</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {# --- 検索窓エリア --- #}
+    <div class="card shadow-sm mb-4 border-0 bg-light">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" name="front_size" class="form-control" placeholder="サイズ検索 (例: 155 または R13)" value="{{ front_size }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">絞り込み</button>
+                </div>
+                {% if estimate_id %}
+                <div class="col-md-5 text-end">
+                    <a href="{% url 'estimate:estimate_detail' pk=estimate_id %}" class="btn btn-dark">見積履歴へ戻る</a>
+                </div>
+                {% endif %}
+                <input type="hidden" name="estimate_id" value="{{ estimate_id|default:'' }}">
+            </form>
+        </div>
+    </div>
+
+    {# --- 在庫一覧テーブル --- #}
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 25%">タイヤ情報</th>
+                        <th class="text-center">実在庫</th>
+                        <th class="text-center text-info">予約(取置)</th>
+                        <th class="text-center">有効在庫</th>
+                        <th class="text-center">定数</th>
+                        <th class="text-end">1本価格</th>
+                        <th class="text-end">4本特価</th>
+                        <th class="text-center">操作</th>
+                        <th class="text-end text-warning">仕入れ値</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tire in tires %}
+                    <tr>
+                        <td>
+                            {# 🎯 CSV: brand, manufacturer, size_raw #}
+                            <div class="fw-bold">{{ tire.brand }}</div>
+                            <div class="small text-muted">{{ tire.manufacturer }}</div>
+                            <div class="font-monospace small bg-light d-inline-block px-1 mt-1">{{ tire.size_raw }}</div>
+                        </td>
+
+                        {# 🎯 CSV: stock_qty #}
+                        <td class="text-center h5">{{ tire.stock_qty }}</td>
+
+                        {# 予約在庫 (将来的に予約データを集計して表示) #}
+                        <td class="text-center text-primary fw-bold">0</td>
+
+                        {# 有効在庫 (実在庫が定数 reorder_point を下回ったら赤字) #}
+                        <td class="text-center">
+                            <span class="h5 fw-bold {% if tire.stock_qty < tire.reorder_point %}text-danger{% endif %}">
+                                {{ tire.stock_qty }}
+                            </span>
+                        </td>
+
+                        {# 🎯 CSV: reorder_point #}
+                        <td class="text-center text-muted small">{{ tire.reorder_point }}</td>
+                        
+                        {# 🎯 CSV: unit_price #}
+                        <td class="text-end">¥{{ tire.unit_price|intcomma }}</td>
+                        
+                        {# 🎯 CSV: set_price #}
+                        <td class="text-end">
+                            {% if tire.set_price %}
+                                <span class="text-danger fw-bold small">¥{{ tire.set_price|intcomma }}</span>
+                            {% else %}
+                                <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+
+                        {# 操作ボタン #}
+                        <td class="text-center">
+                            <a href="{% url 'inventory:order_create' tire.id %}" class="btn btn-sm btn-outline-primary px-3">発注</a>
+                        </td>
+
+                        {# 🎯 CSV: cost_price (仕入れ値) #}
+                        <td class="text-end text-muted small">
+                            ¥{{ tire.cost_price|intcomma|default:"0" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">該当するタイヤの在庫データがありません。</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-hover tbody tr:hover { background-color: rgba(0,0,0,.02); }
+    .font-monospace { font-family: 'Consolas', 'Monaco', monospace; }
+    th.text-end, td.text-end { padding-right: 1.5rem !important; }
+</style>
+{% endblock %}
