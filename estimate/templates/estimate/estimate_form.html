@@ -4,10 +4,13 @@
 {% block content %}
 <style>
 /* --- 画面表示・印刷制御スタイル --- */
+/* 金額が0円の行を薄く表示（作業なしをわかりやすくするため） */
 .charge-row-zero {
     opacity: 0.5;
     background-color: #f8f9fa; 
 }
+
+/* 印刷時はすべてハッキリと、かつグレーの色味を維持して表示 */
 @media print {
     .charge-row-zero {
         display: table-row !important;
@@ -30,20 +33,46 @@
     <form method="post" id="estimate-form">
         {% csrf_token %}
 
+        {# --- 🚨 エラーメッセージ表示セクション --- #}
+        
+        {# 1. メインフォーム（購入区分・車種など）のエラー #}
         {% if form.errors %}
-            <div class="alert alert-danger">
-                {{ form.errors }}
+            <div class="alert alert-danger shadow-sm">
+                <ul class="list-unstyled mb-0">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li><i class="fas fa-exclamation-triangle me-2"></i>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
             </div>
-            {% endif %}
+        {% endif %}
 
-            {% if tire_formset.errors %}
-            <div class="alert alert-danger">
-                {{ tire_formset.errors }}
+        {# 2. タイヤ明細（フォームセット）のエラー：本当にエラーがある時のみ表示 #}
+        {% if tire_formset.total_error_count > 0 %}
+            <div class="alert alert-danger shadow-sm">
+                <ul class="list-unstyled mb-0">
+                    {# 各行ごとのエラー抽出 #}
+                    {% for form_in_set in tire_formset %}
+                        {% for field, errors in form_in_set.errors.items %}
+                            {% for error in errors %}
+                                <li>
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    明細{{ forloop.parentloop.parentloop.counter }}行目: {{ error }}
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                    {% endfor %}
+                    
+                    {# 全体にかかわるエラー（タイヤ未選択など） #}
+                    {% for error in tire_formset.non_form_errors %}
+                        <li><i class="fas fa-exclamation-triangle me-2"></i>{{ error }}</li>
+                    {% endfor %}
+                </ul>
             </div>
-            {% endif %}
+        {% endif %}
 
-        {# --- 🎯 ヘッダーセクション：購入区分・顧客名・車種 --- #}
-        {# 📸 ラベルが上、入力欄が下のスクショ通りのレイアウトに固定 #}
+        {# --- 🎯 ヘッダーセクション：顧客・車両情報 --- #}
         <div class="card shadow-sm mb-4 bg-light">
             <div class="card-body">
                 <div class="row g-3">
@@ -63,13 +92,14 @@
             </div>
         </div>
 
+        {# --- 🛞 タイヤ明細セクション --- #}
         <div class="d-flex align-items-center mb-2">
             <h4 class="mb-0">タイヤ明細</h4>
+            {# JSでのバリデーションエラー用表示スペース #}
             <span id="tire-validation-error" class="badge bg-danger ms-2" style="display:none;"></span>
         </div>
 
-        {# ❌ スクショにあったデバッグ用の文字（estimate_id: など）を削除しました #}
-
+        {# フォームセット管理用隠しデータ（これがないと保存に失敗します） #}
         {{ tire_formset.management_form }}
 
         <div class="table-responsive">
@@ -88,6 +118,7 @@
                     {% for tire_form in tire_formset %}
                     <tr class="formset-row" data-unit-price="0" data-set-price="0">
                         <td class="tire-select-column">
+                            {# 隠しフィールド（IDなど）の出力 #}
                             {% for hidden in tire_form.hidden_fields %}{{ hidden }}{% endfor %}
                             <div class="tire-info-container">
                                 <p class="small fw-bold mb-1 text-primary">選択中のタイヤ</p>
@@ -96,11 +127,13 @@
                                 </div>
                             </div>
                         </td>
+                        {# 単価・特価・小計はJSでリアルタイムに書き換えられます #}
                         <td class="text-end text-nowrap"><span class="js-unit-price text-muted">-</span></td>
                         <td class="text-end text-nowrap"><span class="js-set-price text-muted">-</span></td>
                         <td>{{ tire_form.quantity }}</td>
                         <td class="text-end text-nowrap fw-bold"><span class="js-subtotal">0</span>円</td>
                         <td class="text-center">
+                            {# 削除用チェックボックスを隠して配置し、ボタンで操作 #}
                             <div style="display:none;">{{ tire_form.DELETE }}</div>
                             <button type="button" class="btn btn-outline-danger btn-sm delete-tire-row">削除</button>
                         </td>
@@ -110,16 +143,18 @@
             </table>
         </div>
 
+        {# --- ➕ 明細操作ボタンエリア --- #}
         <div class="mb-4 d-flex gap-2">
-            <a href="{% url 'inventory:tire_list' %}?estimate_id={{ estimate.id|default:'' }}" class="btn btn-primary">
-                <i class="bi bi-search me-1"></i> 在庫からタイヤを選択
+            {# estimate_idを渡して、選択後にこの見積画面に戻れるようにします #}
+            <a href="{% url 'inventory:tire_list_admin' %}?estimate_id={{ estimate.id|default:'' }}" class="btn btn-primary shadow-sm">
+                <i class="fas fa-search me-1"></i> 在庫からタイヤを選択
             </a>
-            <button type="button" class="btn btn-outline-primary" id="add-row-btn">
-                <i class="bi bi-plus-circle me-1"></i> 自由入力行を追加
+            <button type="button" class="btn btn-outline-primary shadow-sm" id="add-row-btn">
+                <i class="fas fa-plus-circle me-1"></i> 自由入力行を追加
             </button>
         </div>
 
-        {# --- 諸費用・工賃セクション（自動計算） --- #}
+        {# --- 💰 諸費用・工賃セクション（自動計算） --- #}
         <div class="mt-5">
             <h4 class="border-bottom pb-2">諸費用・工賃（自動計算）</h4>
             <table class="table table-hover mt-3">
@@ -132,34 +167,40 @@
                     </tr>
                 </thead>
                 <tbody id="js-charges-container">
+                    {# JS（estimate_calculator.js）がここに工賃行を動的に作成します #}
                     <tr>
                         <td colspan="4" class="text-muted text-center py-3">
                             タイヤを選択すると工賃が表示されます
                         </td>
-                    </tr>{# JSがここに結果を流し込みます #}
+                    </tr>
                 </tbody>
                 <tfoot>
                     <tr class="table-primary fs-3">
                         <td colspan="3" class="text-end fw-bold">総合計（税込）</td>
-                        <td class="text-end font-monospace fw-bold"><span id="js-grand-total">0</span></td>
+                        <td class="text-end font-monospace fw-bold">
+                            <span id="js-grand-total">0</span>円
+                        </td>
                     </tr>
                 </tfoot>
             </table>
         </div>
 
+        {# --- 💾 保存ボタンエリア --- #}
         <div class="mt-5 mb-5">
-            <button type="submit" id="submit-btn" class="btn btn-primary btn-lg w-100 shadow py-3">
-                <i class="bi bi-save me-2"></i>見積を保存する
+            <button type="submit" id="submit-btn" class="btn btn-success btn-lg w-100 shadow py-3">
+                <i class="fas fa-save me-2"></i> 見積を保存して確定する
             </button>
         </div>
     </form>
 </div>
 
+{# --- 📦 JSに渡すためのマスターデータ（JSON形式） --- #}
 <script id="estimate-data" type="application/json">{{ estimate_json|default:"{\"items\": []}"|safe }}</script>
 <script id="tire-master-data" type="application/json">{{ tires_json|default:'[]'|safe }}</script>
 {% endblock %}
 
 {% block extra_js %}
+{# jQueryと自作の計算ロジックJSを読み込み #}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="{% static 'js/estimate_calculator.js' %}"></script>
 {% endblock %}
