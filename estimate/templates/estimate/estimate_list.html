@@ -13,7 +13,7 @@
     <div class="card shadow-sm border-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+                <thead class="table-dark">
                     <tr>
                         <th>見積番号</th>
                         <th>顧客名</th>
@@ -26,9 +26,9 @@
                 </thead>
                 <tbody>
                     {% for estimate in estimates %}
-                    <tr>
+                    {# 🎯 予約確定（作業予定あり）の行をハイライトして目立たせる #}
+                    <tr {% if estimate.estimate_status.status_name == "予約確定" %}class="table-warning"{% endif %}>
                         <td class="fw-bold">
-                            {# 番号クリックで詳細へ飛べる実務スタイル #}
                             <a href="{% url 'estimate:estimate_detail' estimate.pk %}" class="text-decoration-none">
                                 {{ estimate.estimate_number }}
                             </a>
@@ -36,25 +36,31 @@
                         <td>{{ estimate.customer_name }}</td>
                         <td>{{ estimate.vehicle_name }}</td>
                         <td class="text-center">
-                            {# 柔軟な文字列判定に変更 #}
-                            {% if "確定" in estimate.estimate_status.status_name %}
-                                <span class="badge bg-success">{{ estimate.estimate_status }}</span>
-                            {% elif "作成中" in estimate.estimate_status.status_name %}
-                                <span class="badge bg-warning text-dark">{{ estimate.estimate_status }}</span>
-                            {% else %}
+                            {# 🎯 ステータスの表示ロジックを整理 #}
+                            {% if estimate.estimate_status.status_name == "予約確定" %}
+                                {# 予約確定は店員が一番動くべき状態なので、黄色バッジ＋アイコンで強調 #}
+                                <span class="badge bg-warning text-dark shadow-sm">
+                                    <i class="bi bi-calendar-check me-1"></i>予約確定
+                                </span>
+                            {% elif estimate.estimate_status.status_name == "見積確定" %}
+                                {# 保存直後の標準ステータスは落ち着いた緑色 #}
+                                <span class="badge bg-success opacity-75">見積確定</span>
+                            {% elif "完了" in estimate.estimate_status.status_name %}
+                                {# 作業完了後はグレーアウト #}
                                 <span class="badge bg-secondary">{{ estimate.estimate_status }}</span>
+                            {% else %}
+                                <span class="badge bg-info">{{ estimate.estimate_status }}</span>
                             {% endif %}
                         </td>
                         <td class="text-end font-monospace fw-bold">
-                            {# 3桁区切りを適用 #}
                             {{ estimate.total_price|intcomma }}円
                         </td>
                         <td class="small text-muted">
                             {{ estimate.created_at|date:"Y/m/d H:i" }}
                         </td>
                         <td class="text-center">
-                            <a href="{% url 'estimate:estimate_detail' estimate.pk %}" class="btn btn-sm btn-outline-primary">
-                                詳細
+                            <a href="{% url 'estimate:estimate_detail' estimate.pk %}" class="btn btn-sm btn-outline-primary px-3">
+                                詳細・管理
                             </a>
                         </td>
                     </tr>

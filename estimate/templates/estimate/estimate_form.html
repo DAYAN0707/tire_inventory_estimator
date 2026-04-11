@@ -146,8 +146,8 @@
         {# --- ➕ 明細操作ボタンエリア --- #}
         <div class="mb-4 d-flex gap-2">
             {# estimate_idを渡して、選択後にこの見積画面に戻れるようにします #}
-            <a href="{% url 'inventory:tire_list_admin' %}?estimate_id={{ estimate.id|default:'' }}" class="btn btn-primary shadow-sm">
-                <i class="fas fa-search me-1"></i> 在庫からタイヤを選択
+            <a href="{% url 'inventory:tire_list' %}?estimate_id={{ estimate.id|default:'' }}" class="btn btn-primary shadow-sm">
+                <i class="fas fa-search me-1"></i> 一覧からタイヤを選択
             </a>
             <button type="button" class="btn btn-outline-primary shadow-sm" id="add-row-btn">
                 <i class="fas fa-plus-circle me-1"></i> 自由入力行を追加

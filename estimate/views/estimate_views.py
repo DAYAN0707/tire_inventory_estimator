@@ -169,7 +169,7 @@ class EstimateCreateView(CreateView):
         return context
 
 
-    # --- [保存ボタンが押された時の処理] ---
+# --- [保存ボタンが押された時の処理] ---
     def form_valid(self, form):
         context = self.get_context_data()
         tire_formset = context['tire_formset']
@@ -178,15 +178,14 @@ class EstimateCreateView(CreateView):
         # 1. タイヤ明細の入力チェック
         if tire_formset.is_valid():
             try:
-                # 🎯 修正2 & 3：サーバー側でのバリデーション（削除・数量0の除外と台数制限）
+                # バリデーション：削除・数量0を除外してカウント
                 valid_items_count = 0
                 for tire_form in tire_formset:
-                    # 削除フラグがON、または数量が0（空欄含む）のデータはカウントしない
                     if tire_form.cleaned_data.get('DELETE') or tire_form.cleaned_data.get('quantity', 0) == 0:
                         continue
                     valid_items_count += 1
 
-                # 交換作業ありの場合のみ、2種類制限をかける（持ち帰りはスルー）
+                # 台数制限チェック
                 if purchase_type == 'exchange' and valid_items_count > 2:
                     form.add_error(None, "【台数制限】交換作業ありの場合、タイヤは2種類までです。")
                     return self.render_to_response(self.get_context_data(form=form))
@@ -194,7 +193,7 @@ class EstimateCreateView(CreateView):
                 # --- 基本情報の準備 ---
                 estimate = form.save(commit=False)
                 
-                # 作成者セット（安全策込み）
+                # 作成者セット
                 if self.request.user.is_authenticated:
                     estimate.created_by = self.request.user
                 else:
@@ -204,32 +203,28 @@ class EstimateCreateView(CreateView):
                         return self.render_to_response(self.get_context_data(form=form))
                     estimate.created_by = first_user
 
-                # ステータスセット
+                # --- 🎯 修正：保存時のステータスを最初から「見積確定」にする ---
+                # お客様が「保存」した時点で作成フローは完了しているため、
+                # 内部的な「作成中」ではなく、従業員がすぐに追える「見積確定」をセットしておく
                 try:
-                    status_draft = EstimateStatus.objects.get(status_name='作成中')
-                    estimate.estimate_status = status_draft
+                    status_confirmed = EstimateStatus.objects.get(status_name='見積確定')
+                    estimate.estimate_status = status_confirmed
                 except EstimateStatus.DoesNotExist:
-                    form.add_error(None, "マスタに '作成中' というステータスが必要です。")
+                    form.add_error(None, "マスタに '見積確定' というステータスが必要です。")
                     return self.render_to_response(self.get_context_data(form=form))
                 
-                # --- 🎯 修正1：手入力された諸費用データの収集 ---
-                # JSのsubmitイベントで作られた hidden input (charge_qtys[...]) をすべて拾う
+                # --- 手入力された諸費用データの収集 ---
                 manual_dict = {}
                 for key, val in self.request.POST.items():
                     if key.startswith("charge_qtys["):
-                        # キーの整形: "charge_qtys[4_0]" -> "4_0"
                         manual_key = key.replace("charge_qtys[", "").replace("]", "")
-                        # 値が存在する場合のみ整数として格納
                         if val is not None and val != "":
                             try:
                                 manual_dict[manual_key] = int(val)
                             except ValueError:
                                 continue
 
-                print(f"DEBUG: サーバー受信(手入力諸費用) -> {manual_dict}")
-
-                # --- 3. UseCaseの呼び出し ---
-                # 最終的な保存処理。manual_dataに手入力値が渡され、UseCase内で計算結果を上書きします。
+                # --- UseCaseの呼び出し ---
                 self.object = EstimateUseCase.create_estimate(
                     estimate_instance=estimate,
                     tire_formset=tire_formset,
@@ -246,16 +241,35 @@ class EstimateCreateView(CreateView):
             return self.render_to_response(self.get_context_data(form=form))
 
 class EstimateDetailView(DetailView):
-    """作成された見積の最終結果を確認するView"""
+    """作成された見積の最終結果を確認し、従業員がステータスを管理するView"""
     model = Estimate
     template_name = 'estimate/estimate_detail.html'
     context_object_name = 'estimate'
 
     def get_context_data(self, **kwargs):
-        """詳細画面でも納期メッセージを表示するために追加"""
         context = super().get_context_data(**kwargs)
         context['delivery_message'] = get_delivery_message(self.object)
+        # 🎯 従業員がステータスを「予約確定」などに変更するための選択肢を渡す
+        context['all_statuses'] = EstimateStatus.objects.all()
         return context
+
+    def post(self, request, *args, **kwargs):
+        """詳細画面（管理画面）からのステータス更新を受け付ける"""
+        if not request.user.is_authenticated:
+            return redirect('login')
+
+        estimate = self.get_object()
+        new_status_id = request.POST.get('status_id')
+
+        if new_status_id:
+            try:
+                new_status = EstimateStatus.objects.get(id=new_status_id)
+                estimate.estimate_status = new_status
+                estimate.save()
+            except EstimateStatus.DoesNotExist:
+                pass
+        
+        return redirect('estimate:estimate_detail', pk=estimate.pk)
 
 # ==========================================
 # 3. 印刷専用Viewの追加
