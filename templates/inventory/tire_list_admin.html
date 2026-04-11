@@ -13,17 +13,27 @@
     {% endif %}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold"><i class="bi bi-box-seam me-2"></i>在庫管理画面 <small class="text-muted fs-6">(店員用)</small></h2>
-        
-        {# --- ユーザー情報表示エリア --- #}
-        {% if user.is_authenticated %}
-        <div class="alert alert-secondary py-2 px-3 mb-0">
-            <strong>{{ user.staff_name }}</strong> さん 
-            <span class="badge {% if user.is_superuser %}bg-danger{% else %}bg-primary{% endif %} ms-1">
-                {% if user.is_superuser %}店長モード{% else %}店員モード{% endif %}
-            </span>
-            <a href="{% url 'users:logout' %}" class="btn btn-sm btn-link text-decoration-none text-dark ms-2">ログアウト</a>
+        <div class="d-flex gap-2 align-items-center">
+            {# 🎯 発注一覧へ飛ぶボタン #}
+            <a href="{% url 'inventory:order_list' %}" class="btn btn-outline-primary shadow-sm">
+                <i class="bi bi-clipboard-check me-1"></i>発注管理画面へ
+            </a>
+            {# 🎯 1. 見積一覧へ飛ぶボタン #}
+            <a href="{% url 'estimate:estimate_list' %}" class="btn btn-outline-success shadow-sm">
+                <i class="bi bi-file-earmark-text me-1"></i>見積一覧画面へ
+            </a>
+
+            {# --- ユーザー情報表示エリア --- #}
+            {% if user.is_authenticated %}
+            <div class="alert alert-secondary py-2 px-3 mb-0">
+                <strong>{{ user.staff_name }}</strong> さん 
+                <span class="badge {% if user.is_superuser %}bg-danger{% else %}bg-primary{% endif %} ms-1">
+                    {% if user.is_superuser %}店長モード{% else %}店員モード{% endif %}
+                </span>
+                <a href="{% url 'users:logout' %}" class="btn btn-sm btn-link text-decoration-none text-dark ms-2">ログアウト</a>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
     {# --- 検索窓エリア --- #}

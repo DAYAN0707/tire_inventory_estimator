@@ -45,7 +45,7 @@ def tire_list(request):
 def tire_list_public(request):
     """
     【お客様用】タイヤ閲覧ビュー
-    ログイン不要。カード形式のレイアウト（tire_list.html）を表示します。
+    ログイン不要。カード形式のレイアウト（tire_list.html）を表示
     """
     # 基本的な取得ロジックは同じ（継続販売ステータスのものだけに制限して表示）
     tires = Tire.objects.select_related('brand_link').filter(status_id=1) 
@@ -57,7 +57,7 @@ def tire_list_public(request):
 def order_create(request, tire_id):
     """
     【店員専用】発注ボタン押下時の処理
-    直接ログを刻むのではなく、まずは「仮発注」レコードを作成して発注一覧画面へ誘導します。
+    直接ログを刻むのではなく、まずは「仮発注」レコードを作成して発注一覧画面へ誘導する流れに変更
     """
     tire = get_object_or_404(Tire, id=tire_id)
 
@@ -75,18 +75,87 @@ def order_create(request, tire_id):
     ip = request.META.get('REMOTE_ADDR')
     
     # 🎯 実務ポイント：AuditLogに操作記録（仮作成）を保存
-    # target_type, target_id を使うことで、どのテーブルのどのデータか特定可能にしています
+    # target_type, target_id を使うことで、どのテーブルのどのデータか特定可能にする
     AuditLog.objects.create(
         target_type="Order",             # 対象モデル名
         target_id=order.id,              # 作成したOrderのID
         action='DRAFT_CREATE',           # 操作種別（仮発注作成）
-        actor=request.user,              # 操作したユーザー（石川さん等）
+        actor=request.user,              # 操作したユーザー
         note=f"IP:{ip} | {tire.brand} の仮発注を作成しました。数量確定待ち。", # メモ欄に詳細を記録
     )
 
     # 操作完了のメッセージを表示
     messages.info(request, f"【リスト追加】{tire.brand} を発注状況に追加しました。数量を確定させてください。")
     
-    # 🎯 次のステップ：本来はここで 'inventory:order_list'（発注一覧画面）へ飛ばしたい
-    # まだURLとViewを作っていないので、一旦在庫一覧に戻します。
-    return redirect('inventory:tire_list')
+    # 🎯 今作った一覧画面へ飛ばす！
+    return redirect('inventory:order_list')
+
+
+@login_required
+def order_list(request):
+    """
+    【店員専用】発注一覧画面
+    仮発注、確定済み、キャンセル済みのすべての発注状況を表示します。
+    """
+    # 🎯 新しい順に並べて表示
+    orders = Order.objects.select_related('tire', 'user').all().order_by('-created_at')
+    
+    return render(request, 'inventory/order_list.html', {
+        'orders': orders,
+    })
+
+@login_required
+def order_confirm(request, order_id):
+    """
+    【店員専用】発注を「確定」させる処理
+    """
+    order = get_object_or_404(Order, id=order_id)
+    
+    if request.method == 'POST':
+        # 🎯 画面から入力された「本数」を取得
+        new_quantity = request.POST.get('quantity')
+        
+        # 状態を「確定」に変更し、本数を保存
+        order.quantity = new_quantity
+        order.status = 'CONFIRMED'
+        order.save()
+
+        # 🎯 実務ポイント：AuditLogに「確定した事実」を刻む
+        ip = request.META.get('REMOTE_ADDR')
+        AuditLog.objects.create(
+            target_type="Order",
+            target_id=order.id,
+            action='ORDER_CONFIRMED',
+            actor=request.user,
+            note=f"IP:{ip} | {order.tire.brand} を {new_quantity}本 で発注確定しました。"
+        )
+
+        messages.success(request, f"【発注確定】{order.tire.brand} を{new_quantity}本で確定しました。")
+    
+    return redirect('inventory:order_list')
+
+@login_required
+def order_cancel(request, order_id):
+    """
+    【店員専用】発注を「取消」にする処理
+    データは消さずに「取消記録」として残す
+    """
+    order = get_object_or_404(Order, id=order_id)
+    
+    # 状態を「キャンセル」に変更（数量はそのまま保持）
+    order.status = 'CANCELLED'
+    order.save()
+
+    # 🎯 監査ログにキャンセルした記録を残す
+    ip = request.META.get('REMOTE_ADDR')
+    AuditLog.objects.create(
+        target_type="Order",
+        target_id=order.id,
+        action='ORDER_CANCELLED',
+        actor=request.user,
+        note=f"IP:{ip} | {order.tire.brand} の発注を取り消しました。"
+    )
+
+    messages.warning(request, f"【発注取消】{order.tire.brand} の発注を取り消しました。")
+    
+    return redirect('inventory:order_list')
