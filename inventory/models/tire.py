@@ -50,7 +50,6 @@ class Tire(models.Model):
         # それ以外は「入荷待ち」
         return {"text": "入荷待ち", "color": "danger", "is_available": False}
     
-    # inventory/models/tire.py
 
 class Order(models.Model):
     # ステータスの選択肢

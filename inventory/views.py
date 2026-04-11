@@ -8,15 +8,38 @@ from audit.models import AuditLog  # 🎯 共通アプリのauditからインポ
 
 def tire_list(request):
     """
-    【共通・お客さん用】カード型タイヤ一覧画面
-    役割：接客時にタブレット等でお客さまと一緒に商品（ブランドや特徴）を見るための画面
-    表示：商品の特徴コメント、ブランドロゴ、サイズ等
+    【店員もお客さんも共通】カード型タイヤ一覧画面
     """
-    tires = Tire.objects.all()
-    # 🎯 接客用の「tire_list.html」を呼び出す
-    return render(request, 'inventory/tire_list.html', {
-        'tires': tires,
-    })
+    # 1. まず全データを取得
+    queryset = Tire.objects.all()
+
+    # パラメータ取得
+    front_size = request.GET.get('front_size') or None
+    rear_size = request.GET.get('rear_size') or None
+    estimate_id = request.GET.get('estimate_id')
+
+    # 検索ロジック
+    if front_size and rear_size:
+        # 前後のサイズどちらかにヒットすればOK
+        queryset = queryset.filter(
+            Q(size_raw__icontains=front_size) |
+            Q(size_raw__icontains=rear_size)
+        )
+    elif front_size:
+        # 前輪サイズのみで検索
+        queryset = queryset.filter(size_raw__icontains=front_size)
+    elif rear_size:
+        # 後輪サイズのみで検索
+        queryset = queryset.filter(size_raw__icontains=rear_size)
+
+    # コンテキストに詰めて返す
+    context = {
+        'tires': queryset,
+        'front_size': front_size or '', # テンプレート表示用にNoneなら空文字に
+        'rear_size': rear_size or '',
+        'estimate_id': estimate_id,
+    }
+    return render(request, 'inventory/tire_list.html', context)
 
 @login_required
 def tire_list_admin(request):
