@@ -35,7 +35,7 @@ class Tire(models.Model):
         brand_name = self.brand_link.name if self.brand_link else self.brand
         return f"{self.manufacturer} {brand_name} {self.size_raw}"
 
-    
+
 
     def get_stock_status(self):
         """一覧画面用の在庫ステータス判定"""
@@ -49,3 +49,37 @@ class Tire(models.Model):
         
         # それ以外は「入荷待ち」
         return {"text": "入荷待ち", "color": "danger", "is_available": False}
+    
+    # inventory/models/tire.py
+
+class Order(models.Model):
+    # ステータスの選択肢
+    STATUS_CHOICES = [
+        ('DRAFT', '仮発注'),
+        ('CONFIRMED', '確定'),
+        ('CANCELLED', '取消'),
+    ]
+
+    tire = models.ForeignKey('Tire', on_delete=models.CASCADE, verbose_name="タイヤ")
+    quantity = models.PositiveIntegerField("数量", default=4)  # デフォルトは1台分の4本
+    status = models.CharField("状態", max_length=10, choices=STATUS_CHOICES, default='DRAFT')
+    
+    # 価格改定があっても「発注時の金額」を記録しておくために必要
+    cost_price_at_order = models.IntegerField("発注時仕入れ値", null=True, blank=True)
+    
+    user = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True, verbose_name="発注者")
+    created_at = models.DateTimeField("発注日", auto_now_add=True)
+    updated_at = models.DateTimeField("更新日", auto_now=True)
+
+    class Meta:
+        verbose_name = "発注"
+        verbose_name_plural = "発注一覧"
+        ordering = ['-created_at']
+
+    # 🎯 確定後は「数量変更」を禁止するロジック
+    def save(self, *args, **kwargs):
+        if self.pk:  # すでにDBに保存されているデータの更新時
+            original = Order.objects.get(pk=self.pk)
+            if original.status == 'CONFIRMED' and self.quantity != original.quantity:
+                raise ValueError("確定済みの発注数量は変更できません。変更が必要な場合は一度取り消してください。")
+        super().save(*args, **kwargs)

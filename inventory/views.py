@@ -1,7 +1,9 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required  # ログイン必須にするためのデコレータ
 from django.db.models import Q
-from .models import Tire
+from django.contrib import messages
+from .models import Tire, Order  # 🎯 Orderモデルをインポート
+from audit.models import AuditLog  # 🎯 共通アプリのauditからインポート
 
 @login_required
 def tire_list(request):
@@ -49,3 +51,42 @@ def tire_list_public(request):
     tires = Tire.objects.select_related('brand_link').filter(status_id=1) 
     
     return render(request, 'inventory/tire_list.html', {'tires': tires})
+
+
+@login_required
+def order_create(request, tire_id):
+    """
+    【店員専用】発注ボタン押下時の処理
+    直接ログを刻むのではなく、まずは「仮発注」レコードを作成して発注一覧画面へ誘導します。
+    """
+    tire = get_object_or_404(Tire, id=tire_id)
+
+    # 🎯 仕様変更：AuditLogに直接書くのではなく、まずはOrderレコード（仮発注）を作る
+    # quantityのデフォルトは、商用車等を考慮して「4本（1台分）」に設定
+    order = Order.objects.create(
+        tire=tire,
+        quantity=4,                 # 仮の数量（後の画面で20本などに変更可能）
+        status='DRAFT',             # 「仮発注」状態で作成
+        user=request.user,          # 操作した店員
+        cost_price_at_order=tire.cost_price # その時点の仕入れ値を記録
+    )
+
+    # 🎯 実務ポイント：接続元のIPアドレスを取得してメモに残す
+    ip = request.META.get('REMOTE_ADDR')
+    
+    # 🎯 実務ポイント：AuditLogに操作記録（仮作成）を保存
+    # target_type, target_id を使うことで、どのテーブルのどのデータか特定可能にしています
+    AuditLog.objects.create(
+        target_type="Order",             # 対象モデル名
+        target_id=order.id,              # 作成したOrderのID
+        action='DRAFT_CREATE',           # 操作種別（仮発注作成）
+        actor=request.user,              # 操作したユーザー（石川さん等）
+        note=f"IP:{ip} | {tire.brand} の仮発注を作成しました。数量確定待ち。", # メモ欄に詳細を記録
+    )
+
+    # 操作完了のメッセージを表示
+    messages.info(request, f"【リスト追加】{tire.brand} を発注状況に追加しました。数量を確定させてください。")
+    
+    # 🎯 次のステップ：本来はここで 'inventory:order_list'（発注一覧画面）へ飛ばしたい
+    # まだURLとViewを作っていないので、一旦在庫一覧に戻します。
+    return redirect('inventory:tire_list')
