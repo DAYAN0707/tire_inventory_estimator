@@ -14,6 +14,8 @@ urlpatterns = [
     # --- 見積追加ロジック ---
     # estimate_views内の add_item 関数を呼び出す設定
     path('add-item/<int:tire_id>/', estimate_views.add_item, name='add_item'),
+    # 見積からのアイテム削除URL
+    path('detail/<int:pk>/update-status/', estimate_views.update_status, name='update_status'),
 
     # --- API（JSON）系 / その他 ---
     path('api/calculate-charges/', api_views.calculate_charges_api, name='calculate_charges_api'),

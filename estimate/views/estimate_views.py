@@ -249,8 +249,8 @@ class EstimateDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['delivery_message'] = get_delivery_message(self.object)
-        # 🎯 従業員がステータスを「予約確定」などに変更するための選択肢を渡す
-        context['all_statuses'] = EstimateStatus.objects.all()
+        # 🎯 従業員がプルダウンで選べるように、全ステータスをテンプレートに送る
+        context['statuses'] = EstimateStatus.objects.all()
         return context
 
     def post(self, request, *args, **kwargs):
@@ -365,3 +365,45 @@ def add_item(request, tire_id):
         # 'estimate:estimate_create' とすることで、app_name='estimate' 内の 'estimate_create' を探す
         redirect_url = reverse('estimate:estimate_create')
         return redirect(f"{redirect_url}?estimate_id={estimate.id}")
+
+
+# ==========================================
+# 5. ステータス更新専用View（従業員操作用）
+# ==========================================
+def update_status(request, pk):
+    """
+    見積詳細画面から従業員がステータス（予約確定・引渡完了など）を直接変更するための処理
+    """
+    if request.method == "POST":
+        # 1. 対象の見積を特定
+        estimate = get_object_or_404(Estimate, pk=pk)
+        
+        # 2. フォームからのデータ取得（クイックボタン または プルダウン）
+        quick_status_name = request.POST.get('quick_status')  # ボタンの value
+        status_id = request.POST.get('status_id')            # プルダウンの value
+
+        try:
+            if quick_status_name:
+                # クイックボタン（「予約確定にする」等）が押された場合
+                new_status = EstimateStatus.objects.get(status_name=quick_status_name)
+            elif status_id:
+                # プルダウンから選択して「更新」が押された場合
+                new_status = EstimateStatus.objects.get(id=status_id)
+            else:
+                # どちらも取得できない場合は何もしない
+                return redirect('estimate:estimate_detail', pk=pk)
+
+            # 3. ステータスを上書きして保存
+            estimate.estimate_status = new_status
+            estimate.save()
+            
+            # 成功メッセージを表示（店員さんへの安心材料）
+            messages.success(request, f"ステータスを「{new_status.status_name}」に更新しました。")
+
+        except EstimateStatus.DoesNotExist:
+            messages.error(request, "指定されたステータスがマスタに登録されていません。")
+        except Exception as e:
+            messages.error(request, f"予期せぬエラーが発生しました: {str(e)}")
+
+    # 4. 元の見積詳細画面にリダイレクトして戻る
+    return redirect('estimate:estimate_detail', pk=pk)

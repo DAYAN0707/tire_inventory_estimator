@@ -14,13 +14,61 @@
         color: #999999 !important; 
         opacity: 0.6 !important;
     }
+
+    /* 🎯 店員操作エリアの装飾 */
+    .status-update-card {
+        border-left: 5px solid #0d6efd;
+    }
 </style>
 
 <div class="container mt-4 mb-5">
     {# --- ヘッダー部分 --- #}
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>見積詳細</h2>
+        <h2>見積詳細・ステータス管理</h2>
     </div>
+
+    {# --- 🎯 従業員専用ステータス操作エリア（スタッフのみ表示） --- #}
+    {% if request.user.is_staff %}
+    <div class="card shadow-sm border-0 mb-4 status-update-card">
+        <div class="card-body bg-light">
+            <h6 class="text-primary fw-bold mb-3"><i class="bi bi-person-badge me-2"></i>従業員専用：ステータス更新</h6>
+            
+            <form method="POST" action="{% url 'estimate:update_status' estimate.pk %}" class="row g-3 align-items-center">
+                {% csrf_token %}
+                <div class="col-md-4">
+                    <select name="status_id" class="form-select fw-bold border-primary">
+                        {% for status in statuses %}
+                            <option value="{{ status.id }}" {% if estimate.estimate_status.id == status.id %}selected{% endif %}>
+                                {{ status.status_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-auto">
+                    <button type="submit" class="btn btn-primary px-4">
+                        更新する
+                    </button>
+                </div>
+
+                {# --- クイック操作ボタン --- #}
+                <div class="col-md text-end">
+                    {% if estimate.estimate_status.status_name == "見積確定" %}
+                        <button type="submit" name="quick_status" value="予約確定" class="btn btn-outline-success">
+                            <i class="bi bi-calendar-check me-1"></i>予約確定にする
+                        </button>
+                    {% elif estimate.estimate_status.status_name == "予約確定" %}
+                        <button type="submit" name="quick_status" value="引渡完了" class="btn btn-danger px-4">
+                            <i class="bi bi-check-circle me-1"></i>完了（引渡済）
+                        </button>
+                        <button type="submit" name="quick_status" value="予約キャンセル" class="btn btn-link text-muted btn-sm" onclick="return confirm('本当に予約をキャンセルしますか？');">
+                            キャンセル処理
+                        </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 
     {# --- 1. 基本情報 --- #}
     <div class="card shadow-sm border-0 mb-4">
@@ -39,8 +87,10 @@
                     <span class="fw-bold fs-5">{{ estimate.vehicle_name }}</span>
                 </div>
                 <div class="col-md-3">
-                    <label class="text-muted small d-block">ステータス</label>
-                    <span class="badge bg-primary fs-6">{{ estimate.estimate_status }}</span>
+                    <label class="text-muted small d-block">現在のステータス</label>
+                    <span class="badge {% if estimate.estimate_status.status_name == '引渡完了' %}bg-success{% elif estimate.estimate_status.status_name == '予約確定' %}bg-info text-dark{% else %}bg-primary{% endif %} fs-6">
+                        {{ estimate.estimate_status }}
+                    </span>
                 </div>
             </div>
         </div>
@@ -115,9 +165,12 @@
                     </div>
                     <hr class="my-4">
                     <div class="d-grid gap-2">
-                        {# 🎯 印刷専用ページを別タブで開くボタンに差し替え #}
                         <a href="{% url 'estimate:estimate_print' estimate.pk %}" target="_blank" class="btn btn-light btn-lg fw-bold text-decoration-none text-primary">
                             <i class="bi bi-printer me-2"></i>印刷用ページを開く
+                        </a>
+                        {# スタッフのみ編集可能にする場合はここも if staff で囲うのもアリです #}
+                        <a href="{% url 'estimate:estimate_create' %}?estimate_id={{ estimate.id }}" class="btn btn-outline-light">
+                            <i class="bi bi-pencil-square me-2"></i>内容を編集する
                         </a>
                     </div>
                 </div>
