@@ -2,9 +2,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required  # ログイン必須にするためのデコレータ
 from django.db.models import Q
 from django.contrib import messages
-from .models import Tire, Order  # 🎯 Orderモデルをインポート
+from .models import Tire, Order, Brand
 from audit.models import AuditLog  # 🎯 共通アプリのauditからインポート
-
+from django.views.generic import CreateView, UpdateView, ListView
+from django.urls import reverse_lazy
 
 def tire_list(request):
     """
@@ -159,3 +160,32 @@ def order_cancel(request, order_id):
     )
     messages.warning(request, f"【発注取消】{order.tire.brand} の発注を取り消しました。")
     return redirect('inventory:order_list')
+
+
+class BrandCreateView(CreateView):
+    model = Brand
+    fields = ['name', 'comment']
+    template_name = 'inventory/brand_form.html'
+    success_url = reverse_lazy('inventory:brand_list')
+
+class BrandUpdateView(UpdateView):
+    model = Brand
+    fields = ['name', 'comment']
+    template_name = 'inventory/brand_form.html'
+    success_url = reverse_lazy('inventory:brand_list')
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        
+        # 削除ボタン押下時の処理
+        if 'delete' in request.POST:
+            self.object.delete()
+            return redirect(self.success_url)
+            
+        return super().post(request, *args, **kwargs)
+
+class BrandListView(ListView):
+    model = Brand
+    template_name = 'inventory/brand_list.html'
+    context_object_name = 'brands'
+    ordering = ['name']

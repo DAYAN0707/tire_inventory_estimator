@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'inventory:brand_list' %}">ブランド管理</a></li>
+            <li class="breadcrumb-item active">{% if object %}ブランド編集{% else %}新規登録{% endif %}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0">
+            {% if object %}
+                <i class="bi bi-pencil-square me-2"></i>ブランドの編集
+            {% else %}
+                <i class="bi bi-plus-circle me-2"></i>新規ブランド登録
+            {% endif %}
+        </h2>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-muted small">ブランド名</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag"></i></span>
+                        <input type="text" name="name" class="form-control border-start-0" 
+                                value="{{ form.name.value|default:'' }}" placeholder="例：ブリヂストン" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-muted small">ブランド特徴・コメント</label>
+                    <textarea name="comment" class="form-control" rows="5" 
+                            placeholder="ブランドの特徴や、見積書に載せたい説明を入力してください">{{ form.comment.value|default:'' }}</textarea>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center border-top pt-4">
+                    <div>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                            <i class="bi bi-check-lg me-1"></i> 変更を保存する
+                        </button>
+                        <a href="{% url 'inventory:brand_list' %}" class="btn btn-outline-secondary px-4 ms-2">
+                            キャンセル
+                        </a>
+                    </div>
+
+                    {% if object %}
+                    <button type="submit" name="delete" class="btn btn-link text-danger text-decoration-none small" 
+                            onclick="return confirm('本当にこのブランドを削除しますか？');">
+                        <i class="bi bi-trash3 me-1"></i> このブランドを削除
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

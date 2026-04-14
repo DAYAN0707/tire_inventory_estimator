@@ -16,4 +16,12 @@ urlpatterns = [
     path('order/confirm/<int:order_id>/', views.order_confirm, name='order_confirm'),
     # 🎯 発注キャンセルのURL
     path('order/cancel/<int:order_id>/', views.order_cancel, name='order_cancel'),
+
+    # --- 🛠️ 店長権限：タイヤブランド管理 ---
+    # 🎯 ブランド一覧画面（パスを 'list/' に変更して、他のURLと完全に区別）
+    path('manager/brands/list/', views.BrandListView.as_view(), name='brand_list'),
+    # 🎯 新規ブランド登録画面
+    path('manager/brands/create/', views.BrandCreateView.as_view(), name='brand_create'),
+    # 🎯 ブランドの編集・削除画面
+    path('manager/brands/<int:pk>/edit/', views.BrandUpdateView.as_view(), name='brand_edit'),
 ]
