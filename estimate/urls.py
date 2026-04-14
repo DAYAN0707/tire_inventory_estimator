@@ -24,4 +24,7 @@ urlpatterns = [
     # --- 店長権限専用の在庫管理画面URL  ---
     path('manager/tires/', estimate_views.ManagerTireListView.as_view(), name='manager_tire_list'),
     path('manager/tires/<int:pk>/edit/', estimate_views.ManagerTireUpdateView.as_view(), name='manager_tire_edit'),
+    path('manager/charges/', estimate_views.ManagerChargeListView.as_view(), name='manager_charge_list'),
+    path('manager/charges/add/', estimate_views.ManagerChargeCreateView.as_view(), name='manager_charge_add'),
+    path('manager/charges/<int:pk>/edit/', estimate_views.ManagerChargeUpdateView.as_view(), name='manager_charge_edit'),
 ]

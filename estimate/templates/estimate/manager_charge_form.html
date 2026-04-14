@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 900px;">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'estimate:manager_charge_list' %}" class="btn btn-outline-secondary me-3 btn-sm">
+            <i class="bi bi-arrow-left"></i> 一覧に戻る
+        </a>
+        <h2 class="h4 mb-0">諸費用項目の詳細設定</h2>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white py-3">
+            <h5 class="card-title mb-0 small">
+                {% if object %}{{ object.name }} の編集{% else %}新規諸費用の登録{% endif %}
+            </h5>
+        </div>
+        
+        <div class="card-body p-0">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="border-bottom p-3">
+                    <div class="row align-items-center">
+                        <label class="col-md-3 fw-bold small text-muted">項目名</label>
+                        <div class="col-md-9">
+                            <input type="text" name="name" value="{{ form.name.value|default:'' }}" class="form-control" placeholder="例：廃タイヤ処分料">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-bottom p-3 bg-light">
+                    <div class="row align-items-center">
+                        <label class="col-md-3 fw-bold small text-muted">管理コード</label>
+                        <div class="col-md-5">
+                            <input type="text" name="code" value="{{ request.POST.code|default:form.code.value|default:'' }}" class="form-control">
+                            {% if form.code.errors %}
+                                <div class="text-danger small">{{ form.code.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 small text-muted">※システム識別用の英数字</div>
+                    </div>
+                </div>
+
+                <div class="border-bottom p-3">
+                    <div class="row align-items-center">
+                        <label class="col-md-3 fw-bold small text-muted">料金タイプ</label>
+                        <div class="col-md-5">
+                            <select name="charge_type" class="form-select">
+                                {% for value, label in form.fields.charge_type.choices %}
+                                    <option value="{{ value }}" {% if form.charge_type.value == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-bottom p-3 bg-light">
+                    <div class="row align-items-center">
+                        <label class="col-md-3 fw-bold small text-muted">単価(税込)</label>
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input type="number" name="unit_price" value="{{ form.unit_price.value|default:'' }}" class="form-control text-end">
+                                <span class="input-group-text">円</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-bottom p-3">
+                    <div class="row align-items-center">
+                        <label class="col-md-3 fw-bold text-primary small">対応インチ範囲</label>
+                        <div class="col-md-9 d-flex align-items-center">
+                            <input type="number" name="min_inch" value="{{ form.min_inch.value|default:'' }}" class="form-control w-25" placeholder="最小">
+                            <span class="mx-3">～</span>
+                            <input type="number" name="max_inch" value="{{ form.max_inch.value|default:'' }}" class="form-control w-25" placeholder="最大">
+                            <span class="ms-3 small text-muted">インチ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-bottom p-3 bg-light">
+                    <div class="row">
+                        <label class="col-md-3 fw-bold small text-muted">各種フラグ</label>
+                        <div class="col-md-9">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" name="per_tire" id="per_tire" {% if form.per_tire.value %}checked{% endif %}>
+                                <label class="form-check-label small" for="per_tire"><strong>本数連動</strong>（タイヤの本数分だけ金額を掛ける）</label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" name="requires_rft" id="requires_rft" {% if form.requires_rft.value %}checked{% endif %}>
+                                <label class="form-check-label small" for="requires_rft"><strong>RFT判定</strong>（ランフラットタイヤ時のみ自動で加算）</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                {# 修正点: default_if_none:True を削除して、現在の値を正確に反映させる #}
+                                <input class="form-check-input" type="checkbox" name="is_active" id="is_active" {% if form.is_active.value %}checked{% endif %}>
+                                <label class="form-check-label small" for="is_active"><strong>有効状態</strong>（見積画面に表示させる）</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 d-flex justify-content-between bg-white">
+                    {% if object %}
+                    <button type="submit" name="delete" class="btn btn-outline-danger shadow-sm" onclick="return confirm('「{{ object.name }}」を完全に削除しますか？');">
+                        <i class="bi bi-trash"></i> この項目を削除
+                    </button>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
+                        <i class="bi bi-save me-2"></i>保存する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

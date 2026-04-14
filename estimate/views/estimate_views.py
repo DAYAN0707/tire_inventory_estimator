@@ -409,19 +409,83 @@ def update_status(request, pk):
     return redirect('estimate:estimate_detail', pk=pk)
 
 
+
 # ==========================================
 # 6. 諸費用計算ロジックの呼び出しと結果保存の関数
 # ==========================================
 
+CHARGE_FIELDS = [
+    'name', 
+    'code', 
+    'charge_type',
+    'unit_price', 
+    'min_inch',
+    'max_inch',
+    'per_tire',
+    'requires_rft',
+    'is_active'
+]
+
 class ManagerTireListView(ListView):
     model = Tire
-    template_name = 'estimate/manager_tire_list.html' # テンプレートの場所
+    template_name = 'estimate/manager_tire_list.html'
     context_object_name = 'tires'
-    
 
 class ManagerTireUpdateView(UpdateView):
     model = Tire
-    # 編集したい項目を指定（admin画面の項目に合わせる）
     fields = ['product_code', 'brand', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
     template_name = 'estimate/manager_tire_form.html'
-    success_url = reverse_lazy('estimate:manager_tire_list') # app_nameがあるので「:」が必要
+    success_url = reverse_lazy('estimate:manager_tire_list')
+
+# 諸費用一覧（店長用）
+class ManagerChargeListView(ListView):
+    model = ChargeMaster
+    template_name = 'estimate/manager_charge_list.html'
+    context_object_name = 'charges'
+
+import logging
+logger = logging.getLogger(__name__)
+
+class ManagerChargeUpdateView(UpdateView):
+    model = ChargeMaster
+    fields = CHARGE_FIELDS
+    template_name = 'estimate/manager_charge_form.html'
+    success_url = reverse_lazy('estimate:manager_charge_list')
+
+def post(self, request, *args, **kwargs):
+        print("\n=== DEBUG: ManagerChargeUpdateView.post STARTED ===")
+        print(f"POST Data: {request.POST}")
+
+        self.object = self.get_object()
+
+        # 🎯 修正点: self.delete ではなく、オブジェクトを直接削除する
+        if 'delete' in request.POST:
+            print(f"=== DEBUG: Deleting {self.object.name} ===")
+            self.object.delete()
+            print("=== DEBUG: DELETE COMPLETED ===\n")
+            return redirect(self.success_url)
+
+        form = self.get_form()
+        if form.is_valid():
+            charge = form.save(commit=False)
+            
+            # スイッチの強制上書きロジック（これはそのまま維持）
+            charge.is_active = 'is_active' in request.POST
+            charge.per_tire = 'per_tire' in request.POST
+            charge.requires_rft = 'requires_rft' in request.POST
+            
+            print(f"Saving is_active as: {charge.is_active}")
+            charge.save()
+            print("=== DEBUG: SAVE COMPLETED ===\n")
+            return redirect(self.success_url)
+
+        print("=== DEBUG: FORM INVALID ===")
+        print(form.errors)
+        return self.form_invalid(form)
+
+# 新規登録Viewも同じ項目に更新
+class ManagerChargeCreateView(CreateView):
+    model = ChargeMaster
+    fields = CHARGE_FIELDS
+    template_name = 'estimate/manager_charge_form.html'
+    success_url = reverse_lazy('estimate:manager_charge_list')

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0"><i class="bi bi-tools me-2"></i>諸費用マスタ管理</h2>
+        <a href="{% url 'estimate:manager_charge_add' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> 新規諸費用登録
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="ps-3">管理コード</th>
+                        <th>項目名</th>
+                        <th class="text-end">単価(税込)</th>
+                        <th class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for charge in charges %}
+                    <tr>
+                        <td class="ps-3 font-monospace">{{ charge.code }}</td>
+                        <td>{{ charge.name }}</td>
+                        <td class="text-end fw-bold">{{ charge.unit_price|intcomma }}円</td>
+                        <td class="text-center">
+                            <a href="{% url 'estimate:manager_charge_edit' charge.pk %}" class="btn btn-sm btn-outline-primary">
+                                編集
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">登録されている諸費用はありません</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
