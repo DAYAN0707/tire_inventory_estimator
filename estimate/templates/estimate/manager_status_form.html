@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0">{% if object %}ステータスの編集{% else %}新規ステータス登録{% endif %}</h2>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">ステータス名</label>
+                    <input type="text" name="status_name" class="form-control"
+                            value="{{ form.status_name.value|default:'' }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">表示順（数字が小さいほど上に表示）</label>
+                    <input type="number" name="display_order" class="form-control" 
+                            value="{{ form.display_order.value|default:0 }}">
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="is_fixed" id="id_is_fixed" 
+                            {% if form.is_fixed.value %}checked{% endif %}>
+                        <label class="form-check-label" for="id_is_fixed">確定ステータスにする</label>
+                    </div>
+                </div>
+
+                <div class="border-top pt-4">
+                    <button type="submit" class="btn btn-primary px-4">保存する</button>
+                    <a href="{% url 'estimate:status_list' %}" class="btn btn-outline-secondary px-4 ms-2">キャンセル</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -27,4 +27,9 @@ urlpatterns = [
     path('manager/charges/', estimate_views.ManagerChargeListView.as_view(), name='manager_charge_list'),
     path('manager/charges/add/', estimate_views.ManagerChargeCreateView.as_view(), name='manager_charge_add'),
     path('manager/charges/<int:pk>/edit/', estimate_views.ManagerChargeUpdateView.as_view(), name='manager_charge_edit'),
+    # --- 店長用：ステータスマスタ管理 ---
+    path('manager/statuses/', estimate_views.ManagerStatusListView.as_view(), name='status_list'),
+    path('manager/statuses/<int:pk>/edit/', estimate_views.ManagerStatusUpdateView.as_view(), name='status_edit'),
+    path('manager/statuses/create/', estimate_views.ManagerStatusCreateView.as_view(), name='status_create'),
+    path('manager/clean-drafts/', estimate_views.clean_draft_estimates, name='clean_drafts'),
 ]

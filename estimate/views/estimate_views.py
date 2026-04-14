@@ -366,54 +366,9 @@ def add_item(request, tire_id):
         redirect_url = reverse('estimate:estimate_create')
         return redirect(f"{redirect_url}?estimate_id={estimate.id}")
 
-
 # ==========================================
-# 5. ステータス更新専用View（従業員操作用）
+# 諸費用フォームで使用するフィールド一覧
 # ==========================================
-def update_status(request, pk):
-    """
-    見積詳細画面から従業員がステータス（予約確定・引渡完了など）を直接変更するための処理
-    """
-    if request.method == "POST":
-        # 1. 対象の見積を特定
-        estimate = get_object_or_404(Estimate, pk=pk)
-        
-        # 2. フォームからのデータ取得（クイックボタン または プルダウン）
-        quick_status_name = request.POST.get('quick_status')  # ボタンの value
-        status_id = request.POST.get('status_id')            # プルダウンの value
-
-        try:
-            if quick_status_name:
-                # クイックボタン（「予約確定にする」等）が押された場合
-                new_status = EstimateStatus.objects.get(status_name=quick_status_name)
-            elif status_id:
-                # プルダウンから選択して「更新」が押された場合
-                new_status = EstimateStatus.objects.get(id=status_id)
-            else:
-                # どちらも取得できない場合は何もしない
-                return redirect('estimate:estimate_detail', pk=pk)
-
-            # 3. ステータスを上書きして保存
-            estimate.estimate_status = new_status
-            estimate.save()
-            
-            # 成功メッセージを表示（店員さんへの安心材料）
-            messages.success(request, f"ステータスを「{new_status.status_name}」に更新しました。")
-
-        except EstimateStatus.DoesNotExist:
-            messages.error(request, "指定されたステータスがマスタに登録されていません。")
-        except Exception as e:
-            messages.error(request, f"予期せぬエラーが発生しました: {str(e)}")
-
-    # 4. 元の見積詳細画面にリダイレクトして戻る
-    return redirect('estimate:estimate_detail', pk=pk)
-
-
-
-# ==========================================
-# 6. 諸費用計算ロジックの呼び出しと結果保存の関数
-# ==========================================
-
 CHARGE_FIELDS = [
     'name', 
     'code', 
@@ -425,67 +380,163 @@ CHARGE_FIELDS = [
     'requires_rft',
     'is_active'
 ]
+# ==========================================
+# 5. ステータス更新専用View（従業員操作用）
+# ==========================================
+def update_status(request, pk):
+    """
+    見積詳細画面から従業員がステータス（予約確定・引渡完了など）を直接変更するための処理
+    """
+    if request.method == "POST":
+        estimate = get_object_or_404(Estimate, pk=pk)
+        
+        quick_status_name = request.POST.get('quick_status')
+        status_id = request.POST.get('status_id')
+
+        try:
+            if quick_status_name:
+                new_status = EstimateStatus.objects.get(status_name=quick_status_name)
+            elif status_id:
+                new_status = EstimateStatus.objects.get(id=status_id)
+            else:
+                return redirect('estimate:estimate_detail', pk=pk)
+
+            estimate.estimate_status = new_status
+            estimate.save()
+            
+            messages.success(request, f"ステータスを「{new_status.status_name}」に更新しました。")
+
+        except EstimateStatus.DoesNotExist:
+            messages.error(request, "指定されたステータスがマスタに登録されていません。")
+        except Exception as e:
+            messages.error(request, f"予期せぬエラーが発生しました: {str(e)}")
+
+    return redirect('estimate:estimate_detail', pk=pk)
+
+
+# ==========================================
+# 6. 店長用：マスタ・在庫管理View
+# ==========================================
 
 class ManagerTireListView(ListView):
+    """タイヤ在庫一覧（店長用）"""
     model = Tire
     template_name = 'estimate/manager_tire_list.html'
     context_object_name = 'tires'
 
 class ManagerTireUpdateView(UpdateView):
+    """タイヤ情報編集（店長用）"""
     model = Tire
     fields = ['product_code', 'brand', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
     template_name = 'estimate/manager_tire_form.html'
     success_url = reverse_lazy('estimate:manager_tire_list')
 
-# 諸費用一覧（店長用）
 class ManagerChargeListView(ListView):
+    """諸費用マスタ一覧（店長用）"""
     model = ChargeMaster
     template_name = 'estimate/manager_charge_list.html'
     context_object_name = 'charges'
 
-import logging
-logger = logging.getLogger(__name__)
-
 class ManagerChargeUpdateView(UpdateView):
+    """諸費用マスタ編集・削除（店長用）"""
     model = ChargeMaster
     fields = CHARGE_FIELDS
     template_name = 'estimate/manager_charge_form.html'
     success_url = reverse_lazy('estimate:manager_charge_list')
 
-def post(self, request, *args, **kwargs):
-        print("\n=== DEBUG: ManagerChargeUpdateView.post STARTED ===")
-        print(f"POST Data: {request.POST}")
-
+    def post(self, request, *args, **kwargs):
         self.object = self.get_object()
 
-        # 🎯 修正点: self.delete ではなく、オブジェクトを直接削除する
         if 'delete' in request.POST:
-            print(f"=== DEBUG: Deleting {self.object.name} ===")
             self.object.delete()
-            print("=== DEBUG: DELETE COMPLETED ===\n")
+            messages.success(request, f"「{self.object.name}」を削除しました。")
             return redirect(self.success_url)
 
         form = self.get_form()
         if form.is_valid():
             charge = form.save(commit=False)
-            
-            # スイッチの強制上書きロジック（これはそのまま維持）
             charge.is_active = 'is_active' in request.POST
             charge.per_tire = 'per_tire' in request.POST
             charge.requires_rft = 'requires_rft' in request.POST
-            
-            print(f"Saving is_active as: {charge.is_active}")
             charge.save()
-            print("=== DEBUG: SAVE COMPLETED ===\n")
+            messages.success(request, f"「{charge.name}」を更新しました。")
             return redirect(self.success_url)
 
-        print("=== DEBUG: FORM INVALID ===")
-        print(form.errors)
         return self.form_invalid(form)
 
-# 新規登録Viewも同じ項目に更新
 class ManagerChargeCreateView(CreateView):
+    """諸費用マスタ新規登録（店長用）"""
     model = ChargeMaster
     fields = CHARGE_FIELDS
     template_name = 'estimate/manager_charge_form.html'
     success_url = reverse_lazy('estimate:manager_charge_list')
+
+
+# ==========================================
+# 7. 特殊操作：データクリーンアップ
+# ==========================================
+
+def clean_draft_estimates(request):
+    """
+    【店長権限専用】作成中データを一括清掃
+    """
+    try:
+        draft_status = EstimateStatus.objects.get(status_name="作成中")
+        draft_estimates = Estimate.objects.filter(estimate_status=draft_status)
+        count = draft_estimates.count()
+        
+        draft_estimates.delete()
+        draft_status.delete()
+        
+        messages.success(request, f"「作成中」の見積 {count} 件と、ステータスマスタを完全に消去しました。")
+        
+    except EstimateStatus.DoesNotExist:
+        messages.info(request, "「作成中」のステータスは既に整理済みです。")
+    except Exception as e:
+        messages.error(request, f"クリーンアップ中にエラーが発生しました: {str(e)}")
+
+    return redirect('estimate:estimate_list')
+
+# ==========================================
+# 8. ステータスマスタ管理（店長用）
+# ==========================================
+
+class ManagerStatusListView(ListView):
+    """ステータス一覧"""
+    model = EstimateStatus
+    template_name = 'estimate/manager_status_list.html'
+    context_object_name = 'statuses'
+
+class ManagerStatusUpdateView(UpdateView):
+    """ステータス編集"""
+    model = EstimateStatus
+    fields = '__all__'
+    template_name = 'estimate/manager_status_form.html'
+    success_url = reverse_lazy('estimate:status_list')
+
+    def form_valid(self, form):
+        # 🎯 内部名 is_fixed に統一
+        if 'is_fixed' not in self.request.POST:
+            form.instance.is_fixed = False
+        else:
+            form.instance.is_fixed = True
+        
+        messages.success(self.request, f"ステータス「{form.instance.status_name}」を更新しました。")
+        return super().form_valid(form)
+
+class ManagerStatusCreateView(CreateView):
+    """ステータス新規登録"""
+    model = EstimateStatus
+    fields = '__all__'
+    template_name = 'estimate/manager_status_form.html'
+    success_url = reverse_lazy('estimate:status_list')
+
+    def form_valid(self, form):
+        # 🎯 内部名 is_fixed に統一
+        if 'is_fixed' not in self.request.POST:
+            form.instance.is_fixed = False
+        else:
+            form.instance.is_fixed = True
+            
+        messages.success(self.request, f"ステータス「{form.instance.status_name}」を登録しました。")
+        return super().form_valid(form)
