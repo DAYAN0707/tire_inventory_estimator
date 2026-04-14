@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 800px;">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'users:user_list' %}" class="btn btn-outline-secondary me-3 btn-sm">
+            <i class="bi bi-arrow-left"></i> 一覧に戻る
+        </a>
+        <h2 class="h4 mb-0">ユーザー情報の詳細設定</h2>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white py-3">
+            <h5 class="card-title mb-0 small">
+                {% if object %}{{ object.staff_name|default:object.username }} の編集{% else %}新規ユーザー登録{% endif %}
+            </h5>
+        </div>
+        
+        <div class="card-body p-0">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="border-bottom p-3">
+                    <div class="row align-items-center">
+                        <label class="col-md-3 fw-bold small text-muted">ユーザー名 (ID)</label>
+                        <div class="col-md-9">
+                            <input type="text" name="username" value="{{ form.username.value|default:'' }}" class="form-control" placeholder="例: StoreManager">
+                            {% if form.username.errors %}<div class="text-danger small">{{ form.username.errors.0 }}</div>{% endif %}
+                            <div class="form-text small text-muted">ログインに使用する識別用IDです。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-bottom p-3 bg-light">
+                    <div class="row align-items-center">
+                        <label class="col-md-3 fw-bold small text-muted">従業員氏名</label>
+                        <div class="col-md-9">
+                            <input type="text" name="staff_name" value="{{ form.staff_name.value|default:'' }}" class="form-control" placeholder="例: 店長">
+                            {% if form.staff_name.errors %}<div class="text-danger small">{{ form.staff_name.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-bottom p-3">
+                    <div class="row align-items-center">
+                        <label class="col-md-3 fw-bold small text-muted">従業員コード</label>
+                        <div class="col-md-5">
+                            <input type="text" name="staff_id" value="{{ form.staff_id.value|default:'' }}" class="form-control font-monospace" placeholder="456789">
+                            {% if form.staff_id.errors %}<div class="text-danger small">{{ form.staff_id.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-bottom p-3 bg-light">
+                    <div class="row">
+                        <label class="col-md-3 fw-bold small text-muted">権限・ステータス</label>
+                        <div class="col-md-9">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" name="is_staff" id="is_staff" {% if form.is_staff.value %}checked{% endif %}>
+                                <label class="form-check-label small" for="is_staff"><strong>管理者権限</strong>（管理画面へのアクセスを許可）</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="is_active" {% if form.is_active.value|default_if_none:True %}checked{% endif %}>
+                                <label class="form-check-label small" for="is_active"><strong>有効フラグ</strong>（ログインを許可する）</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 d-flex justify-content-between bg-white">
+                    {% if object %}
+                    <button type="submit" name="delete" class="btn btn-outline-danger shadow-sm" onclick="return confirm('このユーザー情報を完全に削除しますか？');">
+                        <i class="bi bi-trash"></i> 削除
+                    </button>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
+                        <i class="bi bi-save me-2"></i>保存する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

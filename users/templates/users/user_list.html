@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0">ユーザー管理（店長・従業員）</h2>
+        <a href="{% url 'users:user_create' %}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-person-plus-fill me-1"></i> 新規ユーザー追加
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted small">
+                        <tr>
+                            <th class="ps-4">従業員ID</th>
+                            <th>従業員名</th>
+                            <th>ユーザー名 (ID)</th>
+                            <th class="text-center">管理者権限</th>
+                            <th class="text-center">有効フラグ</th>
+                            <th class="text-end pe-4">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td class="ps-4 font-monospace small">{{ user.staff_id|default:"---" }}</td>
+                            <td class="fw-bold">{{ user.staff_name|default:"(名前未設定)" }}</td>
+                            <td class="text-muted">{{ user.username }}</td>
+                            <td class="text-center">
+                                {% if user.is_staff %}
+                                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
+                                    <i class="bi bi-check-circle-fill"></i> はい
+                                </span>
+                                {% else %}
+                                <span class="badge rounded-pill bg-light text-muted border text-secondary">いいえ</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if user.is_active %}
+                                <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle">
+                                    <i class="bi bi-person-check-fill"></i> 有効
+                                </span>
+                                {% else %}
+                                <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle">無効</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'users:user_edit' user.pk %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                    編集
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-people mb-2 d-block fs-2"></i>
+                                登録されているユーザーがいません。
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
