@@ -1,7 +1,7 @@
 import json # タイヤマスタの価格情報をJSに渡すために使用
-from django.views.generic import ListView, CreateView, DetailView # クラスベースView用
+from django.views.generic import ListView, CreateView, DetailView, UpdateView # クラスベースView用
 from django.forms import inlineformset_factory # フォームセット用
-from django.urls import reverse # URLリバース用
+from django.urls import reverse, reverse_lazy
 from django.shortcuts import redirect, get_object_or_404, render # リダイレクトとオブジェクト取得用
 
 from django.contrib import messages  # 通知用
@@ -407,3 +407,21 @@ def update_status(request, pk):
 
     # 4. 元の見積詳細画面にリダイレクトして戻る
     return redirect('estimate:estimate_detail', pk=pk)
+
+
+# ==========================================
+# 6. 諸費用計算ロジックの呼び出しと結果保存の関数
+# ==========================================
+
+class ManagerTireListView(ListView):
+    model = Tire
+    template_name = 'estimate/manager_tire_list.html' # テンプレートの場所
+    context_object_name = 'tires'
+    
+
+class ManagerTireUpdateView(UpdateView):
+    model = Tire
+    # 編集したい項目を指定（admin画面の項目に合わせる）
+    fields = ['product_code', 'brand', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
+    template_name = 'estimate/manager_tire_form.html'
+    success_url = reverse_lazy('estimate:manager_tire_list') # app_nameがあるので「:」が必要

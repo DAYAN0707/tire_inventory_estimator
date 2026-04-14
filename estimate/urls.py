@@ -20,4 +20,8 @@ urlpatterns = [
     # --- API（JSON）系 / その他 ---
     path('api/calculate-charges/', api_views.calculate_charges_api, name='calculate_charges_api'),
     path('<int:pk>/print/', estimate_views.estimate_print, name='estimate_print'),
+
+    # --- 店長権限専用の在庫管理画面URL  ---
+    path('manager/tires/', estimate_views.ManagerTireListView.as_view(), name='manager_tire_list'),
+    path('manager/tires/<int:pk>/edit/', estimate_views.ManagerTireUpdateView.as_view(), name='manager_tire_edit'),
 ]

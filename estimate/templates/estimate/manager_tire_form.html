@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 700px;">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'estimate:manager_tire_list' %}" class="btn btn-outline-secondary me-3 btn-sm">
+            <i class="bi bi-arrow-left"></i> 一覧に戻る
+        </a>
+        <h2 class="h4 mb-0">タイヤ情報の編集</h2>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white py-3">
+            <h5 class="card-title mb-0 small">
+                {{ object.manufacturer }} {{ object.brand }} ({{ object.size_raw }})
+            </h5>
+        </div>
+
+        <div class="card-body p-4">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="row g-4">
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted">商品コード</label>
+                        <input type="text" name="product_code" value="{{ form.product_code.value|default:'' }}" class="form-control bg-light" required>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted">1本単価(税込)</label>
+                        <div class="input-group">
+                            <input type="number" name="unit_price" value="{{ form.unit_price.value|default:'' }}" class="form-control">
+                            <span class="input-group-text">円</span>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted">4本特価(税込)</label>
+                        <div class="input-group">
+                            <input type="number" name="set_price" value="{{ form.set_price.value|default:'' }}" class="form-control text-success fw-bold">
+                            <span class="input-group-text">円</span>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted">発注点</label>
+                        <input type="number" name="reorder_point" value="{{ form.reorder_point.value|default:'' }}" class="form-control">
+                        <div class="form-text small">この数値を下回ると在庫一覧で赤く強調されます。</div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted">在庫数量</label>
+                        <input type="number" name="stock_qty" value="{{ form.stock_qty.value|default:'' }}" class="form-control">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted">仕入れ値</label>
+                        <div class="input-group">
+                            <input type="number" name="cost_price" value="{{ form.cost_price.value|default:'' }}" class="form-control">
+                            <span class="input-group-text">円</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-top mt-5 pt-4 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary px-5 shadow-sm">
+                        変更を保存する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
