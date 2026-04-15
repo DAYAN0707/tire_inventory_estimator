@@ -5,16 +5,16 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb small">
             <li class="breadcrumb-item"><a href="{% url 'inventory:brand_list' %}">ブランド管理</a></li>
-            <li class="breadcrumb-item active">{% if object %}ブランド編集{% else %}新規登録{% endif %}</li>
+            <li class="breadcrumb-item active">{% if object %}銘柄・品番編集{% else %}新規銘柄登録{% endif %}</li>
         </ol>
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="h4 mb-0">
             {% if object %}
-                <i class="bi bi-pencil-square me-2"></i>ブランドの編集
+                <i class="bi bi-pencil-square me-2"></i>銘柄・品番の編集
             {% else %}
-                <i class="bi bi-plus-circle me-2"></i>新規ブランド登録
+                <i class="bi bi-plus-circle me-2"></i>新規銘柄・品番登録
             {% endif %}
         </h2>
     </div>
@@ -25,18 +25,21 @@
                 {% csrf_token %}
                 
                 <div class="mb-4">
-                    <label class="form-label fw-bold text-muted small">ブランド名</label>
+                    <label class="form-label fw-bold text-muted small">銘柄・品番</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag"></i></span>
+                        {# placeholder を修正：ブリヂストンを削除し、品番までの例に変更 #}
                         <input type="text" name="name" class="form-control border-start-0" 
-                                value="{{ form.name.value|default:'' }}" placeholder="例：ブリヂストン" required>
+                                value="{{ form.name.value|default:'' }}" placeholder="例：エナセーブ RV505" required>
                     </div>
+                    <div class="form-text small text-muted">※「エナセーブ RV505」のように、銘柄と品番をセットで入力してください。</div>
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label fw-bold text-muted small">ブランド特徴・コメント</label>
+                    <label class="form-label fw-bold text-muted small">銘柄の特徴・コメント</label>
                     <textarea name="comment" class="form-control" rows="5" 
-                            placeholder="ブランドの特徴や、見積書に載せたい説明を入力してください">{{ form.comment.value|default:'' }}</textarea>
+                            placeholder="この銘柄の主な特徴や、タイヤ選択時のヒントとなる情報を入力してください">{{ form.comment.value|default:'' }}</textarea>
+                    <div class="form-text small text-muted">※このコメントはタイヤ選択画面の参考に表示されます。（見積書には記載されません）</div>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center border-top pt-4">
@@ -51,8 +54,8 @@
 
                     {% if object %}
                     <button type="submit" name="delete" class="btn btn-link text-danger text-decoration-none small" 
-                            onclick="return confirm('本当にこのブランドを削除しますか？');">
-                        <i class="bi bi-trash3 me-1"></i> このブランドを削除
+                            onclick="return confirm('本当にこのデータを削除しますか？');">
+                        <i class="bi bi-trash3 me-1"></i> 削除
                     </button>
                     {% endif %}
                 </div>
