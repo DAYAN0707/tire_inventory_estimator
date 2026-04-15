@@ -11,7 +11,8 @@ from django.contrib.auth import get_user_model  # ユーザーモデル用
 from inventory.models import Tire # タイヤマスタの情報を取得するためにインポート
 from estimate.forms import EstimateTireForm # タイヤ明細用のフォーム
 from estimate.services.usecase import EstimateUseCase # ビジネスロジックを担うUseCaseクラス
-from estimate.models import Estimate, EstimateItem, EstimateStatus, ChargeMaster  # 見積関連のモデルをインポート
+from estimate.models import Estimate, EstimateStatus, ChargeMaster  # 見積関連のモデルをインポート
+from estimate.models.estimate_item import EstimateItem
 from estimate.services.calculator import sync_estimate_charges # 諸費用計算サービスをインポート
 
 
@@ -289,82 +290,102 @@ def estimate_print(request, pk):
     }
     return render(request, "estimate/estimate_print.html", context)
 
-#==========================================
+# ==========================================
 # 4. APIで呼び出すための関数ベースView（add_item）
-#========================================== 
+# ========================================== 
 # 画面上の「タイヤ追加」ボタンからPOSTリクエストで呼び出される
 def add_item(request, tire_id):
-    if request.method == "POST":
-        User = get_user_model() # ユーザーモデルを取得
-        
-        # 🎯 フォームの hidden input から見積IDを取得
-        estimate_id = request.POST.get("estimate_id")
+    if request.method != "POST":
+        return redirect('inventory:tire_list')
 
-        # 1. 見積オブジェクトを特定または新規作成
-        if estimate_id and estimate_id != "None" and estimate_id != "":
-            # 既存の見積に追加する場合
-            estimate = get_object_or_404(Estimate, id=estimate_id)
-        else:
-            # --- 🎯 開発用の安全ユーザー取得 ---
-            current_user = User.objects.first() 
-            
-            if not current_user:
-                messages.error(request, "管理画面からユーザーを1人以上作成してください。")
-                return redirect('inventory:tire_list')
+    User = get_user_model()
+    current_user = User.objects.first()
 
-            # --- 🎯 新規見積を作成 ---
-            # 開発中は確実に諸費用（工賃等）が計算されるよう 'install' (店舗付け) を指定
-            estimate = Estimate.objects.create(
-                customer_name="新規顧客",
-                created_by=current_user,
-                purchase_type="install"  # 👈 ここで工賃計算のフラグを立てる！
-            )
-        
-        # 2. 追加するタイヤを取得
-        tire = get_object_or_404(Tire, id=tire_id)
-        
-        # 3. フォームから数量と装着位置を取得
-        try:
-            qty = int(request.POST.get("quantity", 4))
-        except (ValueError, TypeError):
-            qty = 4
-        
-        pos = request.POST.get("position", "all")
+    # --- 🎯 開発用の安全ユーザー取得 ---
+    if not current_user:
+        messages.error(request, "管理画面からユーザーを1人以上作成してください。")
+        return redirect('inventory:tire_list')
 
-        # 🎯 工賃マスタの存在チェック（最低1件必要）
-        master = ChargeMaster.objects.first()
-        if not master:
-            messages.error(request, "諸費用マスタが登録されていません。管理画面から登録してください。")
-            return redirect('inventory:tire_list')
+    # 🎯 フォームの hidden input から見積IDを取得
+    estimate_id = request.POST.get("estimate_id")
 
-        # 4. 見積明細（EstimateItem）を作成または更新
-        item, created = EstimateItem.objects.get_or_create(
-            estimate=estimate,
-            tire=tire,
-            position=pos,
-            defaults={
-                'quantity': qty, 
-                'cost_master': master
-            }
+    # ==========================================
+    # 🔍 デバッグログ
+    # ==========================================
+    print("==== DEBUG START ====")
+    print("tire_id:", tire_id)
+    print("tire exists:", Tire.objects.filter(id=tire_id).exists())
+    print("estimate_id:", estimate_id if estimate_id else "なし")
+    
+    # ステータスマスタの状態を確認
+    try:
+        print("statuses in DB:", list(EstimateStatus.objects.values('id', 'status_name')))
+    except Exception as e:
+        print("Status Debug Error:", e)
+    print("==== DEBUG END ====")
+    # ==========================================
+
+    # 🎯 ステータスマスタの取得
+    default_status = EstimateStatus.objects.first()
+
+    if not default_status:
+        messages.error(request, "ステータスマスタが空です。管理画面から登録してください。")
+        return redirect('estimate:status_list')
+
+    # ① 見積オブジェクトを特定または新規作成
+    if estimate_id and estimate_id != "None" and estimate_id != "":
+        # 既存の見積に追加する場合
+        estimate = get_object_or_404(Estimate, id=estimate_id)
+    else:
+        # --- 🎯 新規見積を作成 ---
+        # IntegrityError回避のため、上で取得した default_status を明示的にセット
+        estimate = Estimate.objects.create(
+            customer_name="新規顧客",
+            created_by=current_user,
+            purchase_type="install", 
+            estimate_status=default_status 
         )
-        
-        if not created:
-            item.quantity += qty
-            item.save()
 
-        # 🎯 諸費用の自動生成と合計金額の反映
-        # ① タイヤ構成に合わせて「廃タイヤ」「バルブ」などを自動生成
-        sync_estimate_charges(estimate)
-        
-        # ② 生成された諸費用も含めて、見積全体の最終合計金額を算出
+    # ② 追加するタイヤを取得
+    tire = get_object_or_404(Tire, id=tire_id)
+
+    # ③ フォームから数量と装着位置を取得
+    try:
+        qty = int(request.POST.get("quantity", 4))
+    except (ValueError, TypeError):
+        qty = 4
+
+    pos = request.POST.get("position", "all")
+
+    # 🎯 工賃マスタの存在チェック
+    master = ChargeMaster.objects.first()
+    if not master:
+        messages.error(request, "諸費用マスタが登録されていません。")
+        return redirect('inventory:tire_list')
+
+    # ④ 見積明細（EstimateItem）を作成または更新
+    # 🌟 estimate_item.py で定義されたロジックに基づき保存
+    item, created = EstimateItem.objects.get_or_create(
+        estimate=estimate,
+        tire=tire,
+        position=pos,
+        defaults={
+            'quantity': qty, 
+            'cost_master': master
+        }
+    )
+    
+    if not created:
+        item.quantity += qty
+        item.save() # ここで estimate_item.py の save() メソッドが動く
+
+    # 🎯 合計金額の反映（Estimateモデル側のメソッド）
+    if hasattr(estimate, 'recalc_total_price'):
         estimate.recalc_total_price()
 
-
-        # 5. 完成した見積の詳細画面へ
-        #詳細画面ではなく、作成画面(create)へIDを持って戻る ---
-        # 'estimate:estimate_create' とすることで、app_name='estimate' 内の 'estimate_create' を探す
-        redirect_url = reverse('estimate:estimate_create')
-        return redirect(f"{redirect_url}?estimate_id={estimate.id}")
+    # ⑤ 完成した見積の作成画面(create)へ戻る
+    redirect_url = reverse('estimate:estimate_create')
+    return redirect(f"{redirect_url}?estimate_id={estimate.id}")
 
 # ==========================================
 # 諸費用フォームで使用するフィールド一覧
@@ -380,6 +401,7 @@ CHARGE_FIELDS = [
     'requires_rft',
     'is_active'
 ]
+
 # ==========================================
 # 5. ステータス更新専用View（従業員操作用）
 # ==========================================

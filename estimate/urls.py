@@ -21,17 +21,22 @@ urlpatterns = [
     path('api/calculate-charges/', api_views.calculate_charges_api, name='calculate_charges_api'),
     path('<int:pk>/print/', estimate_views.estimate_print, name='estimate_print'),
 
-    # --- 店長権限専用の在庫管理画面URL  ---
+
+    # --- 店長権限専用の在庫管理画面URL ---
     path('manager/tires/', estimate_views.ManagerTireListView.as_view(), name='manager_tire_list'),
     path('manager/tires/<int:pk>/edit/', estimate_views.ManagerTireUpdateView.as_view(), name='manager_tire_edit'),
+
+    # --- 店長用：諸費用（工賃・廃タイヤ等）マスタ管理 ---
     path('manager/charges/', estimate_views.ManagerChargeListView.as_view(), name='manager_charge_list'),
     path('manager/charges/add/', estimate_views.ManagerChargeCreateView.as_view(), name='manager_charge_add'),
-    path('manager/tires/<int:pk>/edit/', estimate_views.ManagerTireUpdateView.as_view(), name='manager_tire_edit'),
+    path('manager/charges/<int:pk>/edit/', estimate_views.ManagerChargeUpdateView.as_view(), name='manager_charge_edit'),
+
     # --- 店長用：ステータスマスタ管理 ---
     path('manager/statuses/', estimate_views.ManagerStatusListView.as_view(), name='status_list'),
     path('manager/statuses/<int:pk>/edit/', estimate_views.ManagerStatusUpdateView.as_view(), name='status_edit'),
     path('manager/statuses/create/', estimate_views.ManagerStatusCreateView.as_view(), name='status_create'),
+
+    # --- その他管理機能 ---
     path('manager/clean-drafts/', estimate_views.clean_draft_estimates, name='clean_drafts'),
-    # --- 店長・一般スタッフ共通：ポータル画面 ---
     path('manager/dashboard/', estimate_views.ManagerDashboardView.as_view(), name='manager_dashboard'),
 ]
