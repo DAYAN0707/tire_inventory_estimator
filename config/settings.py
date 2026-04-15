@@ -131,5 +131,5 @@ import os
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-LOGIN_REDIRECT_URL = 'inventory:tire_list'
 LOGOUT_REDIRECT_URL = 'users:login'
+LOGIN_REDIRECT_URL = 'estimate:manager_dashboard'

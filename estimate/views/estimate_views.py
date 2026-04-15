@@ -1,5 +1,5 @@
 import json # タイヤマスタの価格情報をJSに渡すために使用
-from django.views.generic import ListView, CreateView, DetailView, UpdateView # クラスベースView用
+from django.views.generic import ListView, CreateView, DetailView, UpdateView, TemplateView # クラスベースView用
 from django.forms import inlineformset_factory # フォームセット用
 from django.urls import reverse, reverse_lazy
 from django.shortcuts import redirect, get_object_or_404, render # リダイレクトとオブジェクト取得用
@@ -540,3 +540,7 @@ class ManagerStatusCreateView(CreateView):
             
         messages.success(self.request, f"ステータス「{form.instance.status_name}」を登録しました。")
         return super().form_valid(form)
+    
+
+class ManagerDashboardView(TemplateView):
+    template_name = 'estimate/manager_dashboard.html'

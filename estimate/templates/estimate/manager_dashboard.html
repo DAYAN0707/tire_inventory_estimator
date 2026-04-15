@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="h4 mb-4 border-bottom pb-2 text-secondary">サイト管理（ダッシュボード）</h2>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-dark text-white py-2 fw-bold">
+                    STAFF（一般業務）
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'estimate:estimate_list' %}" class="text-decoration-none text-dark">見積一覧</a>
+                        <a href="{% url 'estimate:estimate_create' %}" class="btn btn-link btn-sm text-secondary p-0 text-decoration-none">+ 追加</a>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="/inventory/admin/tires/" class="text-decoration-none text-dark">タイヤ一覧</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            {# ヘッダーの判定に合わせて is_superuser も追加して確実に表示させる #}
+            {% if user.is_staff or user.is_superuser %}
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header text-white py-2 fw-bold" style="background-color: #417690 !important;">
+                    MANAGER（店長専用マスタ管理）
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'estimate:manager_tire_list' %}" class="text-decoration-none text-dark">タイヤマスタ</a>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="/inventory/manager/brands/list/" class="text-decoration-none text-dark">ブランドマスタ</a>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'estimate:manager_charge_list' %}" class="text-decoration-none text-dark">諸費用マスタ</a>
+                        <a href="{% url 'estimate:manager_charge_add' %}" class="btn btn-link btn-sm text-secondary p-0 text-decoration-none">+ 追加</a>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="/users/manager/list/" class="text-decoration-none text-dark">ユーザーマスタ</a>
+                        <a href="#" class="btn btn-link btn-sm text-secondary p-0 text-decoration-none">+ 追加</a>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'estimate:status_list' %}" class="text-decoration-none text-dark">見積ステータスマスタ</a>
+                        <a href="{% url 'estimate:status_create' %}" class="btn btn-link btn-sm text-secondary p-0 text-decoration-none">+ 追加</a>
+                    </li>
+                </ul>
+            </div>
+            {% else %}
+            <div class="alert alert-light border text-center h-100 d-flex align-items-center justify-content-center">
+                <div class="text-muted">
+                    <i class="bi bi-lock-fill d-block mb-2"></i>
+                    <small>マスタ管理権限がありません</small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-header { font-size: 0.85rem; letter-spacing: 1px; }
+    .list-group-item { font-size: 0.95rem; transition: background-color 0.2s; }
+    .list-group-item:hover { background-color: #f8f9fa; }
+    .list-group-item a:hover { color: #447e9b !important; }
+</style>
+{% endblock %}
