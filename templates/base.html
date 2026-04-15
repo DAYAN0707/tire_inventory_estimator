@@ -24,15 +24,15 @@
     {# --- 共通ナビゲーションバー --- #}
     <nav class="navbar navbar-dark bg-dark mb-4 shadow-sm">
         <div class="container">
-            {# ロゴ：クリックでお客さん用トップ（タイヤ一覧）へ戻る #}
-            <a class="navbar-brand fw-bold" href="{% url 'inventory:tire_list' %}">
-                <i class="fas fa-car-side me-2"></i>タイヤ在庫見積システム
+            {# ロゴ：クリックでダッシュボード（ログイン後のTOP画面）へ戻る #}
+            <a class="navbar-brand fw-bold" href="{% url 'estimate:manager_dashboard' %}">
+                <i class="fas fa-car-side me-2"></i>タイヤ管理システム
             </a>
 
             {# 右側：ログイン状態に応じた表示 #}
             <div class="navbar-nav flex-row align-items-center">
                 {% if user.is_authenticated %}
-                    {# 店員さんがログインしている場合のみ表示 #}
+                    {# 店員がログインしている場合のみ表示 #}
                     <span class="text-light small me-3">
                         <i class="fas fa-user-circle me-1"></i>{{ user.username }}さん
                     </span>
@@ -43,7 +43,7 @@
                         </button>
                     </form>
                 {% else %}
-                    {# ログインしていない（一般客）場合はログインボタンを出しても良い #}
+                    {# ログインしていない場合はログインボタンを出しても良い #}
                     <a href="{% url 'login' %}" class="btn btn-sm btn-outline-light">
                         <i class="fas fa-sign-in-alt me-1"></i>店員ログイン
                     </a>
