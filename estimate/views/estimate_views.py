@@ -427,7 +427,7 @@ class ManagerTireListView(ListView):
 class ManagerTireUpdateView(UpdateView):
     """タイヤ情報編集（店長用）"""
     model = Tire
-    fields = ['product_code', 'brand', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
+    fields = ['product_code', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
     template_name = 'estimate/manager_tire_form.html'
     success_url = reverse_lazy('estimate:manager_tire_list')
 

@@ -2,17 +2,10 @@
 
 {% block content %}
 <div class="container mt-4" style="max-width: 700px;">
-    <div class="d-flex align-items-center mb-4">
-        <a href="{% url 'estimate:manager_tire_list' %}" class="btn btn-outline-secondary me-3 btn-sm">
-            <i class="bi bi-arrow-left"></i> 一覧に戻る
-        </a>
-        <h2 class="h4 mb-0">タイヤ情報の編集</h2>
-    </div>
-
     <div class="card shadow-sm border-0">
         <div class="card-header bg-dark text-white py-3">
             <h5 class="card-title mb-0 small">
-                {{ object.manufacturer }} {{ object.brand }} ({{ object.size_raw }})
+                <i class="bi bi-info-circle me-2"></i>在庫・価格設定
             </h5>
         </div>
 
@@ -21,6 +14,15 @@
                 {% csrf_token %}
 
                 <div class="row g-4">
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted">対象の銘柄・品番</label>
+                        <div class="form-control bg-light d-flex align-items-center">
+                            <i class="bi bi-tag me-2"></i>
+                            {{ object.brand }} ({{ object.size_raw }})
+                        </div>
+                    </div>
+                    
+
                     <div class="col-12">
                         <label class="form-label fw-bold small text-muted">商品コード</label>
                         <input type="text" name="product_code" value="{{ form.product_code.value|default:'' }}" class="form-control bg-light" required>
@@ -43,14 +45,22 @@
                     </div>
 
                     <div class="col-12">
-                        <label class="form-label fw-bold small text-muted">発注点</label>
-                        <input type="number" name="reorder_point" value="{{ form.reorder_point.value|default:'' }}" class="form-control">
-                        <div class="form-text small">この数値を下回ると在庫一覧で赤く強調されます。</div>
+                        <label class="form-label fw-bold small text-muted">在庫数量</label>
+                        <div class="input-group" style="max-width: 200px;">
+                            <span class="input-group-text bg-light"><i class="bi bi-box-seam"></i></span>
+                            <input type="number" name="stock_qty" value="{{ form.stock_qty.value|default:'' }}" class="form-control">
+                        </div>
                     </div>
 
                     <div class="col-12">
-                        <label class="form-label fw-bold small text-muted">在庫数量</label>
-                        <input type="number" name="stock_qty" value="{{ form.stock_qty.value|default:'' }}" class="form-control">
+                        <label class="form-label fw-bold small text-muted">発注点</label>
+                        <div style="max-width: 200px;">
+                            <input type="number" name="reorder_point" value="{{ form.reorder_point.value|default:'' }}" class="form-control">
+                        </div>
+                        <div class="form-text small text-primary mt-2">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            在庫がこの数値（発注点）を下回ると、一覧で赤く強調されます。
+                        </div>
                     </div>
 
                     <div class="col-12">
@@ -64,7 +74,7 @@
 
                 <div class="border-top mt-5 pt-4 d-flex justify-content-end">
                     <button type="submit" class="btn btn-primary px-5 shadow-sm">
-                        変更を保存する
+                        <i class="bi bi-save me-2"></i>変更を保存する
                     </button>
                 </div>
             </form>
