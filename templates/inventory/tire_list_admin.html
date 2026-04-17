@@ -19,8 +19,8 @@
                 <i class="bi bi-clipboard-check me-1"></i>発注管理画面へ
             </a>
             {# 🎯 1. 見積一覧へ飛ぶボタン #}
-            <a href="{% url 'estimate:estimate_list' %}" class="btn btn-outline-success shadow-sm">
-                <i class="bi bi-file-earmark-text me-1"></i>見積一覧画面へ
+            <a href="{% url 'estimate:estimate_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-list"></i> 見積一覧画面へ
             </a>
 
             {# --- ユーザー情報表示エリア --- #}
@@ -30,7 +30,6 @@
                 <span class="badge {% if user.is_superuser %}bg-danger{% else %}bg-primary{% endif %} ms-1">
                     {% if user.is_superuser %}店長モード{% else %}店員モード{% endif %}
                 </span>
-                <a href="{% url 'users:logout' %}" class="btn btn-sm btn-link text-decoration-none text-dark ms-2">ログアウト</a>
             </div>
             {% endif %}
         </div>
