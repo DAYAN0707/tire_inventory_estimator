@@ -63,7 +63,7 @@
                     <tr>
                         <th style="width: 25%">タイヤ情報</th>
                         <th class="text-center">実在庫</th>
-                        <th class="text-center text-info">予約(取置)</th>
+                        <th class="text-center text-info">予約(取置)</th> {# 🌟項目名を青に固定 #}
                         <th class="text-center">有効在庫</th>
                         <th class="text-center">定数</th>
                         <th class="text-end">1本価格</th>
@@ -82,26 +82,29 @@
                             <div class="font-monospace small bg-light d-inline-block px-1 mt-1">{{ tire.size_raw }}</div>
                         </td>
 
-                        {# 🎯 CSV: stock_qty #}
+                        {# 🎯 実在庫 #}
                         <td class="text-center h5">{{ tire.stock_qty }}</td>
 
-                        {# 予約在庫 (将来的に予約データを集計して表示) #}
-                        <td class="text-center text-primary fw-bold">0</td>
+                        {# 🎯 予約在庫（5章で追加した reserved_qty を表示） #}
+                        <td class="text-center text-primary fw-bold h5">
+                            {{ tire.reserved_qty }}
+                        </td>
 
-                        {# 有効在庫 (実在庫が定数 reorder_point を下回ったら赤字) #}
+                        {# 🎯 有効在庫（プロパティ effective_stock を使用） #}
                         <td class="text-center">
-                            <span class="h5 fw-bold {% if tire.stock_qty < tire.reorder_point %}text-danger{% endif %}">
-                                {{ tire.stock_qty }}
+                            {# 有効在庫が定数を下回ったら text-danger で赤くする #}
+                            <span class="h5 fw-bold {% if tire.effective_stock < tire.reorder_point %}text-danger{% endif %}">
+                                {{ tire.effective_stock }}
                             </span>
                         </td>
 
-                        {# 🎯 CSV: reorder_point #}
+                        {# 🎯 定数 #}
                         <td class="text-center text-muted small">{{ tire.reorder_point }}</td>
                         
-                        {# 🎯 CSV: unit_price #}
+                        {# 🎯 1本価格 #}
                         <td class="text-end">¥{{ tire.unit_price|intcomma }}</td>
                         
-                        {# 🎯 CSV: set_price #}
+                        {# 🎯 4本特価 #}
                         <td class="text-end">
                             {% if tire.set_price %}
                                 <span class="text-danger fw-bold small">¥{{ tire.set_price|intcomma }}</span>
@@ -115,7 +118,7 @@
                             <a href="{% url 'inventory:order_create' tire.id %}" class="btn btn-sm btn-outline-primary px-3">発注</a>
                         </td>
 
-                        {# 🎯 CSV: cost_price (仕入れ値) #}
+                        {# 🎯 仕入れ値 #}
                         <td class="text-end text-muted small">
                             ¥{{ tire.cost_price|intcomma|default:"0" }}
                         </td>

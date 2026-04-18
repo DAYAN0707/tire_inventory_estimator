@@ -3,10 +3,9 @@ from django.views.generic import ListView, CreateView, DetailView, UpdateView, T
 from django.forms import inlineformset_factory # フォームセット用
 from django.urls import reverse, reverse_lazy
 from django.shortcuts import redirect, get_object_or_404, render # リダイレクトとオブジェクト取得用
-
+from django.db import transaction # トランザクション管理用
 from django.contrib import messages  # 通知用
 from django.contrib.auth import get_user_model  # ユーザーモデル用
-
 
 from inventory.models import Tire # タイヤマスタの情報を取得するためにインポート
 from estimate.forms import EstimateTireForm # タイヤ明細用のフォーム
@@ -403,38 +402,82 @@ CHARGE_FIELDS = [
 ]
 
 # ==========================================
-# 5. ステータス更新専用View（従業員操作用）
+# 5. ステータス更新専用View（従業員操作用・在庫連動版）
 # ==========================================
 def update_status(request, pk):
     """
-    見積詳細画面から従業員がステータス（予約確定・引渡完了など）を直接変更するための処理
+    見積詳細画面から従業員がステータスを変更するための処理
+    1. 見積確定 → 予約確定: 予約(reserved)をプラス
+    2. 予約確定 → 予約キャンセル: 予約(reserved)をマイナス
+    3. 予約確定 → 引渡完了: 実在庫(stock)と予約(reserved)を共にマイナス
     """
-    if request.method == "POST":
-        estimate = get_object_or_404(Estimate, pk=pk)
-        
-        quick_status_name = request.POST.get('quick_status')
-        status_id = request.POST.get('status_id')
+    if request.method != "POST":
+        return redirect('estimate:estimate_detail', pk=pk)
 
-        try:
-            if quick_status_name:
-                new_status = EstimateStatus.objects.get(status_name=quick_status_name)
-            elif status_id:
-                new_status = EstimateStatus.objects.get(id=status_id)
-            else:
-                return redirect('estimate:estimate_detail', pk=pk)
+    estimate = get_object_or_404(Estimate, pk=pk)
+    
+    # テンプレート側の「ボタン(quick_status)」と「プルダウン(status_id)」両方に対応
+    quick_status_name = request.POST.get('quick_status')
+    status_id = request.POST.get('status_id')
 
+    try:
+        # 変更後のステータスを特定（優先順位：クイックボタン > プルダウン）
+        if quick_status_name:
+            new_status = EstimateStatus.objects.get(status_name=quick_status_name)
+        elif status_id:
+            new_status = EstimateStatus.objects.get(id=status_id)
+        else:
+            return redirect('estimate:estimate_detail', pk=pk)
+
+        # 変更前と変更後のステータス名を取得
+        old_status_name = estimate.estimate_status.status_name
+        new_status_name = new_status.status_name
+
+        # --- 🎯 在庫連動ロジック ---
+        # データの整合性を守るため、一連の更新をtransaction.atomic()で括る
+        with transaction.atomic():
+            
+            # ① [予約確定] 見積から正式に予約へ進んだ場合
+            if old_status_name == "見積確定" and new_status_name == "予約確定":
+                for item in estimate.items.all():
+                    tire = item.tire
+                    qty = item.quantity or 0
+                    # 予約確定数を増やす（有効在庫はモデルのPropertyで自動計算）
+                    tire.reserved_qty += qty
+                    tire.save()
+
+            # ② [予約キャンセル] 予約されていた枠を解放する場合
+            elif old_status_name == "予約確定" and new_status_name == "予約キャンセル":
+                for item in estimate.items.all():
+                    tire = item.tire
+                    qty = item.quantity or 0
+                    # 予約確定数を減らす（0以下にならないようmax関数でガード）
+                    tire.reserved_qty = max(0, tire.reserved_qty - qty)
+                    tire.save()
+
+            # ③ [引渡完了] 商品を渡し、在庫を物理的に減らす場合
+            elif old_status_name == "予約確定" and new_status_name == "引渡完了":
+                for item in estimate.items.all():
+                    tire = item.tire
+                    qty = item.quantity or 0
+                    # 実際に店から消えるため、実在庫を減らし、予約枠も空ける
+                    tire.stock_qty -= qty
+                    tire.reserved_qty = max(0, tire.reserved_qty - qty)
+                    tire.save()
+
+            # 最後に、見積モデル自体のステータスを更新して保存
             estimate.estimate_status = new_status
             estimate.save()
             
-            messages.success(request, f"ステータスを「{new_status.status_name}」に更新しました。")
+            messages.success(request, f"ステータスを「{new_status.status_name}」に更新し、在庫情報を調整しました。")
 
-        except EstimateStatus.DoesNotExist:
-            messages.error(request, "指定されたステータスがマスタに登録されていません。")
-        except Exception as e:
-            messages.error(request, f"予期せぬエラーが発生しました: {str(e)}")
+    except EstimateStatus.DoesNotExist:
+        messages.error(request, "指定されたステータスがマスタに登録されていません。")
+    except Exception as e:
+        # 万が一計算中にエラーが出た場合は、transactionによって全ての変更が取り消される
+        messages.error(request, f"在庫更新中にエラーが発生しました: {str(e)}")
 
     return redirect('estimate:estimate_detail', pk=pk)
-
 
 # ==========================================
 # 6. 店長用：マスタ・在庫管理View
@@ -469,11 +512,13 @@ class ManagerChargeUpdateView(UpdateView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
 
+        # 画面上の「削除」ボタンが押された場合はオブジェクトを削除してリダイレクト
         if 'delete' in request.POST:
             self.object.delete()
             messages.success(request, f"「{self.object.name}」を削除しました。")
             return redirect(self.success_url)
 
+        # 通常の更新処理（フォームの内容を保存）に進む
         form = self.get_form()
         if form.is_valid():
             charge = form.save(commit=False)
@@ -553,6 +598,7 @@ class ManagerStatusCreateView(CreateView):
     template_name = 'estimate/manager_status_form.html'
     success_url = reverse_lazy('estimate:status_list')
 
+    # 新規作成時も、固定フラグの処理を同様に行う
     def form_valid(self, form):
         # 🎯 内部名 is_fixed に統一
         if 'is_fixed' not in self.request.POST:
@@ -563,6 +609,6 @@ class ManagerStatusCreateView(CreateView):
         messages.success(self.request, f"ステータス「{form.instance.status_name}」を登録しました。")
         return super().form_valid(form)
     
-
 class ManagerDashboardView(TemplateView):
+    # 店長用ダッシュボード（在庫管理・ステータス管理へのリンクを配置）
     template_name = 'estimate/manager_dashboard.html'
