@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}監査ログ一覧 | 店長用{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-journal-text"></i> 監査ログ一覧（店長専用）</h2>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>日時</th>
+                        <th>操作者</th>
+                        <th>アクション</th>
+                        <th>対象</th>
+                        <th>内容</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td class="text-muted small">{{ log.acted_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                {{ log.actor.staff_name|default:log.actor.username|default:"システム" }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if log.action == 'reserve_confirm' %}
+                                <span class="badge bg-success">予約確定</span>
+                            {% elif log.action == 'reserve_cancel' %}
+                                <span class="badge bg-danger">キャンセル</span>
+                            {% else %}
+                                <span class="badge bg-primary">{{ log.get_action_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ log.target_type }} (ID:{{ log.target_id }})</small>
+                        </td>
+                        <td>{{ log.note }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">記録されているログはありません。</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">前へ</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">次へ</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
