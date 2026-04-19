@@ -13,6 +13,7 @@ from estimate.services.usecase import EstimateUseCase # ビジネスロジック
 from estimate.models import Estimate, EstimateStatus, ChargeMaster  # 見積関連のモデルをインポート
 from estimate.models.estimate_item import EstimateItem
 from estimate.services.calculator import sync_estimate_charges # 諸費用計算サービスをインポート
+from audit.utils import write_audit_log # 監査ログ記録用のユーティリティ関数をインポート
 
 
 # ユーザーモデルを取得
@@ -231,6 +232,16 @@ class EstimateCreateView(CreateView):
                     user=estimate.created_by,
                     manual_data=manual_dict
                 )
+                # 新規作成（見積確定）のログ
+                write_audit_log(
+                    request=self.request,
+                    target_type='estimate',
+                    target_id=self.object.id,
+                    action='status_change', # 初期作成
+                    before=None,
+                    after={'status': '見積確定'},
+                    note="見積を新規作成しました"
+                )
                 
                 return redirect(self.get_success_url())
 
@@ -400,16 +411,15 @@ CHARGE_FIELDS = [
     'requires_rft',
     'is_active'
 ]
-
 # ==========================================
-# 5. ステータス更新専用View（従業員操作用・在庫連動版）
+# 5. ステータス更新専用View（従業員操作用・在庫連動 & 監査ログ対応版）
 # ==========================================
 def update_status(request, pk):
     """
     見積詳細画面から従業員がステータスを変更するための処理
-    1. 見積確定 → 予約確定: 予約(reserved)をプラス
-    2. 予約確定 → 予約キャンセル: 予約(reserved)をマイナス
-    3. 予約確定 → 引渡完了: 実在庫(stock)と予約(reserved)を共にマイナス
+    1. 見積確定 → 予約確定: 予約(reserved)をプラス ＆ ログ(reserve_confirm)
+    2. 予約確定 → 予約キャンセル: 予約(reserved)をマイナス ＆ ログ(reserve_cancel)
+    3. 予約確定 → 引渡完了: 実在庫(stock)と予約(reserved)を共にマイナス ＆ ログ
     """
     if request.method != "POST":
         return redirect('estimate:estimate_detail', pk=pk)
@@ -433,43 +443,65 @@ def update_status(request, pk):
         old_status_name = estimate.estimate_status.status_name
         new_status_name = new_status.status_name
 
-        # --- 🎯 在庫連動ロジック ---
-        # データの整合性を守るため、一連の更新をtransaction.atomic()で括る
-        with transaction.atomic():
+        # 🎯 変更がある場合のみ処理を実行（無駄なDBアクセスとログを防ぐ）
+        if old_status_name != new_status_name:
             
-            # ① [予約確定] 見積から正式に予約へ進んだ場合
-            if old_status_name == "見積確定" and new_status_name == "予約確定":
-                for item in estimate.items.all():
-                    tire = item.tire
-                    qty = item.quantity or 0
-                    # 予約確定数を増やす（有効在庫はモデルのPropertyで自動計算）
-                    tire.reserved_qty += qty
-                    tire.save()
+            # ログ用のアクションコードを初期化
+            action_code = "status_change" 
 
-            # ② [予約キャンセル] 予約されていた枠を解放する場合
-            elif old_status_name == "予約確定" and new_status_name == "予約キャンセル":
-                for item in estimate.items.all():
-                    tire = item.tire
-                    qty = item.quantity or 0
-                    # 予約確定数を減らす（0以下にならないようmax関数でガード）
-                    tire.reserved_qty = max(0, tire.reserved_qty - qty)
-                    tire.save()
+            # データの整合性を守るため、一連の更新をtransaction.atomic()で括る
+            with transaction.atomic():
+                
+                # ① [予約確定] 見積から正式に予約へ進んだ場合
+                if old_status_name == "見積確定" and new_status_name == "予約確定":
+                    action_code = "reserve_confirm" # 専用アクション
+                    for item in estimate.items.all():
+                        tire = item.tire
+                        qty = item.quantity or 0
+                        # 予約確定数を増やす（有効在庫はモデルのPropertyで自動計算）
+                        tire.reserved_qty += qty
+                        tire.save()
 
-            # ③ [引渡完了] 商品を渡し、在庫を物理的に減らす場合
-            elif old_status_name == "予約確定" and new_status_name == "引渡完了":
-                for item in estimate.items.all():
-                    tire = item.tire
-                    qty = item.quantity or 0
-                    # 実際に店から消えるため、実在庫を減らし、予約枠も空ける
-                    tire.stock_qty -= qty
-                    tire.reserved_qty = max(0, tire.reserved_qty - qty)
-                    tire.save()
+                # ② [予約キャンセル] 予約されていた枠を解放する場合
+                elif old_status_name == "予約確定" and new_status_name == "予約キャンセル":
+                    action_code = "reserve_cancel" # 専用アクション
+                    for item in estimate.items.all():
+                        tire = item.tire
+                        qty = item.quantity or 0
+                        # 予約確定数を減らす（0以下にならないようmax関数でガード）
+                        tire.reserved_qty = max(0, tire.reserved_qty - qty)
+                        tire.save()
 
-            # 最後に、見積モデル自体のステータスを更新して保存
-            estimate.estimate_status = new_status
-            estimate.save()
+                # ③ [引渡完了] 商品を渡し、在庫を物理的に減らす場合
+                elif old_status_name == "予約確定" and new_status_name == "引渡完了":
+                    # 引渡完了も重要な節目なので、必要に応じてコードを分けてもOK
+                    for item in estimate.items.all():
+                        tire = item.tire
+                        qty = item.quantity or 0
+                        # 実際に店から消えるため、実在庫を減らし、予約枠も空ける
+                        tire.stock_qty -= qty
+                        tire.reserved_qty = max(0, tire.reserved_qty - qty)
+                        tire.save()
+
+                # 最後に、見積モデル自体のステータスを更新して保存
+                estimate.estimate_status = new_status
+                estimate.save()
+
+                # 🌟 監査ログの記録（この位置なら在庫更新が成功した時だけ記録される）
+                # utils.pyでキーワード引数を強制(*)しているので、引数名を明示して呼び出す
+                write_audit_log(
+                    request=request,
+                    target_type='estimate',
+                    target_id=estimate.id,
+                    action=action_code,
+                    before={'status': old_status_name},
+                    after={'status': new_status_name},
+                    note=f"ステータスを {old_status_name} から {new_status_name} へ変更しました。"
+                )
             
             messages.success(request, f"ステータスを「{new_status.status_name}」に更新し、在庫情報を調整しました。")
+        else:
+            messages.info(request, "ステータスに変更はありませんでした。")
 
     except EstimateStatus.DoesNotExist:
         messages.error(request, "指定されたステータスがマスタに登録されていません。")
