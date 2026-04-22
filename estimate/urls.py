@@ -15,7 +15,7 @@ urlpatterns = [
     # estimate_views内の add_item 関数を呼び出す設定
     path('add-item/<int:tire_id>/', estimate_views.add_item, name='add_item'),
     # 見積からのアイテム削除URL
-    path('detail/<int:pk>/update-status/', estimate_views.update_status, name='update_status'),
+    path('detail/<int:pk>/update-status/', estimate_views.EstimateStatusUpdateView.as_view(), name='update_status'),
 
     # --- API（JSON）系 / その他 ---
     path('api/calculate-charges/', api_views.calculate_charges_api, name='calculate_charges_api'),
@@ -39,4 +39,5 @@ urlpatterns = [
     # --- その他管理機能 ---
     path('manager/clean-drafts/', estimate_views.clean_draft_estimates, name='clean_drafts'),
     path('manager/dashboard/', estimate_views.ManagerDashboardView.as_view(), name='manager_dashboard'),
+    path('estimate/update-status/<int:pk>/', estimate_views.EstimateStatusUpdateView.as_view(), name='update_status'),
 ]
