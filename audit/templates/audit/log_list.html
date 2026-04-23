@@ -26,7 +26,11 @@
                         <td class="text-muted small">{{ log.acted_at|date:"Y-m-d H:i" }}</td>
                         <td>
                             <span class="badge bg-secondary">
-                                {{ log.actor.staff_name|default:log.actor.username|default:"システム" }}
+                                {% if log.actor %}
+                                    {{ log.actor.staff_name|default:log.actor.username }}
+                                {% else %}
+                                    システム
+                                {% endif %}
                             </span>
                         </td>
                         <td>
