@@ -27,7 +27,7 @@
         <h2>見積詳細・ステータス管理</h2>
         {#🎯 一覧へ戻るボタンはスタッフのみ表示 #}
         {% if user.is_authenticated %}
-            <a href="{% url 'estimate:dashboard' %}" class="btn btn-secondary">TOP画面へ</a>
+            <a href="{% url 'estimate:manager_dashboard' %}" class="btn btn-secondary">TOP画面へ</a>
         {% else %}
             <a href="/inventory/tires/" class="btn btn-secondary">TOP画面へ</a>
         {% endif %}
