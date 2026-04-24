@@ -556,10 +556,18 @@ class ManagerChargeUpdateView(UpdateView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
 
-        # 画面上の「削除」ボタンが押された場合はオブジェクトを削除してリダイレクト
+        # 画面上の「削除」ボタンが押された場合の処理を追加
         if 'delete' in request.POST:
-            self.object.delete()
-            messages.success(request, f"「{self.object.name}」を削除しました。")
+            # 見積明細（EstimateItem）で使用されているかチェック
+            if self.object.estimate_items.exists():
+                # 使用中の場合は「無効化（論理削除）」
+                self.object.is_active = False
+                self.object.save()
+                messages.success(request, f"「{self.object.name}」は過去の見積で使用されているため、無効化しました。")
+            else:
+                # 未使用の場合は「物理削除」
+                self.object.delete()
+                messages.success(request, f"「{self.object.name}」を完全に削除しました。")
             return redirect(self.success_url)
 
         # 通常の更新処理（フォームの内容を保存）に進む
@@ -581,6 +589,22 @@ class ManagerChargeCreateView(CreateView):
     fields = CHARGE_FIELDS
     template_name = 'estimate/manager_charge_form.html'
     success_url = reverse_lazy('estimate:manager_charge_list')
+    
+# --- 諸費用マスタの有効化処理 ---
+def charge_master_activate(request, pk):
+    """無効化された諸費用を再度有効にする（関数ベースView）"""
+    # 諸費用データを取得（存在しない場合は404エラー）
+    charge = get_object_or_404(ChargeMaster, pk=pk)
+    
+    # 有効フラグをTrueに戻して保存
+    charge.is_active = True
+    charge.save()
+    
+    # ユーザーに通知を表示
+    messages.success(request, f"「{charge.name}」を再度有効にしました。見積作成時に選択できるようになります。")
+    
+    # 一覧画面へ戻る
+    return redirect('estimate:manager_charge_list')
 
 
 # ==========================================

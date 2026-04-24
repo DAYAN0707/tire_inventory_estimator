@@ -30,6 +30,7 @@ urlpatterns = [
     path('manager/charges/', estimate_views.ManagerChargeListView.as_view(), name='manager_charge_list'),
     path('manager/charges/add/', estimate_views.ManagerChargeCreateView.as_view(), name='manager_charge_add'),
     path('manager/charges/<int:pk>/edit/', estimate_views.ManagerChargeUpdateView.as_view(), name='manager_charge_edit'),
+    path('manager/charges/<int:pk>/activate/', estimate_views.charge_master_activate, name='manager_charge_activate'),
 
     # --- 店長用：ステータスマスタ管理 ---
     path('manager/statuses/', estimate_views.ManagerStatusListView.as_view(), name='status_list'),

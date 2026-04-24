@@ -17,25 +17,50 @@
                     <tr>
                         <th class="ps-3">管理コード</th>
                         <th>項目名</th>
+                        <th>状態</th> {# 🌟 列を追加 #}
                         <th class="text-end">単価(税込)</th>
                         <th class="text-center">操作</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for charge in charges %}
-                    <tr>
+                    {# 無効な行は少し薄く（opacity）する #}
+                    <tr {% if not charge.is_active %}style="opacity: 0.7; background-color: #f8f9fa;"{% endif %}>
                         <td class="ps-3 font-monospace">{{ charge.code }}</td>
                         <td>{{ charge.name }}</td>
+                        
+                        {# 状態バッジの判定 #}
+                        <td>
+                            {% if charge.is_active %}
+                                <span class="badge bg-success">有効</span>
+                            {% else %}
+                                <span class="badge bg-secondary">無効（過去データ用）</span>
+                            {% endif %}
+                        </td>
+
                         <td class="text-end fw-bold">{{ charge.unit_price|intcomma }}円</td>
+                        
                         <td class="text-center">
-                            <a href="{% url 'estimate:manager_charge_edit' charge.pk %}" class="btn btn-sm btn-outline-primary">
-                                編集
-                            </a>
+                            <div class="btn-group">
+                                <a href="{% url 'estimate:manager_charge_edit' charge.pk %}" class="btn btn-sm btn-outline-primary">
+                                    編集
+                                </a>
+                                
+                                {# 🌟 無効な場合のみ「有効に戻す」ボタンを表示 #}
+                                {% if not charge.is_active %}
+                                    <form action="{% url 'estimate:manager_charge_activate' charge.pk %}" method="post" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-success ms-1">
+                                            有効に戻す
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center py-5 text-muted">登録されている諸費用はありません</td>
+                        <td colspan="5" class="text-center py-5 text-muted">登録されている諸費用はありません</td>
                     </tr>
                     {% endfor %}
                 </tbody>

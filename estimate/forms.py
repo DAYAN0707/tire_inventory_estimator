@@ -18,6 +18,12 @@ class EstimateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # 諸費用マスタ(ChargeMaster)の選択肢を「有効(is_active=True)なもの」だけに絞り込む
+        # これにより、View側で「無効化」したマスタが新規見積の選択肢に出なくなる（過去の見積データの整合性を保ちつつ、ユーザビリティを向上させるための措置）
+        if 'cost_master' in self.fields:
+            from estimate.models import ChargeMaster
+            self.fields['cost_master'].queryset = ChargeMaster.objects.filter(is_active=True)
+
         # 初期状態では車種は必須ではないが、購入タイプが取付作業ありの場合は車種を必須にする
         self.fields['vehicle_name'].required = False
 
