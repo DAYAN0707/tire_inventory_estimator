@@ -645,7 +645,7 @@ class ManagerStatusListView(ListView):
 class ManagerStatusUpdateView(UpdateView):
     """ステータス編集"""
     model = EstimateStatus
-    fields = '__all__'
+    fields = ['status_name', 'is_fixed']
     template_name = 'estimate/manager_status_form.html'
     success_url = reverse_lazy('estimate:status_list')
 

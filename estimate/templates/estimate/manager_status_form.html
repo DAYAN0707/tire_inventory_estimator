@@ -17,12 +17,6 @@
                             value="{{ form.status_name.value|default:'' }}" required>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold small">表示順（数字が小さいほど上に表示）</label>
-                    <input type="number" name="display_order" class="form-control" 
-                            value="{{ form.display_order.value|default:0 }}">
-                </div>
-
                 <div class="mb-4">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="is_fixed" id="id_is_fixed" 

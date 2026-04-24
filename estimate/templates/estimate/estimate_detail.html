@@ -174,13 +174,6 @@
                         <a href="{% url 'estimate:estimate_print' estimate.pk %}" target="_blank" class="btn btn-light btn-lg fw-bold text-decoration-none text-primary">
                             <i class="bi bi-printer me-2"></i>印刷用ページを開く
                         </a>
-                        
-                        {# --- 🎯 編集ボタンもスタッフのみ表示 --- #}
-                        {% if user.is_authenticated and user.is_staff %}
-                        <a href="{% url 'estimate:estimate_create' %}?estimate_id={{ estimate.id }}" class="btn btn-outline-light">
-                            <i class="bi bi-pencil-square me-2"></i>内容を編集する
-                        </a>
-                        {% endif %}
                     </div>
                 </div>
             </div>
