@@ -574,60 +574,72 @@ class ManagerChargeListView(ListView):
     context_object_name = 'charges'
 
 class ManagerChargeUpdateView(LoginRequiredMixin, UpdateView):
-    """諸費用マスタ編集・削除（店長用）"""
+    """
+    諸費用マスタ編集・削除（店長用）
+    ■ 役割
+    ・諸費用マスタ（工賃など）の編集／削除を行う
+    ・デモユーザーは「閲覧も操作も不可」にする（完全ブロック）
+    ■ セキュリティ方針
+    ① dispatchで全リクエストをブロック（最重要）
+    ② postでも念のため再チェック（二重ガード）
+    """
     model = ChargeMaster
     fields = CHARGE_FIELDS
     template_name = 'estimate/manager_charge_form.html'
     success_url = reverse_lazy('estimate:manager_charge_list')
-    
+
     def dispatch(self, request, *args, **kwargs):
-        # 画面を開く(GET)のも保存する(POST)のも全部ここでチェック
-        if request.user.groups.filter(name="demo_group").exists() or request.user.username == "demo":
-            messages.warning(request, "デモアカウントではマスタデータの変更・削除は制限されています。")
+        # GET（画面表示）もPOST（保存）もここで全部止める
+        # demo_groupに所属しているユーザーは強制リダイレクトで、URL直打ちでも不正アクセス不可
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.warning(
+                request,
+                "デモアカウントではマスタデータの変更・削除は制限されています。"
+            )
             return redirect('estimate:manager_charge_list')
-        
+        # 問題なければ通常のDjango処理へ
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        """テンプレートにデモユーザー判定フラグを渡す"""
+        # テンプレート用の追加データを準備
         context = super().get_context_data(**kwargs)
-        # 🎯 テンプレート側で {% if is_demo_user %} と使えるようにする
         context['is_demo_user'] = self.request.user.groups.filter(name="demo_group").exists()
         return context
 
     def post(self, request, *args, **kwargs):
+        # 編集対象のオブジェクト取得
         self.object = self.get_object()
-
-        # 🎯 【セキュリティ追加】デモグループに属するユーザーの変更・削除をブロック
+        # 【保険】万が一dispatchをすり抜けた場合のガード
         if request.user.groups.filter(name="demo_group").exists():
-            messages.error(request, "デモアカウントではマスタデータの変更・削除は許可されていません。")
+            messages.error(request, "デモアカウントでは操作できません。")
             return redirect('estimate:manager_charge_list')
-
-        # 画面上の「削除」ボタンが押された場合の処理を追加
+        
+        # 削除処理
         if 'delete' in request.POST:
-            # 見積明細（EstimateItem）で使用されているかチェック
-            if self.object.estimate_items.exists():
-                # 使用中の場合は「無効化（論理削除）」
-                self.object.is_active = False
-                self.object.save()
-                messages.success(request, f"「{self.object.name}」は過去の見積で使用されているため、無効化しました。")
-            else:
-                # 未使用の場合は「物理削除」
-                self.object.delete()
-                messages.success(request, f"「{self.object.name}」を完全に削除しました。")
+            # 💡 将来的には紐づきチェックを入れますが、
+            # 現状は Model の構成に合わせて、確実に動く「物理削除」のみを行います。
+            self.object.delete()
+            messages.success(
+                request,
+                f"「{self.object.name}」を完全に削除しました。"
+            )
             return redirect(self.success_url)
 
-        # 通常の更新処理（フォームの内容を保存）に進む
+        # 更新処理
         form = self.get_form()
         if form.is_valid():
             charge = form.save(commit=False)
+            # チェックボックス系はPOSTに存在するかで判定
             charge.is_active = 'is_active' in request.POST
             charge.per_tire = 'per_tire' in request.POST
             charge.requires_rft = 'requires_rft' in request.POST
             charge.save()
-            messages.success(request, f"「{charge.name}」を更新しました。")
+            messages.success(
+                request,
+                f"「{charge.name}」を更新しました。"
+            )
             return redirect(self.success_url)
-
+        # バリデーションエラー時はフォーム再表示
         return self.form_invalid(form)
 
 class ManagerChargeCreateView(CreateView):
