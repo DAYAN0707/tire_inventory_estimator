@@ -33,7 +33,7 @@
             {# 左側：ロゴと管理メニュー #}
             <div class="d-flex align-items-center">
                 {# ロゴ：ログイン状態ならダッシュボード、未ログインならログイン画面へ飛ばす #}
-                <a class="navbar-brand fw-bold" href="{% if user.is_authenticated %}{% url 'estimate:manager_dashboard' %}{% else %}{% url 'login' %}{% endif %}">
+                <a class="navbar-brand fw-bold" href="{% if user.is_authenticated %}{% url 'estimate:manager_dashboard' %}{% else %}{% url 'users:login' %}{% endif %}">
                     <i class="fas fa-car-side me-2"></i>タイヤ管理システム
                 </a>
 
@@ -63,6 +63,10 @@
                         </button>
                     </form>
                 {% else %}
+                    {# 未ログイン（お客様）の時に表示するスタッフ用入り口 #}
+                    <a href="{% url 'users:login' %}" class="btn btn-sm btn-outline-light">
+                        <i class="fas fa-lock me-1"></i>スタッフ専用
+                    </a>
                 {% endif %}
             </div>
         </div>
