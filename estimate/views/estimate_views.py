@@ -426,17 +426,27 @@ class EstimateStatusUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateVi
     fields = ['estimate_status'] # 更新対象のフィールド
 
     def test_func(self):
-        # 🌟 ここで「スタッフ権限があるか」を厳格にチェック
-        return self.request.user.is_staff
+        # 🌟 スタッフ権限があり、かつデモグループでないことをチェック
+        user = self.request.user
+        is_staff = user.is_staff
+        is_demo = user.groups.filter(name="demo_group").exists()
+        
+        # スタッフであり、デモユーザーでない場合のみ True を返す
+        # (デモユーザーは post 内でメッセージを出してリダイレクトさせるため True で通し、postで弾く)
+        return is_staff
 
     def handle_no_permission(self):
-        # 権限がないユーザーがアクセスした場合のリダイレクト先
         messages.error(self.request, "この操作には従業員権限が必要です。")
         return redirect('estimate:estimate_detail', pk=self.kwargs['pk'])
 
     def post(self, request, *args, **kwargs):
         """詳細画面（管理画面）からのステータス更新を受け付ける"""
         estimate = self.get_object()
+        
+        # 🎯 【セキュリティ追加】デモグループの在庫更新操作をブロック
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.error(request, "デモアカウントでは在庫数に影響するステータス変更は実行できません。")
+            return redirect('estimate:estimate_detail', pk=estimate.pk)
         
         # テンプレート側の「ボタン(quick_status)」と「プルダウン(status_id)」両方に対応
         quick_status_name = request.POST.get('quick_status')
@@ -539,6 +549,23 @@ class ManagerTireUpdateView(UpdateView):
     fields = ['product_code', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
     template_name = 'estimate/manager_tire_form.html'
     success_url = reverse_lazy('estimate:manager_tire_list')
+    
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+
+        # 🎯 【セキュリティ追加】デモグループに属するユーザーの変更をブロック
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.error(request, "デモアカウントではタイヤ情報の変更は許可されていません。")
+            return redirect('estimate:manager_tire_list')
+
+        # 通常の更新処理
+        form = self.get_form()
+        if form.is_valid():
+            tire = form.save()
+            messages.success(request, f"商品コード「{tire.product_code}」の情報を更新しました。")
+            return redirect(self.success_url)
+
+        return self.form_invalid(form)
 
 class ManagerChargeListView(ListView):
     """諸費用マスタ一覧（店長用）"""
@@ -553,8 +580,20 @@ class ManagerChargeUpdateView(UpdateView):
     template_name = 'estimate/manager_charge_form.html'
     success_url = reverse_lazy('estimate:manager_charge_list')
 
+    def get_context_data(self, **kwargs):
+        """テンプレートにデモユーザー判定フラグを渡す"""
+        context = super().get_context_data(**kwargs)
+        # 🎯 テンプレート側で {% if is_demo_user %} と使えるようにする
+        context['is_demo_user'] = self.request.user.groups.filter(name="demo_group").exists()
+        return context
+
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+
+        # 🎯 【セキュリティ追加】デモグループに属するユーザーの変更・削除をブロック
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.error(request, "デモアカウントではマスタデータの変更・削除は許可されていません。")
+            return redirect('estimate:manager_charge_list')
 
         # 画面上の「削除」ボタンが押された場合の処理を追加
         if 'delete' in request.POST:
@@ -615,6 +654,15 @@ def clean_draft_estimates(request):
     """
     【店長権限専用】作成中データを一括清掃
     """
+    # 🎯 【セキュリティ追加】デモグループに属するユーザーの一括削除をブロック
+    if request.user.groups.filter(name="demo_group").exists():
+        messages.error(request, "デモアカウントではデータの一括削除は実行できません。")
+        return redirect('estimate:manager_dashboard') # もしくは適切な遷移先
+
+    # 一般スタッフ（is_staff=False）も一応ガード
+    if not request.user.is_staff:
+        messages.error(request, "この操作には店長権限が必要です。")
+        return redirect('estimate:estimate_list')
     try:
         draft_status = EstimateStatus.objects.get(status_name="作成中")
         draft_estimates = Estimate.objects.filter(estimate_status=draft_status)
@@ -676,7 +724,11 @@ class ManagerStatusCreateView(CreateView):
             
         messages.success(self.request, f"ステータス「{form.instance.status_name}」を登録しました。")
         return super().form_valid(form)
-    
-class ManagerDashboardView(TemplateView):
-    # 店長用ダッシュボード（在庫管理・ステータス管理へのリンクを配置）
+
+class ManagerDashboardView(LoginRequiredMixin, TemplateView):
+    """
+    店長・スタッフ共用ダッシュボード
+    LoginRequiredMixin を追加することで、ログインさえしていれば
+    店長(is_staff=True)でも一般スタッフ(is_staff=False)でもアクセス可能
+    """
     template_name = 'estimate/manager_dashboard.html'

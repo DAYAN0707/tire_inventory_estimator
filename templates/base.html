@@ -32,8 +32,8 @@
         <div class="container">
             {# 左側：ロゴと管理メニュー #}
             <div class="d-flex align-items-center">
-                {# ロゴ：クリックでダッシュボードへ戻る #}
-                <a class="navbar-brand fw-bold" href="{% url 'estimate:manager_dashboard' %}">
+                {# ロゴ：ログイン状態ならダッシュボード、未ログインならログイン画面へ飛ばす #}
+                <a class="navbar-brand fw-bold" href="{% if user.is_authenticated %}{% url 'estimate:manager_dashboard' %}{% else %}{% url 'login' %}{% endif %}">
                     <i class="fas fa-car-side me-2"></i>タイヤ管理システム
                 </a>
 

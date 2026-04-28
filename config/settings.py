@@ -130,8 +130,17 @@ AUTH_USER_MODEL = 'users.User'
 import os
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), os.path.join(BASE_DIR, 'static')]
 
-LOGOUT_REDIRECT_URL = 'users:login'
+
+
+# ログイン成功時のリダイレクト先を店長・スタッフ共通のダッシュボードに設定
 LOGIN_REDIRECT_URL = 'estimate:manager_dashboard'
+# 未ログイン時の転送先（以前の検索結果より 'login' と想定）
+LOGIN_URL = 'login' 
+# ログアウト後の転送先
+LOGOUT_REDIRECT_URL = 'login'
+
+LOGOUT_REDIRECT_URL = 'users:login' # ログアウト後にログインページへリダイレクトする設定（既存の設定があれば上書き）
+LOGIN_REDIRECT_URL = 'estimate:manager_dashboard' # ログイン後にダッシュボードへリダイレクトする設定（既存の設定があれば上書き）
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles' # 本番用ファイルの集積場所

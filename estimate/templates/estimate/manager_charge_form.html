@@ -105,10 +105,15 @@
                     {% else %}
                     <div></div>
                     {% endif %}
-                    
                     <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
                         <i class="bi bi-save me-2"></i>保存する
                     </button>
+                {% else %}
+                    {# --- デモユーザー向け：ボタンの代わりに警告を表示 --- #}
+                    <div class="alert alert-warning mb-0 w-100 d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-exclamation-triangle-fill me-2"></i>デモアカウントのため、編集・削除は制限されています。</span>
+                        <a href="{% url 'estimate:manager_charge_list' %}" class="btn btn-sm btn-secondary">一覧に戻る</a>
+                    </div>
                 </div>
             </form>
         </div>
