@@ -573,12 +573,20 @@ class ManagerChargeListView(ListView):
     template_name = 'estimate/manager_charge_list.html'
     context_object_name = 'charges'
 
-class ManagerChargeUpdateView(UpdateView):
+class ManagerChargeUpdateView(LoginRequiredMixin, UpdateView):
     """諸費用マスタ編集・削除（店長用）"""
     model = ChargeMaster
     fields = CHARGE_FIELDS
     template_name = 'estimate/manager_charge_form.html'
     success_url = reverse_lazy('estimate:manager_charge_list')
+    
+    def dispatch(self, request, *args, **kwargs):
+        # 画面を開く(GET)のも保存する(POST)のも全部ここでチェック
+        if request.user.groups.filter(name="demo_group").exists() or request.user.username == "demo":
+            messages.warning(request, "デモアカウントではマスタデータの変更・削除は制限されています。")
+            return redirect('estimate:manager_charge_list')
+        
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         """テンプレートにデモユーザー判定フラグを渡す"""
