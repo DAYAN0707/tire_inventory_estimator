@@ -542,24 +542,29 @@ class ManagerTireListView(ListView):
     model = Tire
     template_name = 'estimate/manager_tire_list.html'
     context_object_name = 'tires'
-
-class ManagerTireUpdateView(UpdateView):
+    
+class ManagerTireUpdateView(LoginRequiredMixin, UpdateView):
     """タイヤ情報編集（店長用）"""
     model = Tire
     fields = ['product_code', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
     template_name = 'estimate/manager_tire_form.html'
     success_url = reverse_lazy('estimate:manager_tire_list')
     
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-
-        # 🎯 【セキュリティ追加】デモグループに属するユーザーの変更をブロック
+    def dispatch(self, request, *args, **kwargs):
+        # 🎯 ここで全てのアクセス（表示も保存も）をシャットアウト
         if request.user.groups.filter(name="demo_group").exists():
-            messages.error(request, "デモアカウントではタイヤ情報の変更は許可されていません。")
+            messages.warning(
+                request, 
+                "デモアカウントではタイヤマスタの編集は制限されています。"
+            )
             return redirect('estimate:manager_tire_list')
+        return super().dispatch(request, *args, **kwargs)
 
-        # 通常の更新処理
+    def post(self, request, *args, **kwargs):
+        #  dispatchで弾いている為、ここには店長（通常ユーザー）しか来ない
+        self.object = self.get_object()
         form = self.get_form()
+        
         if form.is_valid():
             tire = form.save()
             messages.success(request, f"商品コード「{tire.product_code}」の情報を更新しました。")
@@ -589,15 +594,13 @@ class ManagerChargeUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('estimate:manager_charge_list')
 
     def dispatch(self, request, *args, **kwargs):
-        # GET（画面表示）もPOST（保存）もここで全部止める
-        # demo_groupに所属しているユーザーは強制リダイレクトで、URL直打ちでも不正アクセス不可
+        # 🎯 【最重要】デモグループのユーザーを完全ブロック
         if request.user.groups.filter(name="demo_group").exists():
             messages.warning(
-                request,
-                "デモアカウントではマスタデータの変更・削除は制限されています。"
+                request, 
+                "デモアカウントでは諸費用マスタの編集・削除は制限されています。"
             )
-            return redirect('estimate:manager_charge_list')
-        # 問題なければ通常のDjango処理へ
+            return redirect('estimate:manager_charge_list') # 諸費用一覧へ
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
