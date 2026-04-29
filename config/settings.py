@@ -147,8 +147,14 @@ STATIC_ROOT = BASE_DIR / 'staticfiles' # 本番用ファイルの集積場所
 # ホワイトノイズがファイルを圧縮して効率よく配信するための設定
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://tire-inventory-estimator.onrender.com",
+    "https://*.onrender.com",
 ]
+
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = "Lax"
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
