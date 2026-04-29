@@ -9,12 +9,11 @@ from django.contrib.auth import get_user_model  # ユーザーモデル用
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin # ログイン必須・権限判定用
 from inventory.models import Tire # タイヤマスタの情報を取得するためにインポート
 from estimate.forms import EstimateTireForm # タイヤ明細用のフォーム
-from estimate.services.usecase import EstimateUseCase # ビジネスロジックを担うUseCaseクラス
-from estimate.models import Estimate, EstimateStatus, ChargeMaster  # 見積関連のモデルをインポート
+from estimate.services.usecase import EstimateUseCase # ビジネスロジックを担うUseCaseクラス 
+from estimate.models import Estimate, ChargeMaster, EstimateStatus # 見積関連のモデルをインポート
 from estimate.models.estimate_item import EstimateItem
 from estimate.services.calculator import sync_estimate_charges # 諸費用計算サービスをインポート
 from audit.utils import write_audit_log # 監査ログ記録用のユーティリティ関数をインポート
-
 
 # ユーザーモデルを取得
 User = get_user_model()
@@ -425,6 +424,15 @@ class EstimateStatusUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateVi
     model = Estimate
     fields = ['estimate_status'] # 更新対象のフィールド
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.warning(
+                request, 
+                "デモアカウントでは見積ステータスの編集・登録は制限されています。"
+            )
+            return redirect('estimate:manager_status_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def test_func(self):
         # 🌟 スタッフ権限があり、かつデモグループでないことをチェック
         user = self.request.user
@@ -720,6 +728,12 @@ class ManagerStatusUpdateView(UpdateView):
     template_name = 'estimate/manager_status_form.html'
     success_url = reverse_lazy('estimate:status_list')
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.warning(request, "デモアカウントではステータスの編集は制限されています。")
+            return redirect('estimate:manager_status_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         # 🎯 内部名 is_fixed に統一
         if 'is_fixed' not in self.request.POST:
@@ -735,7 +749,13 @@ class ManagerStatusCreateView(CreateView):
     model = EstimateStatus
     fields = '__all__'
     template_name = 'estimate/manager_status_form.html'
-    success_url = reverse_lazy('estimate:status_list')
+    success_url = reverse_lazy('estimate:manager_status_list')
+    
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.warning(request, "デモアカウントではステータスの編集は制限されています。")
+            return redirect('estimate:manager_status_list')
+        return super().dispatch(request, *args, **kwargs)
 
     # 新規作成時も、固定フラグの処理を同様に行う
     def form_valid(self, form):

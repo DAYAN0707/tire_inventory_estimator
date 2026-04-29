@@ -168,21 +168,33 @@ class BrandCreateView(CreateView):
     template_name = 'inventory/brand_form.html'
     success_url = reverse_lazy('inventory:brand_list')
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.warning(request, "デモアカウントではブランドの新規登録は制限されています。")
+            return redirect('inventory:brand_list')
+        return super().dispatch(request, *args, **kwargs)
+
+
 class BrandUpdateView(UpdateView):
     model = Brand
     fields = ['name', 'comment']
     template_name = 'inventory/brand_form.html'
     success_url = reverse_lazy('inventory:brand_list')
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.warning(request, "デモアカウントではブランドの編集・削除は制限されています。")
+            return redirect('inventory:brand_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-        
-        # 削除ボタン押下時の処理
         if 'delete' in request.POST:
             self.object.delete()
+            messages.success(request, f"ブランド「{self.object.name}」を削除しました。")
             return redirect(self.success_url)
-            
         return super().post(request, *args, **kwargs)
+
 
 class BrandListView(ListView):
     model = Brand

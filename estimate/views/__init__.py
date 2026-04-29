@@ -1,2 +1,2 @@
-from .estimate_views import EstimateCreateView, EstimateDetailView, ManagerTireListView, ManagerTireUpdateView
+from .estimate_views import EstimateCreateView, EstimateDetailView, ManagerTireListView, ManagerTireUpdateView, ManagerStatusListView, ManagerStatusUpdateView
 from .api_views import calculate_charges_api
