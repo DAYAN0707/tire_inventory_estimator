@@ -519,7 +519,6 @@ class EstimateStatusUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateVi
 
                     # 🌟 監査ログの記録（この位置なら在庫更新が成功した時だけ記録される）
                     # utils.pyでキーワード引数を強制(*)しているので、引数名を明示して呼び出す
-                    """
                     write_audit_log(
                         request=request,
                         target_type='estimate',
@@ -529,7 +528,6 @@ class EstimateStatusUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateVi
                         after={'status': new_status_name},
                         note=f"ステータスを {old_status_name} から {new_status_name} へ変更しました。"
                     )
-                    """
                 
                 messages.success(request, f"ステータスを「{new_status.status_name}」に更新し、在庫情報を調整しました。")
             else:
