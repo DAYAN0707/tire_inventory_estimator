@@ -26,7 +26,7 @@
                         <div class="col-md-9">
                             <input type="text" name="username" value="{{ form.username.value|default:'' }}" class="form-control" placeholder="例: StoreManager">
                             {% if form.username.errors %}<div class="text-danger small">{{ form.username.errors.0 }}</div>{% endif %}
-                            <div class="form-text small text-muted">ログインに使用する識別用IDです。</div>
+                            <div class="form-text small text-muted">※システム管理用の識別名です。ログインは「従業員コード」を使用します。</div>
                         </div>
                     </div>
                 </div>
