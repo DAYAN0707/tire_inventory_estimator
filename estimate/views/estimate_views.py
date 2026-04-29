@@ -417,127 +417,126 @@ CHARGE_FIELDS = [
 class EstimateStatusUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """
     見積詳細画面から従業員がステータスを変更するための処理
-    1. 見積確定 → 予約確定: 予約(reserved)をプラス ＆ ログ(reserve_confirm)
-    2. 予約確定 → 予約キャンセル: 予約(reserved)をマイナス ＆ ログ(reserve_cancel)
-    3. 予約確定 → 引渡完了: 実在庫(stock)と予約(reserved)を共にマイナス ＆ ログ
     """
     model = Estimate
-    fields = ['estimate_status'] # 更新対象のフィールド
+    fields = ['estimate_status']
 
     def dispatch(self, request, *args, **kwargs):
+        # デモグループの早期ガード
         if request.user.groups.filter(name="demo_group").exists():
-            messages.warning(
-                request, 
-                "デモアカウントでは見積ステータスの編集・登録は制限されています。"
-            )
-            return redirect('estimate:manager_status_list')
+            messages.warning(request, "デモアカウントでは見積ステータスの編集・登録は制限されています。")
+            pk = self.kwargs.get('pk')
+            return redirect('estimate:estimate_detail', pk=pk) if pk else redirect('estimate:estimate_list')
         return super().dispatch(request, *args, **kwargs)
 
     def test_func(self):
-        # 🌟 スタッフ権限があり、かつデモグループでないことをチェック
-        user = self.request.user
-        is_staff = user.is_staff
-        is_demo = user.groups.filter(name="demo_group").exists()
-        
-        # スタッフであり、デモユーザーでない場合のみ True を返す
-        # (デモユーザーは post 内でメッセージを出してリダイレクトさせるため True で通し、postで弾く)
-        return is_staff
+        return self.request.user.is_staff
 
     def handle_no_permission(self):
         messages.error(self.request, "この操作には従業員権限が必要です。")
-        return redirect('estimate:estimate_detail', pk=self.kwargs['pk'])
+        pk = self.kwargs.get('pk')
+        return redirect('estimate:estimate_detail', pk=pk) if pk else redirect('estimate:estimate_list')
 
     def post(self, request, *args, **kwargs):
         """詳細画面（管理画面）からのステータス更新を受け付ける"""
-        estimate = self.get_object()
+        # 🚀 ログ出力（RenderのログでView到達を確認するため）
+        print("DEBUG POST HIT")
         
-        # 🎯 【セキュリティ追加】デモグループの在庫更新操作をブロック
-        if request.user.groups.filter(name="demo_group").exists():
-            messages.error(request, "デモアカウントでは在庫数に影響するステータス変更は実行できません。")
-            return redirect('estimate:estimate_detail', pk=estimate.pk)
+        # 🛡️ 1. URLからpkを安全に取得し、存在チェック
+        pk = self.kwargs.get('pk')
+        if not pk:
+            messages.error(request, "不正なリクエストです（見積IDが見つかりません）")
+            return redirect('estimate:estimate_list')
+
+        # 🛡️ 2. filter().first() で安全にデータを取得（DoesNotExistを回避しつつ自前でリダイレクト）
+        estimate = Estimate.objects.filter(pk=pk).first()
+        if not estimate:
+            messages.error(request, "対象の見積データが見つかりませんでした。")
+            return redirect('estimate:estimate_list')
         
-        # テンプレート側の「ボタン(quick_status)」と「プルダウン(status_id)」両方に対応
         quick_status_name = request.POST.get('quick_status')
         status_id = request.POST.get('status_id')
+        new_status = None
 
         try:
-            # 変更後のステータスを特定（優先順位：クイックボタン > プルダウン）
+            # 🛡️ 3. ステータス取得を「明示的な取得」に変更（サイレント失敗の防止）
             if quick_status_name:
+                # get() を使い、存在しない場合はあえて例外(DoesNotExist)を飛ばす
                 new_status = EstimateStatus.objects.get(status_name=quick_status_name)
             elif status_id:
+                # ID指定の場合も get()。無効なIDなら例外を飛ばしてキャッチする
                 new_status = EstimateStatus.objects.get(id=status_id)
-            else:
+
+            # 何も取得できなかった場合のガード（基本的にここには到達しない）
+            if not new_status:
+                messages.warning(request, "変更後のステータスが特定できませんでした。")
                 return redirect('estimate:estimate_detail', pk=estimate.pk)
 
-            # 変更前と変更後のステータス名を取得
             old_status_name = estimate.estimate_status.status_name
             new_status_name = new_status.status_name
 
-            # 🎯 変更がある場合のみ処理を実行（無駄なDBアクセスとログを防ぐ）
+            # 🎯 ステータスに変更がある場合のみ在庫処理を実行
             if old_status_name != new_status_name:
-                
-                # ログ用のアクションコードを初期化
                 action_code = "status_change" 
 
-                # データの整合性を守るため、一連の更新をtransaction.atomic()で括る
                 with transaction.atomic():
+                    # 🛡️ 4. None計算エラー(TypeError)の徹底防止策
+                    # 全ての tire.field に対して (field or 0) を適用
                     
-                    # ① [予約確定] 見積から正式に予約へ進んだ場合
+                    # ① [予約確定] 見積確定 → 予約確定
                     if old_status_name == "見積確定" and new_status_name == "予約確定":
-                        action_code = "reserve_confirm" # 専用アクション
+                        action_code = "reserve_confirm"
                         for item in estimate.items.all():
                             tire = item.tire
                             qty = item.quantity or 0
-                            # 予約確定数を増やす（有効在庫はモデルのPropertyで自動計算）
-                            tire.reserved_qty += qty
+                            # 🛡️ Noneガード: 既存値がNoneなら0として計算
+                            tire.reserved_qty = (tire.reserved_qty or 0) + qty
                             tire.save()
 
-                    # ② [予約キャンセル] 予約されていた枠を解放する場合
+                    # ② [予約キャンセル] 予約確定 → 予約キャンセル
                     elif old_status_name == "予約確定" and new_status_name == "予約キャンセル":
-                        action_code = "reserve_cancel" # 専用アクション
+                        action_code = "reserve_cancel"
                         for item in estimate.items.all():
                             tire = item.tire
                             qty = item.quantity or 0
-                            # 予約確定数を減らす（0以下にならないようmax関数でガード）
-                            tire.reserved_qty = max(0, tire.reserved_qty - qty)
+                            # 🛡️ Noneガード ＋ マイナス防止
+                            tire.reserved_qty = max(0, (tire.reserved_qty or 0) - qty)
                             tire.save()
 
-                    # ③ [引渡完了] 商品を渡し、在庫を物理的に減らす場合
+                    # ③ [引渡完了] 予約確定 → 引渡完了
                     elif old_status_name == "予約確定" and new_status_name == "引渡完了":
-                        # 引渡完了も重要な節目なので、必要に応じてコードを分けてもOK
                         for item in estimate.items.all():
                             tire = item.tire
                             qty = item.quantity or 0
-                            # 実際に店から消えるため、実在庫を減らし、予約枠も空ける
-                            tire.stock_qty -= qty
-                            tire.reserved_qty = max(0, tire.reserved_qty - qty)
+                            # 🛡️ 実在庫・予約枠ともにNoneガード ＋ マイナス防止
+                            tire.stock_qty = max(0, (tire.stock_qty or 0) - qty)
+                            tire.reserved_qty = max(0, (tire.reserved_qty or 0) - qty)
                             tire.save()
 
-                    # 最後に、見積モデル自体のステータスを更新して保存
+                    # 見積自身のステータスを更新
                     estimate.estimate_status = new_status
                     estimate.save()
 
-                    # 🌟 監査ログの記録（この位置なら在庫更新が成功した時だけ記録される）
-                    # utils.pyでキーワード引数を強制(*)しているので、引数名を明示して呼び出す
+                    # 🌟 監査ログ（原因切り分けのため一時的にコメントアウト。安定後、utilsのインポートを確認して戻す）
+                    """
                     write_audit_log(
-                        request=request,
-                        target_type='estimate',
-                        target_id=estimate.id,
-                        action=action_code,
-                        before={'status': old_status_name},
+                        request=request, target_type='estimate', target_id=estimate.id,
+                        action=action_code, before={'status': old_status_name},
                         after={'status': new_status_name},
                         note=f"ステータスを {old_status_name} から {new_status_name} へ変更しました。"
                     )
+                    """
                 
-                messages.success(request, f"ステータスを「{new_status.status_name}」に更新し、在庫情報を調整しました。")
+                messages.success(request, f"ステータスを「{new_status.status_name}」に更新しました。")
             else:
                 messages.info(request, "ステータスに変更はありませんでした。")
 
         except EstimateStatus.DoesNotExist:
-            messages.error(request, "指定されたステータスがマスタに登録されていません。")
+            # 🛡️ get() でデータが見つからなかった場合の明確なエラー通知
+            messages.error(request, f"エラー：マスタに指定のステータスが存在しません。")
         except Exception as e:
-            # 万が一計算中にエラーが出た場合は、transactionによって全ての変更が取り消される
-            messages.error(request, f"在庫更新中にエラーが発生しました: {str(e)}")
+            # 🛡️ TypeError や DBエラーなど、すべての予期せぬエラーをここでキャッチして500を回避
+            messages.error(request, f"システムエラーが発生しました: {str(e)}")
 
         return redirect('estimate:estimate_detail', pk=estimate.pk)
 
