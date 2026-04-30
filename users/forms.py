@@ -1,6 +1,6 @@
-from django import forms
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth import authenticate
+from django import forms # Djangoのフォーム機能を利用するためのインポート
+from django.contrib.auth.forms import AuthenticationForm # Djangoの組み込み認証フォームをベースにカスタマイズするためのインポート
+from django.contrib.auth import authenticate # 認証処理を行うための関数をインポート
 from .models import User  # 同じフォルダのmodels.pyからUserを読み込む
 
 # スタッフログインフォーム（従業員IDとパスワードでログインするフォーム）

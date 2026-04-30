@@ -1,6 +1,6 @@
-from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from .models import User
+from django.contrib import admin # Djangoの管理サイト機能を利用するためのインポート
+from django.contrib.auth.admin import UserAdmin # Djangoの組み込みUserAdminをベースにカスタマイズするためのインポート
+from .models import User # 同じフォルダのmodels.pyからUserモデルを読み込む
 
 class CustomUserAdmin(UserAdmin):
     # 一覧画面に表示する項目

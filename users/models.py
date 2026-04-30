@@ -1,5 +1,5 @@
-from django.contrib.auth.models import AbstractUser
-from django.db import models
+from django.contrib.auth.models import AbstractUser # Djangoの組み込みUserモデルを拡張するためのインポート
+from django.db import models # Djangoのモデル機能を利用するためのインポート
 
 class User(AbstractUser):
     # Django の組み込み User モデルを拡張し、従業員IDと従業員名を追加(従業員IDと従業員名は必須項目)

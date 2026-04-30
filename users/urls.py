@@ -1,5 +1,5 @@
-from django.urls import path
-from django.contrib.auth.views import LogoutView
+from django.urls import path # URLパターンを定義するための関数をインポート
+from django.contrib.auth.views import LogoutView # ログアウト処理を行うための組み込みビューをインポート
 from . import views  # views.pyから一括インポート
 
 app_name = 'users'
