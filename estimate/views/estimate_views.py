@@ -735,7 +735,7 @@ class ManagerStatusUpdateView(UpdateView):
     def dispatch(self, request, *args, **kwargs):
         if request.user.groups.filter(name="demo_group").exists():
             messages.warning(request, "デモアカウントではステータスの編集は制限されています。")
-            return redirect('estimate:manager_status_list')
+            return redirect('estimate:status_list')
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -753,12 +753,12 @@ class ManagerStatusCreateView(CreateView):
     model = EstimateStatus
     fields = '__all__'
     template_name = 'estimate/manager_status_form.html'
-    success_url = reverse_lazy('estimate:manager_status_list')
+    success_url = reverse_lazy('estimate:status_list')
     
     def dispatch(self, request, *args, **kwargs):
         if request.user.groups.filter(name="demo_group").exists():
             messages.warning(request, "デモアカウントではステータスの編集は制限されています。")
-            return redirect('estimate:manager_status_list')
+            return redirect('estimate:status_list')
         return super().dispatch(request, *args, **kwargs)
 
     # 新規作成時も、固定フラグの処理を同様に行う
