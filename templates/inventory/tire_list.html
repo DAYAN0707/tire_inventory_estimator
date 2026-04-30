@@ -125,7 +125,49 @@
                 <p class="text-muted">検索条件に一致するタイヤはありません。</p>
             </div>
         {% endfor %}
-    </div> 
+    </div>
+    {# --- パジネーション・ナビゲーションエリア --- #}
+    {% if tires.has_other_pages %}
+    <nav aria-label="Page navigation" class="mt-5">
+        <ul class="pagination justify-content-center">
+            
+            {# 「前へ」ボタン #}
+            {% if tires.has_previous %}
+                <li class="page-item">
+                    {# page番号の後に検索条件(query_params)を安全に結合 #}
+                    <a class="page-link" href="?page={{ tires.previous_page_number }}{% if query_params %}&{{ query_params }}{% endif %}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo; 前へ</span>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&laquo; 前へ</span>
+                </li>
+            {% endif %}
+
+            {# ページ番号の表示 #}
+            <li class="page-item active">
+                <span class="page-link">
+                    {{ tires.number }} / {{ tires.paginator.num_pages }}
+                </span>
+            </li>
+
+            {# 「次へ」ボタン #}
+            {% if tires.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ tires.next_page_number }}{% if query_params %}&{{ query_params }}{% endif %}" aria-label="Next">
+                        <span aria-hidden="true">次へ &raquo;</span>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">次へ &raquo;</span>
+                </li>
+            {% endif %}
+
+        </ul>
+    </nav>
+    {% endif %}
 </div>
 
 <style>

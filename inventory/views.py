@@ -1,25 +1,28 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, get_object_or_404, redirect # 画面表示、オブジェクト取得、リダイレクトのためのショートカット関数
 from django.contrib.auth.decorators import login_required  # ログイン必須にするためのデコレータ
-from django.db.models import Q
-from django.contrib import messages
-from .models import Tire, Order, Brand
+from django.db.models import Q # 複雑なクエリを組み立てるためのモジュール（OR条件などに使用）
+from django.contrib import messages # ユーザーにフィードバックを表示するためのモジュール（成功・エラーなどのメッセージ）
+from .models import Tire, Order, Brand # タイヤ、発注、ブランドのモデルをインポート
 from audit.models import AuditLog  # 🎯 共通アプリのauditからインポート
-from django.views.generic import CreateView, UpdateView, ListView
-from django.urls import reverse_lazy
+from django.views.generic import CreateView, UpdateView, ListView # ブランド管理のための汎用クラスベースビューをインポート
+from django.urls import reverse_lazy # URLの逆引きに使用（成功後のリダイレクト先など）
+from urllib.parse import urlencode # URLクエリパラメータのエンコードに使用
+from django.core.paginator import Paginator  # 🎯 パジネーションのためのインポート
 
 def tire_list(request):
     """
     【店員もお客さんも共通】カード型タイヤ一覧画面
+    1ページ9件のパジネーションと、検索条件の自動引き継ぎを実装
     """
-    # 1. まず全データを取得
-    queryset = Tire.objects.all()
+    # まず全データを取得（パジネーション使用時は順序を固定するため id 順にする）
+    queryset = Tire.objects.all().order_by('id')
 
-    # パラメータ取得
+    # --- パラメータ取得 ---
     front_size = request.GET.get('front_size') or None
     rear_size = request.GET.get('rear_size') or None
     estimate_id = request.GET.get('estimate_id')
 
-    # 検索ロジック
+    # --- 検索ロジック ---
     if front_size and rear_size:
         # 前後のサイズどちらかにヒットすればOK
         queryset = queryset.filter(
@@ -33,12 +36,23 @@ def tire_list(request):
         # 後輪サイズのみで検索
         queryset = queryset.filter(size_raw__icontains=rear_size)
 
+    # --- パジネーション設定 (先生絶賛の1ページ9件) ---
+    paginator = Paginator(queryset, 9)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # --- 現在のクエリパラメータを一括管理 ---
+    # 現在のGETパラメータ（front_size等）をコピーし、pageだけ除外して文字列化
+    query_params = request.GET.copy()
+    query_params.pop('page', None) 
+
     # コンテキストに詰めて返す
     context = {
-        'tires': queryset,
-        'front_size': front_size or '', # テンプレート表示用にNoneなら空文字に
+        'tires': page_obj,  # querysetではなく、分割された page_obj を渡す
+        'front_size': front_size or '',
         'rear_size': rear_size or '',
         'estimate_id': estimate_id,
+        'query_params': query_params.urlencode(),  # 🌟 テンプレート側で使う「引き継ぎ用URL」
     }
     return render(request, 'inventory/tire_list.html', context)
 

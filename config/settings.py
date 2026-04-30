@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-$y^)k_ggg7xb4b#@=u9o-s(5*s(zh957#r38+*i9z^+f)w=oj$'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False # 🌟 本番では必ずFalse
+# DEBUG = False # 🌟 本番では必ずFalse！！！
 
 ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
 
@@ -152,9 +152,23 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.onrender.com",
 ]
 
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+# 本番環境ではTrueにする（ローカル環境ではFalseで問題なし）
+# CSRF_COOKIE_SECURE = True
+# 本番環境ではTrueにする（ローカル環境ではFalseで問題なし）
+# SESSION_COOKIE_SECURE = True
+
 CSRF_COOKIE_SAMESITE = "Lax"
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
+# ローカル環境にはSSLを強制しない
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# ローカル環境にはSSLを強制しない
+# SECURE_SSL_REDIRECT = True
+
+
+DEBUG = True
+
+SECURE_PROXY_SSL_HEADER = None
+SECURE_SSL_REDIRECT = False
+
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
