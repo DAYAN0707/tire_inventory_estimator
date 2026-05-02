@@ -1,5 +1,7 @@
 from django.urls import path # URLパターンを定義するための関数をインポート
 from .views import estimate_views, api_views # views.py内のestimate_viewsとapi_viewsをインポート
+from django.contrib.auth.views import LogoutView # ログアウト処理を行うための組み込みビューをインポート
+from django.contrib import admin # 管理サイトのURLを定義するためにadminをインポート
 
 # アプリケーション名を定義（URLの逆引きに使用）
 app_name = 'estimate'
@@ -57,4 +59,8 @@ urlpatterns = [
     path('manager/dashboard/', estimate_views.ManagerDashboardView.as_view(), name='manager_dashboard'),
     # 見積のステータス更新URL（例: 予約確定、キャンセル等）
     path('<int:pk>/update-status/', estimate_views.EstimateStatusUpdateView.as_view(), name='update_status'),
+    # 見積のPDF出力URL（例: 印刷用のPDFを生成するためのURL）
+    path('logout/', LogoutView.as_view(next_page='users:login'), name='logout'),
+    # Django標準の管理画面（データベースの値を直接操作・確認できる場所）へのURLを定義
+    path('admin/', admin.site.urls),
 ]

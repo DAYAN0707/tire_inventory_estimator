@@ -37,8 +37,8 @@
                     <i class="fas fa-car-side me-2"></i>タイヤ管理システム
                 </a>
 
-                {# 🌟 監査ログリンク：店長・スタッフ権限がある場合のみロゴの横に表示 #}
-                {% if user.is_authenticated and user.is_staff %}
+                {# 🌟 監査ログリンク：店長権限がある場合のみロゴの横に表示 #}
+                {% if user.is_authenticated and user.is_superuser %}
                     <ul class="navbar-nav flex-row ms-2">
                         <li class="nav-item">
                             <a class="nav-link nav-link-audit px-3 border-start border-secondary" href="{% url 'audit:log_list' %}">

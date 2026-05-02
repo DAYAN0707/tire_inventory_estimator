@@ -14,6 +14,11 @@ User = get_user_model()
 class StaffLoginView(LoginView):
     form_class = StaffLoginForm # カスタムログインフォームを使用
     template_name = 'users/login.html' # ログイン画面のテンプレートを指定
+    
+    # ログイン成功後のリダイレクト先を指定
+    def get_success_url(self):
+        return self.get_redirect_url() or reverse_lazy('estimate:manager_dashboard')
+
 
 # --- 1. ユーザー一覧画面 ---
 class UserListView(ListView):

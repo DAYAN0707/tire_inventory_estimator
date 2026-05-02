@@ -23,8 +23,7 @@
         </div>
 
         <div class="col-md-6">
-            {# ヘッダーの判定に合わせて is_superuser も追加して確実に表示させる #}
-            {% if user.is_staff or user.is_superuser %}
+            {% if user.is_superuser %}
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header text-white py-2 fw-bold" style="background-color: #417690 !important;">
                     MANAGER（店長専用マスタ管理）

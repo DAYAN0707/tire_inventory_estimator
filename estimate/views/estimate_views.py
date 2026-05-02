@@ -267,6 +267,8 @@ class EstimateDetailView(DetailView):
         context['delivery_message'] = get_delivery_message(self.object)
         # 🎯 従業員がプルダウンで選べるように、全ステータスをテンプレートに送る
         context['statuses'] = EstimateStatus.objects.all()
+        # 🎯 重要：デモユーザーの場合はステータス編集を制限するためのフラグをテンプレートに渡す
+        context['is_demo'] = self.request.user.groups.filter(name="demo_group").exists()
         return context
 
     def post(self, request, *args, **kwargs):

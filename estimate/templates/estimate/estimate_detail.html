@@ -25,7 +25,6 @@
     {# --- ヘッダー部分 --- #}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>見積詳細・ステータス管理</h2>
-        {#🎯 一覧へ戻るボタンはスタッフのみ表示 #}
         {% if user.is_authenticated %}
             <a href="{% url 'estimate:manager_dashboard' %}" class="btn btn-secondary">TOP画面へ</a>
         {% else %}
@@ -33,48 +32,61 @@
         {% endif %}
     </div>
 
-    {# --- 🎯 従業員専用ステータス操作エリア（ログイン済み かつ スタッフ権限あり のみ表示） --- #}
+    {# --- 🎯 従業員専用ステータス操作エリア --- #}
     {% if user.is_authenticated and user.is_staff %}
     <div class="card shadow-sm border-0 mb-4 status-update-card">
         <div class="card-body bg-light">
-            <h6 class="text-primary fw-bold mb-3"><i class="bi bi-person-badge me-2"></i>従業員専用：ステータス更新</h6>
-            
-            <form method="POST" action="{% url 'estimate:update_status' estimate.pk %}" class="row g-3 align-items-center">
-                {% csrf_token %}
-                <div class="col-md-4">
-                    <select name="status_id" class="form-select fw-bold border-primary">
-                        {% for status in statuses %}
-                            <option value="{{ status.id }}" {% if estimate.estimate_status.id == status.id %}selected{% endif %}>
-                                {{ status.status_name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-auto">
-                    <button type="submit" class="btn btn-primary px-4">
-                        更新する
-                    </button>
-                </div>
+            <h6 class="text-primary fw-bold mb-3">
+                <i class="bi bi-person-badge me-2"></i>従業員専用：ステータス更新
+            </h6>
 
-                {# --- クイック操作ボタン --- #}
-                <div class="col-md text-end">
-                    {% if estimate.estimate_status.status_name == "見積確定" %}
-                        <button type="submit" name="quick_status" value="予約確定" class="btn btn-outline-success">
-                            <i class="bi bi-calendar-check me-1"></i>予約確定にする
-                        </button>
-                    {% elif estimate.estimate_status.status_name == "予約確定" %}
-                        <button type="submit" name="quick_status" value="引渡完了" class="btn btn-danger px-4">
-                            <i class="bi bi-check-circle me-1"></i>完了（引渡済）
-                        </button>
-                        <button type="submit" name="quick_status" value="予約キャンセル" class="btn btn-link text-muted btn-sm" onclick="return confirm('本当に予約をキャンセルしますか？');">
-                            キャンセル処理
-                        </button>
-                    {% endif %}
+            {% if is_demo %}
+                <div class="alert alert-warning">
+                    デモアカウントのためステータス変更はできません。
                 </div>
-            </form>
+                <span class="badge bg-secondary">
+                    {{ estimate.estimate_status.status_name }}
+                </span>
+            {% else %}
+                {# 通常更新フォームとクイックボタンを一つのフォームにまとめます #}
+                <form method="POST" action="{% url 'estimate:update_status' estimate.pk %}" class="row g-3 align-items-center">
+                    {% csrf_token %}
+
+                    <div class="col-md-4">
+                        <select name="status_id" class="form-select fw-bold border-primary">
+                            {% for status in statuses %}
+                                <option value="{{ status.id }}"
+                                    {% if estimate.estimate_status.id == status.id %}selected{% endif %}>
+                                    {{ status.status_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-auto">
+                        <button type="submit" class="btn btn-primary px-4">更新する</button>
+                    </div>
+
+                    {# --- クイック操作ボタン --- #}
+                    <div class="col-md text-end">
+                        {% if estimate.estimate_status.status_name == "見積確定" %}
+                            <button type="submit" name="quick_status" value="予約確定" class="btn btn-outline-success">
+                                <i class="bi bi-calendar-check me-1"></i>予約確定にする
+                            </button>
+                        {% elif estimate.estimate_status.status_name == "予約確定" %}
+                            <button type="submit" name="quick_status" value="引渡完了" class="btn btn-danger px-4">
+                                <i class="bi bi-check-circle me-1"></i>完了（引渡済）
+                            </button>
+                            <button type="submit" name="quick_status" value="予約キャンセル" class="btn btn-link text-muted btn-sm" onclick="return confirm('本当に予約をキャンセルしますか？');">
+                                キャンセル処理
+                            </button>
+                        {% endif %}
+                    </div>
+                </form>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
+    {% endif %} {# 🚩 ここで staff 判定を閉じます（1箇所のみ） #}
 
     {# --- 1. 基本情報 --- #}
     <div class="card shadow-sm border-0 mb-4">

@@ -136,7 +136,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), os.path.join(BASE_DIR, 'st
 LOGIN_URL = 'users:login' 
 
 # 2. ログインが成功した直後のジャンプ先
-LOGIN_REDIRECT_URL = 'estimate:manager_dashboard'
+LOGIN_REDIRECT_URL = 'estimate:estimate_list'
 
 # 3. ログアウトした直後のジャンプ先
 LOGOUT_REDIRECT_URL = 'users:login'
