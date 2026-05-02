@@ -25,6 +25,7 @@
         }
     </style>
 </head>
+
 <body class="bg-light">
     
     {# --- 共通ナビゲーションバー --- #}
@@ -38,7 +39,7 @@
                 </a>
 
                 {# 🌟 監査ログリンク：店長権限がある場合のみロゴの横に表示 #}
-                {% if user.is_authenticated and user.is_superuser %}
+                {% if user.is_staff and user.username != "staff_demo" %}
                     <ul class="navbar-nav flex-row ms-2">
                         <li class="nav-item">
                             <a class="nav-link nav-link-audit px-3 border-start border-secondary" href="{% url 'audit:log_list' %}">
