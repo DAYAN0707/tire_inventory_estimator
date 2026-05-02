@@ -5,9 +5,18 @@
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="h4 mb-0"><i class="bi bi-gear-fill me-2"></i>タイヤマスタ管理（店長権限）</h2>
-        <a href="#" class="btn btn-primary shadow-sm">
-            <i class="bi bi-plus-lg"></i> 新規タイヤ登録
-        </a>
+    
+        {# 🌟 判定ロジック：デモユーザー（manager_demo or staff_demo）の場合 #}
+        {% if user.username == "manager_demo" or user.username == "staff_demo" %}
+            <a href="javascript:void(0);" class="btn btn-primary shadow-sm" onclick="alert('デモアカウントのため、新規登録機能は制限されています。');">
+                <i class="bi bi-plus-lg"></i> 新規タイヤ登録
+            </a>
+        {% else %}
+            {# 本物の店長（adminなど）の場合 #}
+            <a href="{% url 'estimate:manager_tire_add' %}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-lg"></i> 新規タイヤ登録
+            </a>
+        {% endif %}
     </div>
 
     <div class="card mb-4 border-0 shadow-sm bg-light">
