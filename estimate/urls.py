@@ -39,6 +39,8 @@ urlpatterns = [
     path('manager/charges/', estimate_views.ManagerChargeListView.as_view(), name='manager_charge_list'),
     # 諸費用の新規作成URL
     path('manager/charges/add/', estimate_views.ManagerChargeCreateView.as_view(), name='manager_charge_add'),
+    # デモユーザーが諸費用の新規作成を試みたときのURL（実際の処理はビュー内で制御）
+    path('manager/charges/demo-alert/', estimate_views.manager_charge_demo_alert, name='manager_charge_demo_alert'),
     # 諸費用の編集URL（例: 工賃の金額を変更する等）
     path('manager/charges/<int:pk>/edit/', estimate_views.ManagerChargeUpdateView.as_view(), name='manager_charge_edit'),
     # 諸費用の有効化URL（例: 工賃を見積に反映させるためのスイッチ）

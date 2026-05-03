@@ -5,9 +5,17 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="h4 mb-0"><i class="bi bi-tools me-2"></i>諸費用マスタ管理</h2>
-        <a href="{% url 'estimate:manager_charge_add' %}" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i> 新規諸費用登録
-        </a>
+    
+        {# 🌟 判定ロジック：デモユーザーの場合は、メッセージを出すビューへ飛ばす #}
+        {% if user.username == "manager_demo" or user.username == "staff_demo" %}
+            <a href="{% url 'estimate:manager_charge_demo_alert' %}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-lg"></i> 新規諸費用登録
+            </a>
+        {% else %}
+            <a href="{% url 'estimate:manager_charge_add' %}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-lg"></i> 新規諸費用登録
+            </a>
+        {% endif %}
     </div>
 
     <div class="card border-0 shadow-sm">
