@@ -17,7 +17,38 @@ from estimate.services.calculator import sync_estimate_charges # 諸費用計算
 from audit.utils import write_audit_log # 監査ログ記録用のユーティリティ関数をインポート
 from users.utils import stop_demo_user # デモユーザーの操作を制限するユーティリティ関数をインポート
 from django.utils.decorators import method_decorator # クラスベースViewにデコレータを適用するためのインポート
+from django.core.exceptions import PermissionDenied # 403エラー用の例外クラスをインポート
+from django.contrib.auth.decorators import login_required, user_passes_test # 関数ベースViewの権限判定用デコレータ
 
+
+# ==========================================
+# 0. 権限判定ロジック（グループベース）
+# ==========================================
+
+def is_manager(user):
+    """
+    【店長・管理者権限】
+    条件: ログイン済み ＋ (managerグループ所属 OR スーパーユーザー)
+    役割: マスタ編集、監査ログ閲覧、クリーンアップ等の全権限
+    """
+    return (
+        user.is_authenticated 
+        and (user.groups.filter(name="manager").exists() or user.is_superuser)
+    )
+
+def is_staff_member(user):
+    """
+    【一般スタッフ以上の全従業員】
+    条件: ログイン済み ＋ (manager OR staffグループ所属 OR スーパーユーザー)
+    役割: 在庫閲覧、見積作成、ステータス変更などの通常業務
+    """
+    return (
+        user.is_authenticated 
+        and (
+            user.groups.filter(name__in=["manager", "staff"]).exists() 
+            or user.is_superuser
+        )
+    )
 
 # ユーザーモデルを取得
 User = get_user_model()
@@ -427,15 +458,16 @@ CHARGE_FIELDS = [
 class EstimateStatusUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """
     見積詳細画面から従業員がステータスを変更するための処理
+    👉 ログイン必須 ＋ 従業員(staff/manager)権限のみアクセス可
     """
     model = Estimate
     fields = ['estimate_status']
 
     def test_func(self):
-        return self.request.user.is_staff
+        # 一般スタッフ(staff)も店長(manager)も許可
+        return is_staff_member(self.request.user)
 
     def handle_no_permission(self):
-        # 従業員権限がない（is_staff=False）場合の処理
         messages.error(self.request, "この操作には従業員権限が必要です。")
         pk = self.kwargs.get('pk')
         return redirect('estimate:estimate_detail', pk=pk) if pk else redirect('estimate:estimate_list')
@@ -552,19 +584,39 @@ class EstimateStatusUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateVi
 # 6. 店長用：マスタ・在庫管理View
 # ==========================================
 
-class ManagerTireListView(ListView):
-    """タイヤ在庫一覧（店長用）"""
+class ManagerTireListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """
+    タイヤ在庫一覧（店長用）
+    👉 URL直打ち対策: ログイン必須 ＋ 店長（superuser）のみアクセス可
+    """
     model = Tire
     template_name = 'estimate/manager_tire_list.html'
     context_object_name = 'tires'
-    
-class ManagerTireUpdateView(LoginRequiredMixin, UpdateView):
-    """タイヤ情報編集（店長用）"""
+
+    def test_func(self):
+        return is_manager(self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "管理用ページへのアクセス権限がありません。")
+        return redirect('estimate:estimate_list')
+
+class ManagerTireUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """
+    タイヤ情報編集（店長用）
+    👉 Mixinを最優先に配置して二重ガード
+    """
     model = Tire
     fields = ['product_code', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
     template_name = 'estimate/manager_tire_form.html'
     success_url = reverse_lazy('estimate:manager_tire_list')
-    
+
+    def test_func(self):
+        return is_manager(self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "編集権限がありません。")
+        return redirect('estimate:manager_tire_list')
+
     def dispatch(self, request, *args, **kwargs):
         # 🎯 ここで全てのアクセス（表示も保存も）をシャットアウト
         if request.user.groups.filter(name="demo_group").exists():
@@ -576,7 +628,7 @@ class ManagerTireUpdateView(LoginRequiredMixin, UpdateView):
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        #  dispatchで弾いている為、ここには店長（通常ユーザー）しか来ない
+        # dispatchで弾いている為、ここには店長（通常ユーザー）しか来ない
         self.object = self.get_object()
         form = self.get_form()
         
@@ -587,33 +639,51 @@ class ManagerTireUpdateView(LoginRequiredMixin, UpdateView):
 
         return self.form_invalid(form)
 
-class ManagerChargeListView(ListView):
-    """諸費用マスタ一覧（店長用）"""
+class ManagerChargeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """
+    諸費用マスタ一覧（店長用）
+    👉 一般スタッフのURL直打ちを完全にシャットアウト
+    """
     model = ChargeMaster
     template_name = 'estimate/manager_charge_list.html'
     context_object_name = 'charges'
 
+    def test_func(self):
+        return is_manager(self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "管理用ページへのアクセス権限がありません。")
+        return redirect('estimate:estimate_list')
+
+@login_required
+@user_passes_test(is_manager)
 def manager_charge_demo_alert(request):
-    from django.contrib import messages
-    from django.shortcuts import redirect
-    
+    """諸費用登録制限のアラート（関数ベースViewも二重ガード）"""
     messages.warning(request, "デモアカウントでは諸費用の新規登録は制限されています。")
     return redirect('estimate:manager_charge_list')
 
-class ManagerChargeUpdateView(LoginRequiredMixin, UpdateView):
+class ManagerChargeUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """
     諸費用マスタ編集・削除（店長用）
     ■ 役割
     ・諸費用マスタ（工賃など）の編集／削除を行う
     ・デモユーザーは「閲覧も操作も不可」にする（完全ブロック）
     ■ セキュリティ方針
-    ① dispatchで全リクエストをブロック（最重要）
-    ② postでも念のため再チェック（二重ガード）
+    ① LoginRequiredMixin & UserPassesTestMixin でURL直打ちを防御
+    ② dispatchで全リクエストをブロック（最重要）
+    ③ postでも念のため再チェック（二重ガード）
     """
     model = ChargeMaster
     fields = CHARGE_FIELDS
     template_name = 'estimate/manager_charge_form.html'
     success_url = reverse_lazy('estimate:manager_charge_list')
+
+    def test_func(self):
+        return is_manager(self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "諸費用マスタを変更する権限がありません。")
+        return redirect('estimate:manager_charge_list')
 
     def dispatch(self, request, *args, **kwargs):
         # 🎯 【最重要】デモグループのユーザーを完全ブロック
@@ -667,16 +737,25 @@ class ManagerChargeUpdateView(LoginRequiredMixin, UpdateView):
         # バリデーションエラー時はフォーム再表示
         return self.form_invalid(form)
 
-class ManagerChargeCreateView(CreateView):
-    """諸費用マスタ新規登録（店長用）"""
+class ManagerChargeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """諸費用マスタ新規登録（店長用：鍵付き）"""
     model = ChargeMaster
     fields = CHARGE_FIELDS
     template_name = 'estimate/manager_charge_form.html'
     success_url = reverse_lazy('estimate:manager_charge_list')
-    
+
+    def test_func(self):
+        return is_manager(self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "マスタ登録権限がありません。")
+        return redirect('estimate:manager_charge_list')
+
 # --- 諸費用マスタの有効化処理 ---
+@login_required
+@user_passes_test(is_manager)
 def charge_master_activate(request, pk):
-    """無効化された諸費用を再度有効にする（関数ベースView）"""
+    """無効化された諸費用を再度有効にする（関数ベースView：鍵付き）"""
     # 諸費用データを取得（存在しない場合は404エラー）
     charge = get_object_or_404(ChargeMaster, pk=pk)
     
@@ -695,54 +774,81 @@ def charge_master_activate(request, pk):
 # 7. 特殊操作：データクリーンアップ
 # ==========================================
 
+@login_required
+@user_passes_test(is_manager)
 def clean_draft_estimates(request):
     """
     【店長権限専用】作成中データを一括清掃
+    👉 ログイン必須 ＋ manager権限以上のみアクセス可
     """
-    # 🎯 【セキュリティ追加】デモグループに属するユーザーの一括削除をブロック
-    if request.user.groups.filter(name="demo_group").exists():
+    # 🎯 デモユーザーは dispatch や stop_demo_user 的な処理で別途ガード
+    if request.user.groups.filter(name__in=["demo_manager", "demo_staff"]).exists():
         messages.error(request, "デモアカウントではデータの一括削除は実行できません。")
-        return redirect('estimate:manager_dashboard') # もしくは適切な遷移先
+        return redirect('estimate:manager_dashboard')
 
-    # 一般スタッフ（is_staff=False）も一応ガード
-    if not request.user.is_staff:
-        messages.error(request, "この操作には店長権限が必要です。")
-        return redirect('estimate:estimate_list')
     try:
+        # 💡 内部的な「作成中」ステータスを特定
         draft_status = EstimateStatus.objects.get(status_name="作成中")
+        
+        # 該当する見積を取得
         draft_estimates = Estimate.objects.filter(estimate_status=draft_status)
         count = draft_estimates.count()
         
-        draft_estimates.delete()
-        draft_status.delete()
-        
-        messages.success(request, f"「作成中」の見積 {count} 件と、ステータスマスタを完全に消去しました。")
-        
-    except EstimateStatus.DoesNotExist:
-        messages.info(request, "「作成中」のステータスは既に整理済みです。")
-    except Exception as e:
-        messages.error(request, f"クリーンアップ中にエラーが発生しました: {str(e)}")
+        if count > 0:
+            # 見積データのみを一括削除（ステータスマスタ本体は消さないのが安全）
+            draft_estimates.delete()
+            messages.success(request, f"「作成中」の見積データ {count} 件を完全に清掃しました。")
+        else:
+            messages.info(request, "現在、清掃が必要な「作成中」データはありません。")
+            
+        # 💡 ヒント：以前のコードにあった「draft_status.delete()」は
+        # ステータスという「枠組み」自体を消してしまうため、今後の見積作成に
+        # 支障が出る恐れがあります。そのため、データ（中身）のみ消す形に調整しました。
 
+    except EstimateStatus.DoesNotExist:
+        messages.info(request, "「作成中」というステータスが定義されていないため、スキップしました。")
+    except Exception as e:
+        messages.error(request, f"クリーンアップ中に予期せぬエラーが発生しました: {str(e)}")
+
+    # 処理完了後は見積一覧へ戻る
     return redirect('estimate:estimate_list')
 
 # ==========================================
 # 8. ステータスマスタ管理（店長用）
 # ==========================================
 
-class ManagerStatusListView(ListView):
-    """ステータス一覧"""
+class ManagerStatusListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """
+    ステータス一覧
+    URL直打ち防御を追加
+    """
     model = EstimateStatus
     template_name = 'estimate/manager_status_list.html'
     context_object_name = 'statuses'
 
-class ManagerStatusUpdateView(UpdateView):
+    def test_func(self):
+        return is_manager(self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "ステータスマスタの管理権限がありません。")
+        return redirect('estimate:estimate_list')
+
+class ManagerStatusUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """ステータス編集"""
     model = EstimateStatus
     fields = ['status_name', 'is_fixed']
     template_name = 'estimate/manager_status_form.html'
     success_url = reverse_lazy('estimate:status_list')
 
+    def test_func(self):
+        return is_manager(self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "ステータスを変更する権限がありません。")
+        return redirect('estimate:status_list')
+
     def dispatch(self, request, *args, **kwargs):
+        # 🎯 デモユーザー制限
         if request.user.groups.filter(name="demo_group").exists():
             messages.warning(request, "デモアカウントではステータスの編集は制限されています。")
             return redirect('estimate:status_list')
@@ -750,42 +856,38 @@ class ManagerStatusUpdateView(UpdateView):
 
     def form_valid(self, form):
         # 🎯 内部名 is_fixed に統一
-        if 'is_fixed' not in self.request.POST:
-            form.instance.is_fixed = False
-        else:
-            form.instance.is_fixed = True
-        
+        form.instance.is_fixed = 'is_fixed' in self.request.POST
         messages.success(self.request, f"ステータス「{form.instance.status_name}」を更新しました。")
         return super().form_valid(form)
 
-class ManagerStatusCreateView(CreateView):
+class ManagerStatusCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """ステータス新規登録"""
     model = EstimateStatus
     fields = '__all__'
     template_name = 'estimate/manager_status_form.html'
     success_url = reverse_lazy('estimate:status_list')
     
+    def test_func(self):
+        return is_manager(self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "新しいステータスを追加する権限がありません。")
+        return redirect('estimate:status_list')
+
     def dispatch(self, request, *args, **kwargs):
         if request.user.groups.filter(name="demo_group").exists():
-            messages.warning(request, "デモアカウントではステータスの編集は制限されています。")
+            messages.warning(request, "デモアカウントでは操作が制限されています。")
             return redirect('estimate:status_list')
         return super().dispatch(request, *args, **kwargs)
 
-    # 新規作成時も、固定フラグの処理を同様に行う
     def form_valid(self, form):
-        # 🎯 内部名 is_fixed に統一
-        if 'is_fixed' not in self.request.POST:
-            form.instance.is_fixed = False
-        else:
-            form.instance.is_fixed = True
-            
+        form.instance.is_fixed = 'is_fixed' in self.request.POST
         messages.success(self.request, f"ステータス「{form.instance.status_name}」を登録しました。")
         return super().form_valid(form)
 
 class ManagerDashboardView(LoginRequiredMixin, TemplateView):
     """
     店長・スタッフ共用ダッシュボード
-    LoginRequiredMixin を追加することで、ログインさえしていれば
-    店長(is_staff=True)でも一般スタッフ(is_staff=False)でもアクセス可能
+    👉 ここは全従業員(is_staff=True以上)が見れる場所という設計
     """
     template_name = 'estimate/manager_dashboard.html'
