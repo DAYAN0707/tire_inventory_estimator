@@ -28,6 +28,7 @@ class UserListView(ListView):
     ordering = ['-is_staff', 'staff_id'] # スタッフユーザーを上に、次に従業員ID順で並べる
 
 # --- 2. ユーザー登録画面 ---
+@method_decorator(stop_demo_user, name='dispatch')  # デモユーザーの操作を制限するデコレータをクラスベースViewのdispatchメソッドに適用
 class UserCreateView(CreateView):
     model = User
     fields = ['username', 'staff_id', 'staff_name', 'is_staff', 'is_active'] # フォームに表示するフィールドを指定

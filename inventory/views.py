@@ -8,6 +8,9 @@ from django.views.generic import CreateView, UpdateView, ListView # ブランド
 from django.urls import reverse_lazy # URLの逆引きに使用（成功後のリダイレクト先など）
 from urllib.parse import urlencode # URLクエリパラメータのエンコードに使用
 from django.core.paginator import Paginator  # 🎯 パジネーションのためのインポート
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin # クラスベースビューでのログイン必須と権限チェックのためのミックスイン
+from estimate.utils import is_demo_staff_only # デモスタッフかどうかを判定するユーティリティ関数をインポート
+
 
 def tire_list(request):
     """
@@ -175,42 +178,47 @@ def order_cancel(request, order_id):
     messages.warning(request, f"【発注取消】{order.tire.brand} の発注を取り消しました。")
     return redirect('inventory:order_list')
 
-
-class BrandCreateView(CreateView):
+class BrandCreateView(LoginRequiredMixin, CreateView): # Mixinを整理
     model = Brand
     fields = ['name', 'comment']
     template_name = 'inventory/brand_form.html'
     success_url = reverse_lazy('inventory:brand_list')
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.groups.filter(name="demo_group").exists():
+        # 🚨 ここで「デモグループ」に属しているか、ユーザー名で直接判定して弾く
+        if request.user.groups.filter(name="demo_group").exists() or request.user.username in ['manager_demo', 'staff_demo']:
             messages.warning(request, "デモアカウントではブランドの新規登録は制限されています。")
-            return redirect('inventory:brand_list')
+            return redirect('inventory:brand_list') # 一覧へ戻す
         return super().dispatch(request, *args, **kwargs)
 
 
-class BrandUpdateView(UpdateView):
+class BrandUpdateView(LoginRequiredMixin, UpdateView):
     model = Brand
     fields = ['name', 'comment']
     template_name = 'inventory/brand_form.html'
     success_url = reverse_lazy('inventory:brand_list')
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.groups.filter(name="demo_group").exists():
+        # 🚨 編集・削除画面も同様に dispatch で入り口を閉じる
+        if request.user.groups.filter(name="demo_group").exists() or request.user.username in ['manager_demo', 'staff_demo']:
             messages.warning(request, "デモアカウントではブランドの編集・削除は制限されています。")
             return redirect('inventory:brand_list')
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        # POST（保存・削除ボタン押下）時も念のため二重ガード
+        if request.user.groups.filter(name="demo_group").exists():
+            return redirect('inventory:brand_list')
+            
         self.object = self.get_object()
         if 'delete' in request.POST:
             self.object.delete()
             messages.success(request, f"ブランド「{self.object.name}」を削除しました。")
             return redirect(self.success_url)
         return super().post(request, *args, **kwargs)
-
-
-class BrandListView(ListView):
+    
+# 一覧画面もガードを固める LoginRequiredMixin を入れる
+class BrandListView(LoginRequiredMixin, ListView):
     model = Brand
     template_name = 'inventory/brand_list.html'
     context_object_name = 'brands'

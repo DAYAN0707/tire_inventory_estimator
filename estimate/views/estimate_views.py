@@ -19,6 +19,8 @@ from users.utils import stop_demo_user # デモユーザーの操作を制限す
 from django.utils.decorators import method_decorator # クラスベースViewにデコレータを適用するためのインポート
 from django.core.exceptions import PermissionDenied # 403エラー用の例外クラスをインポート
 from django.contrib.auth.decorators import login_required, user_passes_test # 関数ベースViewの権限判定用デコレータ
+from estimate.utils import is_manager, is_demo_staff_only # 役割判定のユーティリティ関数をインポート
+
 
 
 
@@ -128,7 +130,7 @@ class EstimateListView(LoginRequiredMixin, ListView):
     context_object_name = 'estimates'
     ordering = ['-created_at']
 
-class EstimateCreateView(CreateView):
+class EstimateCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """
     見積を新規作成し、タイヤ明細（Formset）を同時に管理するView
     在庫一覧からの「追加」による復元ロジックと、手入力の両方に対応
@@ -136,6 +138,20 @@ class EstimateCreateView(CreateView):
     model = Estimate
     template_name = "estimate/estimate_form.html"
     fields = ["purchase_type", "customer_name", "vehicle_name"]
+
+    def test_func(self):
+        """UserPassesTestMixin の判定条件"""
+        user = self.request.user
+        # 🚨 デモユーザー（店長・スタッフ問わず）は新規作成画面へのアクセスを禁止する
+        if is_demo_staff_only(user) or user.username == 'demo_manager':
+            return False
+        return True
+
+    def handle_no_permission(self):
+        """test_func が False を返した（デモユーザーなど）場合の挙動"""
+        # ログイン画面に戻りつつ、赤い警告メッセージを表示
+        messages.error(self.request, "デモアカウントでは新規見積の作成はできません。店長またはスタッフアカウントでログインしてください。", extra_tags='danger')
+        return redirect('users:login')
 
     def get_success_url(self):
         """保存成功後のリダイレクト先（詳細画面）"""
@@ -250,7 +266,7 @@ class EstimateCreateView(CreateView):
                         return self.render_to_response(self.get_context_data(form=form))
                     estimate.created_by = first_user
 
-                # --- 🎯 修正：保存時のステータスを最初から「見積確定」にする ---
+                # --- 保存時のステータスを最初から「見積確定」にする ---
                 # お客様が「保存」した時点で作成フローは完了しているため、
                 # 内部的な「作成中」ではなく、従業員がすぐに追える「見積確定」をセットしておく
                 try:
@@ -305,15 +321,20 @@ class EstimateDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['delivery_message'] = get_delivery_message(self.object)
+        # context['delivery_message'] = get_delivery_message(self.object) # もし不要ならコメントアウト
         # 🎯 従業員がプルダウンで選べるように、全ステータスをテンプレートに送る
         context['statuses'] = EstimateStatus.objects.all()
         # 🎯 重要：デモユーザーの場合はステータス編集を制限するためのフラグをテンプレートに渡す
-        context['is_demo'] = self.request.user.groups.filter(name="demo_group").exists()
+        context['is_demo'] = is_demo_staff_only(self.request.user) or self.request.user.username == 'demo_manager'
         return context
 
     def post(self, request, *args, **kwargs):
         """詳細画面（管理画面）からのステータス更新を受け付ける"""
+        # 🚨 デモユーザー（店長・スタッフ問わず）はステータスの更新を禁止し、ログイン画面へ飛ばす
+        if is_demo_staff_only(request.user) or request.user.username == 'demo_manager':
+            messages.error(request, "デモアカウントではステータスの更新はできません。店長アカウントでログインし直してください。", extra_tags='danger')
+            return redirect('users:login')
+
         if not request.user.is_authenticated:
             return redirect('login')
 
@@ -329,7 +350,7 @@ class EstimateDetailView(DetailView):
                 pass
         
         return redirect('estimate:estimate_detail', pk=estimate.pk)
-
+    
 # ==========================================
 # 3. 印刷専用Viewの追加
 # ==========================================
@@ -902,13 +923,22 @@ class ManagerDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     template_name = 'estimate/manager_dashboard.html'
 
     def test_func(self):
-        # 🎯 ここで先ほどの判定ロジックを使用
-        # 画像の「管理者権限(is_staff)」か「スーパーユーザー(is_superuser)」ならTrue
-        return is_manager(self.request.user)
+        """UserPassesTestMixin の判定条件"""
+        user = self.request.user
+        # 判定1: まずは店長（is_staff）かどうか
+        if not is_manager(user):
+            return False
+            
+        # 判定2: デモスタッフ（店長権限なし）なら拒否
+        # ここで False を返せば、下の handle_no_permission が即座に実行
+        if is_demo_staff_only(user):
+            return False
+            
+        return True
 
     def handle_no_permission(self):
-        """
-        権限がない（一般スタッフ等）がアクセスした時の挙動
-        """
-        messages.error(self.request, "店長専用ページのため、アクセス権限がありません。")
-        return redirect('estimate:estimate_list')
+        """test_func が False を返した（権限がない）場合の挙動"""
+        # ログイン画面に戻りつつ、赤い警告メッセージを表示
+        # extra_tags='danger' を追加して Bootstrap の alert-danger（赤色）を適用
+        messages.error(self.request, "このページは店長専用です。店長アカウントでログインし直してください。", extra_tags='danger')
+        return redirect('users:login')
