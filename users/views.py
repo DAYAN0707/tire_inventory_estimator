@@ -6,6 +6,9 @@ from django.utils.decorators import method_decorator # クラスベースViewに
 from django.contrib.auth.views import LoginView # Django標準のログインビューをインポート
 from .forms import StaffLoginForm # カスタムログインフォームをインポート
 from .utils import stop_demo_user # デモユーザーの操作を制限するユーティリティ関数をインポート
+from django.contrib import messages # ユーザーにフィードバックを表示するためのモジュール（成功・エラーなどのメッセージ）
+from django.contrib.auth.mixins import LoginRequiredMixin # クラスベースビューでログイン必須にするためのミックスインをインポート
+
 
 # カスタムユーザーモデルを取得（image_480fbe.pngの項目を扱うため）
 User = get_user_model()
@@ -21,7 +24,7 @@ class StaffLoginView(LoginView):
 
 
 # --- 1. ユーザー一覧画面 ---
-class UserListView(ListView):
+class UserListView(LoginRequiredMixin, ListView):
     model = User
     template_name = 'users/user_list.html' # ユーザー一覧画面のテンプレートを指定
     context_object_name = 'users' # テンプレート内でユーザーリストを参照する際の名前
@@ -29,7 +32,7 @@ class UserListView(ListView):
 
 # --- 2. ユーザー登録画面 ---
 @method_decorator(stop_demo_user, name='dispatch')  # デモユーザーの操作を制限するデコレータをクラスベースViewのdispatchメソッドに適用
-class UserCreateView(CreateView):
+class UserCreateView(LoginRequiredMixin, CreateView):
     model = User
     fields = ['username', 'staff_id', 'staff_name', 'is_staff', 'is_active'] # フォームに表示するフィールドを指定
     template_name = 'users/user_form.html' # ユーザー登録・編集画面のテンプレートを指定
@@ -37,7 +40,7 @@ class UserCreateView(CreateView):
 
 # --- 3. ユーザー編集・削除画面 ---
 @method_decorator(stop_demo_user, name='dispatch')  # デモユーザーの操作を制限するデコレータをクラスベースViewのdispatchメソッドに適用
-class UserUpdateView(UpdateView):
+class UserUpdateView(LoginRequiredMixin, UpdateView):
     model = User
     fields = ['username', 'staff_id', 'staff_name', 'is_staff', 'is_active'] # フォームに表示するフィールドを指定
     template_name = 'users/user_form.html' # ユーザー登録・編集画面のテンプレートを指定
@@ -69,3 +72,18 @@ class UserUpdateView(UpdateView):
             return redirect(self.success_url)
         # フォームが無効な場合はエラーを表示して同じページに戻す
         return self.form_invalid(form)
+    
+    def stop_demo_user(view_func):
+        def _wrapped_view(request, *args, **kwargs):
+            user = request.user
+        
+            # 🚨 デモユーザー、または店長権限がないユーザーは全員アウト
+            # user.is_staff が「店長のみTrue」という設計ならそれを使います
+            is_demo = user.username in ['manager_demo', 'staff_demo'] or user.groups.filter(name="demo_group").exists()
+        
+            if user.is_authenticated and (is_demo or not user.is_staff):
+                messages.error(request, "アクセス権限がありません。ログインし直してください。")
+                return redirect('users:login') # 🎯 全員ログイン画面へ
+            
+            return view_func(request, *args, **kwargs)
+        return _wrapped_view

@@ -1,10 +1,10 @@
-import re
-from decimal import Decimal
-from dataclasses import dataclass
-from typing import Optional
-from django.db import transaction
-from estimate.models import Estimate, EstimateCharge
-from estimate.models.masters.charge_master import ChargeMaster
+import re # 正規表現モジュールをインポート（タイヤサイズの解析に使用）
+from decimal import Decimal # Decimal型をインポート（価格計算の精度を保つため）
+from dataclasses import dataclass # データクラスをインポート（タイヤスペックの構造化に使用）
+from typing import Optional # 型ヒントのためのOptionalをインポート
+from django.db import transaction # データベーストランザクション管理のためのモジュールをインポート
+from estimate.models import Estimate, EstimateCharge # 見積モデルと見積諸費用モデルをインポート
+from estimate.models.masters.charge_master import ChargeMaster # 諸費用マスタモデルをインポート
 
 # 1.タイヤ仕様解析（データ構造 ＆ 解析エンジン）
 @dataclass(frozen=True)

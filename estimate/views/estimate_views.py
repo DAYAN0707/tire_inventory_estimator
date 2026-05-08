@@ -313,7 +313,7 @@ class EstimateCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         else:
             return self.render_to_response(self.get_context_data(form=form))
 
-class EstimateDetailView(DetailView):
+class EstimateDetailView(LoginRequiredMixin,DetailView):
     """作成された見積の最終結果を確認し、従業員がステータスを管理するView"""
     model = Estimate
     template_name = 'estimate/estimate_detail.html'
