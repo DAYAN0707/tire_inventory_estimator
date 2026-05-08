@@ -6,6 +6,7 @@
 
     <div class="row g-4">
         {# --- 左側：スタッフ用（一般業務） --- #}
+        {# 🌟 全員（店長も一般スタッフも）共通で表示されるエリア #}
         <div class="col-md-6">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-dark text-white py-2 fw-bold">
@@ -25,8 +26,10 @@
 
         {# --- 右側：マネージャー用（マスタ管理） --- #}
         <div class="col-md-6">
-            {# 🌟 判定ロジック：スタッフ権限があり、かつデモスタッフではない場合に表示 #}
-            {% if user.is_staff and user.username != "staff_demo" %}
+            {# 🌟 判定ロジックの修正： #}
+            {# スーパーユーザー(is_superuser) または 管理者権限(is_staff) のどちらかがあれば表示 #}
+            {# これにより、adminユーザーも正しく店長メニューが表示される #}
+            {% if user.is_superuser or user.is_staff %}
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header text-white py-2 fw-bold" style="background-color: #417690 !important;">
                     MANAGER（店長専用マスタ管理）
@@ -53,11 +56,12 @@
                 </ul>
             </div>
             {% else %}
-            {# デモスタッフ(staff_demo)や一般権限ユーザーには鍵マークを表示 #}
-            <div class="alert alert-light border text-center h-100 d-flex align-items-center justify-content-center">
+            {# 🌟 一般スタッフやデモスタッフ（どちらの権限もOFF）に表示される制限画面 #}
+            <div class="alert alert-light border text-center h-100 d-flex align-items-center justify-content-center m-0">
                 <div class="text-muted">
-                    <i class="bi bi-lock-fill d-block mb-2"></i>
-                    <small>マスタ管理権限がありません</small>
+                    <i class="bi bi-lock-fill d-block mb-2 fs-4"></i>
+                    <small class="fw-bold">マスタ管理権限がありません</small>
+                    <p class="mb-0 mt-1" style="font-size: 0.75rem;">※設定の変更は店長へ依頼してください</p>
                 </div>
             </div>
             {% endif %}
@@ -70,5 +74,6 @@
     .list-group-item { font-size: 0.95rem; transition: background-color 0.2s; }
     .list-group-item:hover { background-color: #f8f9fa; }
     .list-group-item a:hover { color: #447e9b !important; }
+    .bi-lock-fill { color: #adb5bd; }
 </style>
 {% endblock %}

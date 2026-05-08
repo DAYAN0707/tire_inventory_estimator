@@ -33,6 +33,8 @@ urlpatterns = [
     path('manager/tires/', estimate_views.ManagerTireListView.as_view(), name='manager_tire_list'),
     # 店長用のタイヤ編集URL（例: タイヤの6桁コードや価格を変更するための画面）
     path('manager/tires/<int:pk>/edit/', estimate_views.ManagerTireUpdateView.as_view(), name='manager_tire_edit'),
+    # 店長用のタイヤ新規登録URL（例: 新しいタイヤを見積に追加するための画面）
+    path('manager/tires/add/', estimate_views.ManagerTireCreateView.as_view(), name='manager_tire_add'),
 
     # --- 店長用：諸費用（工賃・廃タイヤ等）マスタ管理 ---
     # 諸費用マスタの一覧・編集・新規作成URLを定義

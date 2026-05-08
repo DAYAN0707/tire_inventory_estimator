@@ -20,7 +20,7 @@ from django.utils.decorators import method_decorator # クラスベースViewに
 from django.core.exceptions import PermissionDenied # 403エラー用の例外クラスをインポート
 from django.contrib.auth.decorators import login_required, user_passes_test # 関数ベースViewの権限判定用デコレータ
 from estimate.utils import is_manager, is_demo_staff_only # 役割判定のユーティリティ関数をインポート
-
+from django.db.models import Q # 複雑なクエリを組み立てるためのモジュール（OR条件などに使用）
 
 
 
@@ -614,21 +614,47 @@ class EstimateStatusUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateVi
 # 6. 店長用：マスタ・在庫管理View
 # ==========================================
 
+from django.db.models import Q  # ファイルの先頭（import文の並び）に追加してください
+
 class ManagerTireListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """
     タイヤ在庫一覧（店長用）
-    👉 URL直打ち対策: ログイン必須 ＋ 店長（superuser）のみアクセス可
+    👉 権限ガード ＋ 検索機能付き
     """
     model = Tire
     template_name = 'estimate/manager_tire_list.html'
     context_object_name = 'tires'
 
+    # --- 1. 権限チェック ---
     def test_func(self):
-        return is_manager(self.request.user)
+        """店長(is_staff) または 管理者(is_superuser) なら許可"""
+        user = self.request.user
+        return user.is_superuser or user.is_staff
 
-    def handle_no_permission(self):
-        messages.error(self.request, "管理用ページへのアクセス権限がありません。")
-        return redirect('estimate:estimate_list')
+    # --- 2. 検索ロジック ---
+    def get_queryset(self):
+        # ここでブランド名を効率的に取得するために select_related を使用
+        queryset = Tire.objects.select_related('brand_link').all() 
+        # 検索クエリを取得して前後の空白を削除
+        query = self.request.GET.get('q', '').strip()
+
+
+        if query:
+            queryset = queryset.filter(
+                Q(manufacturer__icontains=query) |        # メーカー名
+                Q(brand_link__name__icontains=query) |   # ブランド名 (リレーション先)
+                Q(size_raw__icontains=query) |            # サイズ
+                Q(product_code__icontains=query)          # 商品コード
+            ).distinct()
+            
+        return queryset
+
+    # --- 3. テンプレートへの値渡し ---
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # 検索窓に文字を残すために q という名前で値を渡す
+        context['q'] = self.request.GET.get('q', '') 
+        return context
 
 class ManagerTireUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """
@@ -668,6 +694,32 @@ class ManagerTireUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
             return redirect(self.success_url)
 
         return self.form_invalid(form)
+
+
+class ManagerTireCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """
+    タイヤ新規登録（店長用）
+    👉 URL直打ち対策: ログイン必須 ＋ 店長権限(is_staff/is_superuser)のみ
+    """
+    model = Tire
+    # 編集(UpdateView)と同じ項目を指定します
+    fields = ['product_code', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
+    template_name = 'estimate/manager_tire_form.html'
+    success_url = reverse_lazy('estimate:manager_tire_list')
+
+    def test_func(self):
+        """店長(is_staff) または 管理者(is_superuser) なら許可"""
+        user = self.request.user
+        return user.is_superuser or user.is_staff
+
+    def handle_no_permission(self):
+        messages.error(self.request, "タイヤ登録権限がありません。")
+        return redirect('estimate:manager_tire_list')
+
+    def form_valid(self, form):
+        # 登録成功時にメッセージを表示
+        messages.success(self.request, f"商品コード「{form.instance.product_code}」を新規登録しました。")
+        return super().form_valid(form)
 
 class ManagerChargeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """
@@ -915,30 +967,11 @@ class ManagerStatusCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateVie
         messages.success(self.request, f"ステータス「{form.instance.status_name}」を登録しました。")
         return super().form_valid(form)
 
-class ManagerDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+class ManagerDashboardView(LoginRequiredMixin, TemplateView): # 👈 UserPassesTestMixin を削除
     """
-    店長専用ダッシュボード
-    👉 URL直打ち対策: ログイン必須 ＋ 管理者権限(is_staff)以上のみアクセス可
+    ダッシュボード
+    👉 ログイン必須。表示内容はテンプレート側の権限判定で切り替える
     """
     template_name = 'estimate/manager_dashboard.html'
 
-    def test_func(self):
-        """UserPassesTestMixin の判定条件"""
-        user = self.request.user
-        # 判定1: まずは店長（is_staff）かどうか
-        if not is_manager(user):
-            return False
-            
-        # 判定2: デモスタッフ（店長権限なし）なら拒否
-        # ここで False を返せば、下の handle_no_permission が即座に実行
-        if is_demo_staff_only(user):
-            return False
-            
-        return True
 
-    def handle_no_permission(self):
-        """test_func が False を返した（権限がない）場合の挙動"""
-        # ログイン画面に戻りつつ、赤い警告メッセージを表示
-        # extra_tags='danger' を追加して Bootstrap の alert-danger（赤色）を適用
-        messages.error(self.request, "このページは店長専用です。店長アカウントでログインし直してください。", extra_tags='danger')
-        return redirect('users:login')
