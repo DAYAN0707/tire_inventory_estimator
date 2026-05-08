@@ -65,32 +65,32 @@ def tire_list(request):
 def tire_list_admin(request):
     """
     【店員専用】在庫管理・リスト型画面
-    役割：店内のPCで、在庫数、仕入れ値、発注ボタンを管理するための「裏方」画面
-    機能：1. インチ数や幅による曖昧検索 2. 見積作成中のタイヤ選択からの戻り先保持
+    ブランド（メーカー）名、サイズ、商品コードのいずれからでも検索可能に改良
     """
-    # 見積作成の途中で在庫確認に来た場合、元の見積画面に戻れるようIDを取得
     estimate_id = request.GET.get('estimate_id')
 
-    # 検索窓に入力されたサイズ情報を取得
-    front_size = request.GET.get('front_size', '').strip()
-    rear_size = request.GET.get('rear_size', '').strip()
+    # 一般的に「Query（問い合わせ）」の頭文字をとって q とされることが多い
+    # 窓の名前を 'q' で受け取るように統一！
+    query = request.GET.get('q', '').strip()
 
-    # パフォーマンス対策：ブランド情報を一括取得(JOIN)してデータベースへの負荷を軽減
     tires = Tire.objects.select_related('brand_link').all()
 
-    # 部分一致（icontains）によるフィルタリング(店員の「235」などの断片的な入力に対応)
-    if front_size and rear_size:
-        tires = tires.filter(Q(size_raw__icontains=front_size) | Q(size_raw__icontains=rear_size))
-    elif front_size:
-        tires = tires.filter(size_raw__icontains=front_size)
-    elif rear_size:
-        tires = tires.filter(size_raw__icontains=rear_size)
+    if query:
+        # 🎯 ここで「メーカー名」「サイズ」「商品コード」を検索
+        tires = tires.filter(
+            # メーカー名 (BRIDGESTONE, YOKOHAMAなど)
+            Q(manufacturer__icontains=query) | 
+            # ブランド名 (プラクティバ, POTENZAなど)
+            Q(brand_link__name__icontains=query) | 
+            # サイズ (155, R13など)
+            Q(size_raw__icontains=query) |
+            # 商品コード
+            Q(product_code__icontains=query)
+        )
 
-    # 🎯 管理用の「tire_list_admin.html」を呼び出す（URLかぶっていた問題を解消）
     return render(request, 'inventory/tire_list_admin.html', {
         'tires': tires,
-        'front_size': front_size,
-        'rear_size': rear_size,
+        'q': query,  # 🎯 検索後も窓に文字を残すために渡す
         'estimate_id': estimate_id,
     })
 

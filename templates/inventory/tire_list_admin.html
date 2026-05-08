@@ -38,9 +38,9 @@
     {# --- 検索窓エリア --- #}
     <div class="card shadow-sm mb-4 border-0 bg-light">
         <div class="card-body">
-            <form method="GET" class="row g-3">
+            <form method="GET" action="{% url 'inventory:tire_list_admin' %}" class="row g-3">
                 <div class="col-md-5">
-                    <input type="text" name="front_size" class="form-control" placeholder="サイズ検索 (例: 155 または R13)" value="{{ front_size }}">
+                    <input type="text" name="q" class="form-control" placeholder="サイズ・メーカー等で検索" value="{{ q }}">
                 </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100">絞り込み</button>
