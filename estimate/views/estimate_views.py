@@ -139,19 +139,23 @@ class EstimateCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     template_name = "estimate/estimate_form.html"
     fields = ["purchase_type", "customer_name", "vehicle_name"]
 
+    # シンプルに「ログインしてるか」
     def test_func(self):
-        """UserPassesTestMixin の判定条件"""
-        user = self.request.user
-        # 🚨 デモユーザー（店長・スタッフ問わず）は新規作成画面へのアクセスを禁止する
-        if is_demo_staff_only(user) or user.username == 'demo_manager':
-            return False
-        return True
+        return self.request.user.is_authenticated
 
     def handle_no_permission(self):
-        """test_func が False を返した（デモユーザーなど）場合の挙動"""
-        # ログイン画面に戻りつつ、赤い警告メッセージを表示
-        messages.error(self.request, "デモアカウントでは新規見積の作成はできません。店長またはスタッフアカウントでログインしてください。", extra_tags='danger')
-        return redirect('users:login')
+        messages.error(self.request, "見積作成権限がありません。")
+        return redirect('estimate:estimate_list')
+
+    # 表示される前にデモユーザーを判定して弾く
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.warning(
+                request, 
+                "デモアカウントでは新規見積の作成は制限されています。"
+            )
+            return redirect('estimate:estimate_list')
+        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         """保存成功後のリダイレクト先（詳細画面）"""
@@ -715,6 +719,16 @@ class ManagerTireCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
     def handle_no_permission(self):
         messages.error(self.request, "タイヤ登録権限がありません。")
         return redirect('estimate:manager_tire_list')
+    
+    def dispatch(self, request, *args, **kwargs):
+        # デモグループに属している場合は、画面を表示させずに一覧へ戻す
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.warning(
+                request, 
+                "デモアカウントではタイヤマスタの新規登録は制限されています。"
+            )
+            return redirect('estimate:manager_tire_list')
+        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         # 登録成功時にメッセージを表示
@@ -832,6 +846,15 @@ class ManagerChargeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateVie
     def handle_no_permission(self):
         messages.error(self.request, "マスタ登録権限がありません。")
         return redirect('estimate:manager_charge_list')
+    
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.groups.filter(name="demo_group").exists():
+            messages.warning(
+                request, 
+                "デモアカウントでは諸費用マスタの新規登録は制限されています。"
+            )
+            return redirect('estimate:manager_charge_list')
+        return super().dispatch(request, *args, **kwargs)
 
 # --- 諸費用マスタの有効化処理 ---
 @login_required
