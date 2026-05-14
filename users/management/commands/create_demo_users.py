@@ -16,8 +16,8 @@ class Command(BaseCommand):
         manager, created = User.objects.get_or_create(
             username="demo_manager",
             defaults={
-                "employee_id": "111111",
-                "employee_name": "デモ店長",
+                "staff_id": "111111",
+                "staff_name": "デモ店長",
                 "is_staff": True,      # 管理者権限
                 "is_active": True,     # 有効フラグ
                 "is_superuser": False, # スーパーユーザーではない
@@ -35,8 +35,8 @@ class Command(BaseCommand):
         staff, created = User.objects.get_or_create(
             username="demo_staff",
             defaults={
-                "employee_id": "222222",
-                "employee_name": "デモスタッフ",
+                "staff_id": "222222",
+                "staff_name": "デモスタッフ",
                 "is_staff": False,     # 管理者権限なし
                 "is_active": True,     # 有効フラグ（スタッフ判別用）
                 "is_superuser": False,
