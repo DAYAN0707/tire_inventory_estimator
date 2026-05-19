@@ -49,8 +49,8 @@ https://tire-inventory-estimator.onrender.com
 - **復活機能:** 無効化したマスタをワンクリックで再度有効化
 
 ## 使用技術
-- **Backend:** Python 3.14 / Django 6.0.1
-- **Frontend:** HTML5 / CSS3 (Bootstrap 5) / JavaScript
+- **Backend:** Python 3.14 / Django 6.0.1 / SQLite3
+- **Frontend:** HTML5 / CSS3 (Bootstrap 5) / JavaScript（Ajax / Fetch API）
 - **Server:** Gunicorn / WhiteNoise (静的ファイル配信)
 - **Infrastructure:** Render
 
@@ -80,7 +80,6 @@ https://tire-inventory-estimator.onrender.com
 - 発注したタイヤの入荷時に在庫と連動する機能の実装
 - 顧客通知機能（SMS / メール）
 - 売上・需要分析機能
-- PostgreSQLへの移行（本番対応）
 
 
 ### このアプリで意識したこと

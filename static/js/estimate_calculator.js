@@ -13,16 +13,10 @@
 // 🔥 修正の本質：どの項目を手入力したかをキー単位（masterId_rowIndex）で記録する
 let manualEditedKeys = new Set(); 
 let chargeUpdateTimer; // Debounce（連打防止）用のタイマー
-let logCounter = 0;    // 💥 修正②：console暴走対策用のログカウンター
 let isInitialLoad = true; // 🚀 修正：初回ロード時のAPIループ防止フラグ
 
-console.log("★★★ JSファイル読み込み成功！ ★★★");
 
 $(function() {
-    console.log("見積計算スクリプト始動");
-
-
-    let logCounter = 0; // デバッグログ用
 
     // ==========================================
     // --- 1章：初期化・マスタ読み込み ---
@@ -37,9 +31,6 @@ $(function() {
     
     // マスタデータが存在しない場合は空配列として初期化（エラー防止）
     const tireMasterData = JSON.parse(tireMasterElement?.textContent || "[]");
-
-    // 🔍 デバッグ用：マスタデータが正しくロードされたか確認（空ならView側の設定ミス）
-    console.log("🛞 tireMasterDataのロード状況:", tireMasterData);
 
     // ==========================================
     // --- 2章：タイヤ金額計算（単価・小計）＆ フォーム操作 ---
@@ -63,9 +54,6 @@ $(function() {
         // 🎯 マスタデータから該当するタイヤを探す
         const tire = tireMasterData.find(t => String(t.id) === String(tireId));
 
-        // 🎯 デバッグ用：見つかったタイヤの情報をコンソールに表示
-        console.log(`🔍 行[${rowIndex}] 検索実行: tireId=${tireId} -> 結果:`, tire);
-
         if (tire) {
             // --- 🎯 4本単位＋端数の分解計算ロジック ---
             const unitPrice = parseFloat(tire.unit_price) || 0;
@@ -83,8 +71,6 @@ $(function() {
                 subtotal = unitPrice * qty;
             }
 
-            // 🔍 デバッグ用：計算の内訳をログ出力
-            console.log(`🧮 行[${rowIndex}] 計算詳細: ${qty}本 = (${setCount}セット × ${setPrice}円) + (${remainder}本 × ${unitPrice}円)`);
             
             // --- 画面表示（UI）の更新 ---
             const $unitPriceCell = $row.find('.js-unit-price, .unit-price-display');
@@ -99,7 +85,6 @@ $(function() {
             // 🎯 計算結果をdata属性に保持
             $subtotalCell.data('value', subtotal);
             
-            console.log(`✅ 行[${rowIndex}] 計算完了: ID=${tireId}, 数量=${qty}, 小計=${subtotal}`);
         } else {
             // リセット処理
             $row.find('.js-unit-price, .unit-price-display, .js-set-price, .special-price-display, .js-subtotal, .item-subtotal-display').text("---");
@@ -144,7 +129,6 @@ $(function() {
         $newRow.hide().appendTo('#formset-container').fadeIn(300);
         $totalForms.val(count + 1);
         
-        console.log(`➕ 行を追加しました。現在の合計行数: ${count + 1}`);
     });
 
     /**
@@ -159,7 +143,6 @@ $(function() {
         const manufacturer = $row.find('.search-manufacturer').val();
         const size = $row.find('.search-size').val();
 
-        console.log(`🔍 検索ボタン押下 - 行[${rowIndex}]: メーカー=${manufacturer}, サイズ=${size}`);
 
         if (!manufacturer || !size) {
             alert("メーカーとサイズを選択してください");
@@ -179,7 +162,7 @@ $(function() {
                         const priceLabel = tire.price ? ` (￥${tire.price.toLocaleString()})` : '';
                         $select.append(`<option value="${tire.id}">${tire.name}${priceLabel}</option>`);
                     });
-                    console.log(`✅ 行[${rowIndex}]: ${data.length}件の検索結果を表示`);
+
                 } else {
                     alert("該当するタイヤが見つかりませんでした");
                 }
@@ -291,20 +274,17 @@ $(function() {
                             totalLaborQty += Number(c.qty || 0);
                         }
                     });
-                    console.log("🛠️ 工賃合計（事前集計）:", totalLaborQty);
+
 
                     let hasRunflat = false;
                     $('.formset-row').not('.empty-form').each(function() {
                         if ($(this).find('input[name$="-DELETE"]').prop('checked')) return;
                         const tId = $(this).find('select[name$="-tire"]').val();
                         const tire = tireMasterData.find(t => String(t.id) === String(tId));
-                        // デバッグ用
-                        console.log("🛞 タイヤ確認:", tire);
                         if (tire && (tire.is_runflat === true || tire.is_runflat == 1)) {
                             hasRunflat = true;
                         }
                     });
-                    console.log("🛞 ランフラット判定:", hasRunflat);
 
                     // =============================================================
                     // 🎯 描画ループ（ここでランフラット数量を強制上書き）
@@ -319,7 +299,6 @@ $(function() {
                         // 🔥 ランフラット行の場合、上で集計した工賃合計を強制適用
                         if (c.name.includes("ランフラット")) {
                             qty = (isExchange && hasRunflat) ? totalLaborQty : 0;
-                            console.log("🎯 ランフラット行に数量を適用:", qty);
                         }
                         // 手動編集されている場合は、手動の値を優先（ランフラット以外）
                         else if (typeof manualEditedKeys !== 'undefined' && manualEditedKeys.has(key) && $existing.length) {
@@ -430,10 +409,6 @@ $(function() {
         // 最終合計を画面に表示
         $('#js-grand-total').text(total.toLocaleString() + "円");
         
-        // console用のログカウンター使用により、総合計ログが暴走しないよう制御（20回に1回のみ表示）
-        if (logCounter++ % 20 === 0) {
-            console.log("💰 リアルタイム総合計（data集計）:", total);
-        }
     }
 
     /**
@@ -452,7 +427,6 @@ $(function() {
 
         //エラーがある場合はエラーメッセージを表示して保存ボタンは隠す。エラーがなければ保存ボタンを表示してエラーメッセージは隠す
         if (errorMsg) {
-            console.log("🚨 エラー表示中:", errorMsg);
             $msgArea.text(errorMsg).show();
             $('button[type="submit"]').hide(); 
             return false;
@@ -491,9 +465,6 @@ $(function() {
             }
         });
 
-        // 🎯 デバッグ用：タイヤの種類数と合計本数をログに出す（これで業務ルールのチェックが正しく行われているかを確認できる）
-        console.log(`🧪 検証中... 種類数: ${tireTypes.size}, 合計本数: ${totalQty}`);
-
         let errorMsg = "";
         // 🔥 交換作業の場合の業務ルールチェック（種類数と本数の制限）
         if (isExchange) {
@@ -525,7 +496,6 @@ $(function() {
     let isRestoring = true;
 
     $(document).ready(function() {
-        console.log("🚀 見積計算JS: 初期化開始 (isRestoring: true)");
 
         // ==========================================================================
         // --- 🎯 1. DB/在庫一覧からの状態復元（add-itemからの戻り対応） ---
@@ -548,7 +518,6 @@ $(function() {
 
                     // 復元すべきデータ（タイヤ選択情報）がある場合のみ実行
                     if (estimateData.items && estimateData.items.length > 0) {
-                        console.log("📦 在庫からの選択データを検知。復元プロセスを開始します...");
 
                         const requiredRows = estimateData.items.length; // 必要な行数
                         let $currentRows = $('#tire-formset-body tr.formset-row'); // 現在のHTML上の行
@@ -560,7 +529,6 @@ $(function() {
                          * TOTAL_FORMS カウントが正しく加算され、保存時の不整合を防げる
                          */
                         while ($currentRows.length < requiredRows) {
-                            console.log(`➕ 行不足を確認（現在:${$currentRows.length}/必要:${requiredRows}）。自動追加を実行。`);
                             $('#add-row-btn').click();
                             // 追加後の最新の行リストを再取得してループ判定に使う
                             $currentRows = $('#tire-formset-body tr.formset-row');
@@ -571,7 +539,6 @@ $(function() {
                             const $targetRow = $currentRows.eq(index);
 
                             if ($targetRow.length > 0) {
-                                console.log(`🔧 行[${index}] 復元中: タイヤID[${item.tire_id}], 数量[${item.quantity}]`);
 
                                 /**
                                  * セレクタのポイント:
@@ -590,9 +557,6 @@ $(function() {
                                 updateTireInfo($targetRow);
                             }
                         });
-
-                        // --- 手順C：復元の仕上げ（一括計算の許可） ---
-                        console.log("🔄 復元データの流し込み完了。初回一括計算を許可します。");
                         
                         // 💡 ここでフラグを解除することで、ガードがかかっていた計算関数たちが動けるようになる
                         isRestoring = false; 
@@ -601,7 +565,6 @@ $(function() {
                         updateGrandTotalWithCharges();
                         updateEstimateCharges();
 
-                        console.log("✅ 復元および初期計算が正常に終了しました。");
                     } else {
                         isRestoring = false; // アイテムが空の場合は即座に通常モードへ
                     }
@@ -627,7 +590,6 @@ $(function() {
          */
         $(document).on('change', 'select[name="purchase_type"], #id_purchase_type', function() {
             if (isRestoring) return; // 復元中の余計な発火をガード
-            console.log("🔄 購入区分が変更されました。諸費用を再スキャンします。");
             
             // ユーザーが手動でいじった工賃の記憶を一度消し、自動計算を優先させる
             manualEditedKeys.clear(); 
@@ -697,7 +659,6 @@ $(function() {
          * 保存ボタンが押された際、計算結果に矛盾がないか、不正な入力がないか最終確認
          */
         $('form#estimate-form').on('submit', function(e) {
-            console.log("💾 見積データの整合性を確認し、保存を開始します...");
             // updateGrandTotalWithCharges が false（エラーあり）を返したら送信を中止
             // if (!updateGrandTotalWithCharges()) {
                 // e.preventDefault();
@@ -730,6 +691,5 @@ $(function() {
         manualEditedKeys.clear(); 
         updateGrandTotalWithCharges(); 
         updateEstimateChargesDebounced(); 
-        console.log("🗑 DELETEフラグを立て、行を削除しました");
     });
 });
