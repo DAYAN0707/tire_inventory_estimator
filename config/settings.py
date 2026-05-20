@@ -27,7 +27,7 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False # 🌟 本番では必ずFalse！！！
+# DEBUG = False # 🌟 本番では必ずFalse！！！
 
 ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
 
@@ -157,22 +157,23 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # 本番環境ではTrueにする（ローカル環境ではFalseで問題なし）
-CSRF_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
 # 本番環境ではTrueにする（ローカル環境ではFalseで問題なし）
-SESSION_COOKIE_SECURE = True
+# SESSION_COOKIE_SECURE = True
 
 CSRF_COOKIE_SAMESITE = "Lax"
 
 # ローカル環境にはSSLを強制しない
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # ローカル環境にはSSLを強制しない
-SECURE_SSL_REDIRECT = True
+# SECURE_SSL_REDIRECT = True
 
 
-# DEBUG = True
 
-# SECURE_PROXY_SSL_HEADER = None
-# SECURE_SSL_REDIRECT = False
+DEBUG = True
 
-# CSRF_COOKIE_SECURE = False
-# SESSION_COOKIE_SECURE = False
+SECURE_PROXY_SSL_HEADER = None
+SECURE_SSL_REDIRECT = False
+
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False

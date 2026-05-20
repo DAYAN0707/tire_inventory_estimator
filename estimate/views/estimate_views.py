@@ -130,7 +130,7 @@ class EstimateListView(LoginRequiredMixin, ListView):
     context_object_name = 'estimates'
     ordering = ['-created_at']
 
-class EstimateCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+class EstimateCreateView(CreateView):
     """
     見積を新規作成し、タイヤ明細（Formset）を同時に管理するView
     在庫一覧からの「追加」による復元ロジックと、手入力の両方に対応
@@ -138,24 +138,6 @@ class EstimateCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Estimate
     template_name = "estimate/estimate_form.html"
     fields = ["purchase_type", "customer_name", "vehicle_name"]
-
-    # シンプルに「ログインしてるか」
-    def test_func(self):
-        return self.request.user.is_authenticated
-
-    def handle_no_permission(self):
-        messages.error(self.request, "見積作成権限がありません。")
-        return redirect('estimate:estimate_list')
-
-    # 表示される前にデモユーザーを判定して弾く
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.groups.filter(name="demo_group").exists():
-            messages.warning(
-                request, 
-                "デモアカウントでは新規見積の作成は制限されています。"
-            )
-            return redirect('estimate:estimate_list')
-        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         """保存成功後のリダイレクト先（詳細画面）"""
@@ -317,7 +299,7 @@ class EstimateCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         else:
             return self.render_to_response(self.get_context_data(form=form))
 
-class EstimateDetailView(LoginRequiredMixin,DetailView):
+class EstimateDetailView(DetailView):
     """作成された見積の最終結果を確認し、従業員がステータスを管理するView"""
     model = Estimate
     template_name = 'estimate/estimate_detail.html'
@@ -340,7 +322,7 @@ class EstimateDetailView(LoginRequiredMixin,DetailView):
             return redirect('users:login')
 
         if not request.user.is_authenticated:
-            return redirect('login')
+            return redirect('users:login')
 
         estimate = self.get_object()
         new_status_id = request.POST.get('status_id')
