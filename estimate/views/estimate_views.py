@@ -570,15 +570,16 @@ class EstimateStatusUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateVi
                     estimate.estimate_status = new_status
                     estimate.save()
 
-                    # 🌟 監査ログ（原因切り分けのため一時的にコメントアウト。安定後、utilsのインポートを確認して戻す）
-                    """
+                    # 🌟 監査ログ
                     write_audit_log(
-                        request=request, target_type='estimate', target_id=estimate.id,
-                        action=action_code, before={'status': old_status_name},
-                        after={'status': new_status_name},
-                        note=f"ステータスを {old_status_name} から {new_status_name} へ変更しました。"
+                        request=request, # ここでリクエストを渡すことで、ユーザー情報やIPアドレスなどもログに記録されるようになる 
+                        target_type='estimate', # ログの対象は「見積」
+                        target_id=estimate.id, # 変更対象の見積ID
+                        action='ステータス変更',  # 一覧の「アクション」欄に表示
+                        before={'status': old_status_name}, # 変更前のステータス名を記録
+                        after={'status': new_status_name}, # 変更後のステータス名を記録
+                        note=f"ステータスを「{old_status_name}」から「{new_status_name}」へ変更しました。" # ログの「備考」欄に詳細を記録
                     )
-                    """
                 
                 messages.success(request, f"ステータスを「{new_status.status_name}」に更新しました。")
             else:
