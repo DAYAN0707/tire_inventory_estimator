@@ -13,15 +13,26 @@
             <form method="post" novalidate>
                 {% csrf_token %}
 
-                <div class="row g-4">
-                    <div class="col-12">
-                        <label class="form-label fw-bold small text-muted">対象の銘柄・品番</label>
-                        <div class="form-control bg-light d-flex align-items-center">
-                            <i class="bi bi-tag me-2"></i>
-                            {{ object.brand }} ({{ object.size_raw }})
-                        </div>
-                    </div>
-                    
+                <div class="col-12">
+                    <label class="form-label fw-bold small text-muted">ブランド名</label>
+                    <input type="text" name="brand"
+                        value="{{ form.brand.value|default:'' }}"
+                        class="form-control">
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold small text-muted">サイズ</label>
+                    <input type="text" name="size_raw"
+                        value="{{ form.size_raw.value|default:'' }}"
+                        class="form-control">
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold small text-muted">メーカー</label>
+                    <input type="text" name="manufacturer"
+                        value="{{ form.manufacturer.value|default:'' }}"
+                        class="form-control">
+                </div>
 
                     <div class="col-12">
                         <label class="form-label fw-bold small text-muted">商品コード</label>

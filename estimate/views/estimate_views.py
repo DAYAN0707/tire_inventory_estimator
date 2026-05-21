@@ -649,7 +649,7 @@ class ManagerTireUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
     👉 Mixinを最優先に配置して二重ガード
     """
     model = Tire
-    fields = ['product_code', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
+    fields = ['manufacturer', 'brand', 'size_raw', 'product_code', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
     template_name = 'estimate/manager_tire_form.html'
     success_url = reverse_lazy('estimate:manager_tire_list')
 
@@ -690,7 +690,7 @@ class ManagerTireCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
     """
     model = Tire
     # 編集(UpdateView)と同じ項目を指定します
-    fields = ['product_code', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
+    fields = ['manufacturer', 'brand', 'size_raw', 'product_code', 'unit_price', 'set_price', 'reorder_point', 'cost_price', 'stock_qty', 'is_runflat']
     template_name = 'estimate/manager_tire_form.html'
     success_url = reverse_lazy('estimate:manager_tire_list')
 
