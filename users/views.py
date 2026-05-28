@@ -4,7 +4,7 @@ from django.views.generic import ListView, CreateView, UpdateView # クラスベ
 from django.contrib.auth import get_user_model # カスタムユーザーモデルを取得（image_480fbe.pngの項目を扱うため）
 from django.utils.decorators import method_decorator # クラスベースViewにデコレータを適用するためのインポート
 from django.contrib.auth.views import LoginView # Django標準のログインビューをインポート
-from .forms import StaffLoginForm # カスタムログインフォームをインポート
+from .forms import StaffLoginForm, UserCreateForm # カスタムログインフォームとユーザー登録フォームをインポート
 from .utils import stop_demo_user # デモユーザーの操作を制限するユーティリティ関数をインポート
 from django.contrib import messages # ユーザーにフィードバックを表示するためのモジュール（成功・エラーなどのメッセージ）
 from django.contrib.auth.mixins import LoginRequiredMixin # クラスベースビューでログイン必須にするためのミックスインをインポート
@@ -34,15 +34,16 @@ class UserListView(LoginRequiredMixin, ListView):
 @method_decorator(stop_demo_user, name='dispatch')  # デモユーザーの操作を制限するデコレータをクラスベースViewのdispatchメソッドに適用
 class UserCreateView(LoginRequiredMixin, CreateView):
     model = User
-    fields = ['username', 'staff_id', 'staff_name', 'is_staff', 'is_active'] # フォームに表示するフィールドを指定
+    form_class = UserCreateForm # カスタムユーザー登録フォームを使用
     template_name = 'users/user_form.html' # ユーザー登録・編集画面のテンプレートを指定
     success_url = reverse_lazy('users:user_list') # 登録成功後のリダイレクト先をユーザー一覧画面に設定
+
 
 # --- 3. ユーザー編集・削除画面 ---
 @method_decorator(stop_demo_user, name='dispatch')  # デモユーザーの操作を制限するデコレータをクラスベースViewのdispatchメソッドに適用
 class UserUpdateView(LoginRequiredMixin, UpdateView):
     model = User
-    fields = ['username', 'staff_id', 'staff_name', 'is_staff', 'is_active'] # フォームに表示するフィールドを指定
+    form_class = UserCreateForm # カスタムユーザー登録フォームを使用
     template_name = 'users/user_form.html' # ユーザー登録・編集画面のテンプレートを指定
     success_url = reverse_lazy('users:user_list') # 編集成功後のリダイレクト先をユーザー一覧画面に設定
 
