@@ -33,7 +33,7 @@ https://tire-inventory-estimator.onrender.com
 
 ### 在庫管理
 - タイヤマスタ管理（登録・編集・削除）
-- 在庫数のリアルタイム表示および**在庫アラート機能**（定数を下回ると「要発注」表示）
+- 在庫数のリアルタイム表示および**在庫アラート機能**（設定した発注点を下回ると「要発注」表示）
 
 ### 見積・予約機能
 - 顧客・車種・タイヤ選択による**自動見積算出**
@@ -53,6 +53,8 @@ https://tire-inventory-estimator.onrender.com
 - **Frontend:** HTML5 / CSS3 (Bootstrap 5) / JavaScript（Ajax / Fetch API）
 - **Server:** Gunicorn / WhiteNoise (静的ファイル配信)
 - **Infrastructure:** Render
+  
+※ 本アプリはポートフォリオ用途のため SQLite を採用しています。  
 
 ## 技術的な工夫・こだわり
 - **データ整合性:** 外部キーに `PROTECT` を設定し、見積履歴のあるタイヤを誤って削除できないよう設計
@@ -69,11 +71,29 @@ https://tire-inventory-estimator.onrender.com
 
 ---
 
-### 画面イメージ
-(※以下にスクリーンショットを追加予定)
-- **ダッシュボード:** 全体の在庫・見積状況の把握
-- **見積作成画面:** 自動計算ロジックの動作
-- **監査ログ:** 操作履歴の可視化
+## 画面イメージ
+
+### ログイン画面
+ユーザーIDとパスワードによる認証機能を実装しています。
+![ログイン画面](screenshots/login.png)
+
+### スタッフ用ダッシュボード
+見積作成や在庫確認など、日常業務の起点となる画面です。
+![スタッフ用ダッシュボード](screenshots/staff_dashboard.png)
+
+### タイヤ在庫一覧
+サイズやブランドで検索可能な在庫一覧画面です。
+![在庫一覧](screenshots/inventory_list.png)
+
+### 見積作成画面
+タイヤ・工賃・諸費用を組み合わせて見積を自動計算します。
+![見積作成画面](screenshots/estimate.png)
+
+### 監査ログ画面
+誰が・いつ・どのデータを操作したかを記録します。
+![監査ログ画面](screenshots/audit_log.png)
+
+※その他の画面（発注管理・見積ステータス管理・店長ダッシュボード等）は screenshots フォルダに掲載しています。
 
 
 ### 今後の改善課題
